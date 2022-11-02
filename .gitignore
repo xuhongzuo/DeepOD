@@ -2,3 +2,5 @@ deepod.egg-info/
 dist/
 build/
 .idea
+data/
+_py

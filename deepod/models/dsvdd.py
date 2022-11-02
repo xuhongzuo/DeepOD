@@ -11,10 +11,57 @@ import torch
 
 
 class DeepSVDD(BaseDeepAD):
+    """ Deep One-class Classification (Deep SVDD) for anomaly detection
+    See :cite:`ruff2018deepsvdd` for details
+
+    Parameters
+    ----------
+    epochs: int, optional (default=100)
+        Number of training epochs
+
+    batch_size: int, optional (default=64)
+        Number of samples in a mini-batch
+
+    lr: float, optional (default=1e-3)
+        Learning rate
+
+    rep_dim: int, optional (default=128)
+        Dimensionality of the representation space
+
+    hidden_dims: list, str or int, optional (default='100,50')
+        Number of neural units in hidden layers
+            - If list, each item is a layer
+            - If str, neural units of hidden layers are split by comma
+            - If int, number of neural units of single hidden layer
+
+    act: str, optional (default='ReLU')
+        activation layer name
+        choice = ['ReLU', 'LeakyReLU', 'Sigmoid', 'Tanh']
+
+    bias: bool, optional (default=False)
+        Additive bias in linear layer
+
+    epoch_steps: int, optional (default=-1)
+        Maximum steps in an epoch
+            - If -1, all the batches will be processed
+
+    prt_steps: int, optional (default=10)
+        Number of epoch intervals per printing
+
+    device: str, optional (default='cuda')
+        torch device,
+
+    verbose: int, optional (default=1)
+        Verbosity mode
+
+    random_state： int, optional (default=42)
+        the seed used by the random
+
+    """
     def __init__(self, epochs=100, batch_size=64, lr=1e-3,
                  rep_dim=128, hidden_dims='100,50', act='ReLU', bias=False,
                  epoch_steps=-1, prt_steps=10, device='cuda',
-                 verbose=2, random_state=42):
+                 verbose=1, random_state=42):
         super(DeepSVDD, self).__init__(
             model_name='DeepSVDD', epochs=epochs, batch_size=batch_size, lr=lr,
             epoch_steps=epoch_steps, prt_steps=prt_steps, device=device,
@@ -44,7 +91,7 @@ class DeepSVDD(BaseDeepAD):
         ).to(self.device)
 
         # c = torch.randn(net.n_emb).to(self.device)
-        self.c = self.set_c(net, train_loader)
+        self.c = self._set_c(net, train_loader)
         criterion = DSVDDLoss(c=self.c)
 
         if self.verbose >= 2:
@@ -70,7 +117,7 @@ class DeepSVDD(BaseDeepAD):
         s = criterion(batch_z)
         return batch_z, s
 
-    def set_c(self, net, dataloader, eps=0.1):
+    def _set_c(self, net, dataloader, eps=0.1):
         """Initializing the center for the hypersphere"""
         net.eval()
         z_ = []
@@ -87,6 +134,21 @@ class DeepSVDD(BaseDeepAD):
 
 
 class DSVDDLoss(torch.nn.Module):
+    """
+
+    Parameters
+    ----------
+    c: torch.Tensor
+        Center of the pre-defined hyper-sphere in the representation space
+
+    reduction: str, optional (default='mean')
+        choice = [``'none'`` | ``'mean'`` | ``'sum'``]
+            - If ``'none'``: no reduction will be applied;
+            - If ``'mean'``: the sum of the output will be divided by the number of
+            elements in the output;
+            - If ``'sum'``: the output will be summed
+
+    """
     def __init__(self, c, reduction='mean'):
         super(DSVDDLoss, self).__init__()
         self.c = c

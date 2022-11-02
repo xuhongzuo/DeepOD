@@ -9,9 +9,42 @@ import torch
 import random
 import time
 from abc import ABCMeta, abstractmethod
+from sklearn.utils import check_array
 
 
 class BaseDeepAD(metaclass=ABCMeta):
+    """
+    Abstract class for deep outlier detection models
+
+    Parameters
+    ----------
+
+    epochs: int, optional (default=100)
+        Number of training epochs
+
+    batch_size: int, optional (default=64)
+        Number of samples in a mini-batch
+
+    lr: float, optional (default=1e-3)
+        Learning rate
+
+    epoch_steps: int, optional (default=-1)
+        Maximum steps in an epoch
+            - If -1, all the batches will be processed
+
+    prt_steps: int, optional (default=10)
+        Number of epoch intervals per printing
+
+    device: str, optional (default='cuda')
+        torch device,
+
+    verbose: int, optional (default=1)
+        Verbosity mode
+
+    random_state： int, optional (default=42)
+        the seed used by the random
+
+    """
     def __init__(self, model_name, epochs=100, batch_size=64, lr=1e-3,
                  epoch_steps=-1, prt_steps=10, device='cuda',
                  verbose=1, random_state=42):
@@ -59,11 +92,10 @@ class BaseDeepAD(metaclass=ABCMeta):
         self : object
             Fitted estimator.
         """
-
         self.n_samples, self.n_features = X.shape
 
         self.train_loader, self.net, self.criterion = self.training_prepare(X, y=y)
-        self.training()
+        self._training()
 
         return self
 
@@ -87,11 +119,13 @@ class BaseDeepAD(metaclass=ABCMeta):
         """
 
         self.test_loader = self.inference_prepare(X)
-        scores = self.inference()
+        z, scores = self._inference()
+
+        z, scores = self.decision_function_update(z, scores)
 
         return scores
 
-    def training(self):
+    def _training(self):
         optimizer = torch.optim.Adam(self.net.parameters(),
                                      lr=self.lr,
                                      weight_decay=1e-5)
@@ -127,7 +161,7 @@ class BaseDeepAD(metaclass=ABCMeta):
 
         return
 
-    def inference(self):
+    def _inference(self):
         self.net.eval()
         with torch.no_grad():
             z_lst = []
@@ -141,14 +175,16 @@ class BaseDeepAD(metaclass=ABCMeta):
         z = torch.cat(z_lst).data.cpu().numpy()
         scores = torch.cat(score_lst).data.cpu().numpy()
 
-        return scores
+        return z, scores
 
     @abstractmethod
     def training_forward(self, batch_x, net, criterion):
+        """define forward step in training"""
         pass
 
     @abstractmethod
     def inference_forward(self, batch_x, net, criterion):
+        """define forward step in inference"""
         pass
 
     @abstractmethod
@@ -158,11 +194,17 @@ class BaseDeepAD(metaclass=ABCMeta):
 
     @abstractmethod
     def inference_prepare(self, X):
+        """define test_loader"""
         pass
 
     def epoch_update(self):
         """for any updating operation after each training epoch"""
         return
+
+    def decision_function_update(self, z, scores):
+        """for any updating operation after decision function"""
+        return z, scores
+
 
     @staticmethod
     def set_seed(seed):

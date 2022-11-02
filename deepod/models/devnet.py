@@ -91,7 +91,6 @@ class DevLoss(torch.nn.Module):
         return
 
     def forward(self, y_true, y_pred):
-
         ref = torch.randn(self.loss_l)
         dev = (y_pred - torch.mean(ref)) / torch.std(ref)
         inlier_loss = torch.abs(dev)
