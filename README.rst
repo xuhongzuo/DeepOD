@@ -31,6 +31,6 @@ DeepOD can be used in a few lines of code. This API style is the same with sklea
     # weakly-supervised methods
     from deepod.models.devnet import DevNet
     clf = DevNet()
-    clf.fit(X_train, y=semi_y) # semi_y use 1 for known anomalies, and 0 for unlabeled data
+    clf.fit(X_train, y=semi_y) # semi_y uses 1 for known anomalies, and 0 for unlabeled data
     scores = clf.decision_function(X_test)
 
