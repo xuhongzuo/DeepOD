@@ -9,11 +9,23 @@ DeepOD includes six popular deep outlier detection / anomaly detection algorithm
 
 The DeepOD framework can be installed via:
 
+install a stable version
+
 
 .. code-block:: bash
 
-    open cmd
-    enter the installation dir
+
+    pip install deepod
+
+
+install a developing version
+
+
+.. code-block:: bash
+
+
+    git clone https://github.com/xuhongzuo/DeepOD.git
+    cd DeepOD
     pip install .
 
 
