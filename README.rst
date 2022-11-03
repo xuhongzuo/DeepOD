@@ -12,7 +12,9 @@ The DeepOD framework can be installed via:
 
 .. code-block:: bash
 
-    pip install deepod
+    open cmd
+    enter the installation dir
+    pip install .
 
 
 
