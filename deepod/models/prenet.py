@@ -1,9 +1,12 @@
+# -*- coding: utf-8 -*-
+"""
+Weakly-supervised anomaly detection by pairwise relation prediction task
+@Author: Hongzuo Xu <hongzuoxu@126.com, xuhongzuo13@nudt.edu.cn>
+"""
+
 from deepod.core.base_model import BaseDeepAD
 from deepod.core.base_networks import MLPnet, LinearBlock
-from torch.utils.data import DataLoader
 import torch
-import torch.nn.functional as F
-import numpy as np
 
 
 class PReNet(BaseDeepAD):
@@ -35,9 +38,7 @@ class PReNet(BaseDeepAD):
             bias=False,
         ).to(self.device)
 
-        # should be MAE loss?
-        criterion = torch.nn.MSELoss(reduction='mean')
-
+        criterion = torch.nn.L1Loss(reduction='mean')
         return train_loader, net, criterion
 
     def inference_prepare(self, X):
