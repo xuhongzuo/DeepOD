@@ -12,6 +12,52 @@ import torch.nn.functional as F
 
 
 class RCA(BaseDeepAD):
+    """
+    epochs: int, optional (default=100)
+        Number of training epochs
+
+    batch_size: int, optional (default=64)
+        Number of samples in a mini-batch
+
+    lr: float, optional (default=1e-3)
+        Learning rate
+
+    rep_dim: int, optional (default=128)
+        Dimensionality of the representation space
+
+    hidden_dims: list, str or int, optional (default='100,50')
+        Number of neural units in hidden layers
+            - If list, each item is a layer
+            - If str, neural units of hidden layers are split by comma
+            - If int, number of neural units of single hidden layer
+
+    act: str, optional (default='ReLU')
+        activation layer name
+        choice = ['ReLU', 'LeakyReLU', 'Sigmoid', 'Tanh']
+
+    bias: bool, optional (default=False)
+        Additive bias in linear layer
+
+    beta: float, optional (default=0.)
+        RCA selects (β × 100)% of the data points with the lowest reconstruction errors
+        in the mini-batch to update the autoencoder.
+
+    epoch_steps: int, optional (default=-1)
+        Maximum steps in an epoch
+            - If -1, all the batches will be processed
+
+    prt_steps: int, optional (default=10)
+        Number of epoch intervals per printing
+
+    device: str, optional (default='cuda')
+        torch device,
+
+    verbose: int, optional (default=1)
+        Verbosity mode
+
+    random_state： int, optional (default=42)
+        the seed used by the random
+    """
     def __init__(self, epochs=100, batch_size=64, lr=1e-3,
                  rep_dim=128, hidden_dims='100,50', act='ReLU', bias=False,
                  beta=0.,
@@ -113,7 +159,6 @@ class RCANet(torch.nn.Module):
         if type(hidden_dims)==str:
             hidden_dims = hidden_dims.split(',')
             hidden_dims = [int(a) for a in hidden_dims]
-
 
         self.enc1 = MLPnet(
             n_features=n_features,

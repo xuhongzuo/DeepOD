@@ -13,6 +13,53 @@ import torch
 
 
 class DevNet(BaseDeepAD):
+    """
+    Parameters
+    ----------
+    epochs: int, optional (default=100)
+        Number of training epochs
+
+    batch_size: int, optional (default=64)
+        Number of samples in a mini-batch
+
+    lr: float, optional (default=1e-3)
+        Learning rate
+
+    hidden_dims: list, str or int, optional (default='100,50')
+        Number of neural units in hidden layers
+            - If list, each item is a layer
+            - If str, neural units of hidden layers are split by comma
+            - If int, number of neural units of single hidden layer
+
+    act: str, optional (default='ReLU')
+        activation layer name
+        choice = ['ReLU', 'LeakyReLU', 'Sigmoid', 'Tanh']
+
+    bias: bool, optional (default=False)
+        Additive bias in linear layer
+
+    margin: float, optional (default=5.)
+        margin value used in the deviation loss function
+
+    l: int, optional (default=5000.)
+        the size of samples of the Gaussian distribution used in the deviation loss function
+
+    epoch_steps: int, optional (default=-1)
+        Maximum steps in an epoch
+            - If -1, all the batches will be processed
+
+    prt_steps: int, optional (default=10)
+        Number of epoch intervals per printing
+
+    device: str, optional (default='cuda')
+        torch device,
+
+    verbose: int, optional (default=1)
+        Verbosity mode
+
+    random_state： int, optional (default=42)
+        the seed used by the random
+    """
     def __init__(self, epochs=100, batch_size=64, lr=1e-3,
                  hidden_dims='100,50', act='ReLU', bias=False,
                  margin=5., l=5000,
@@ -83,6 +130,25 @@ class DevNet(BaseDeepAD):
 
 
 class DevLoss(torch.nn.Module):
+    """
+    Deviation Loss
+
+    Parameters
+    ----------
+    margin: float, optional (default=5.)
+        Center of the pre-defined hyper-sphere in the representation space
+
+    l: int, optional (default=5000.)
+        the size of samples of the Gaussian distribution used in the deviation loss function
+
+    reduction: str, optional (default='mean')
+        choice = [``'none'`` | ``'mean'`` | ``'sum'``]
+            - If ``'none'``: no reduction will be applied;
+            - If ``'mean'``: the sum of the output will be divided by the number of
+            elements in the output;
+            - If ``'sum'``: the output will be summed
+
+    """
     def __init__(self, margin=5., l=5000, reduction='mean'):
         super(DevLoss, self).__init__()
         self.margin = margin

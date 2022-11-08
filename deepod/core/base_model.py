@@ -70,7 +70,10 @@ class BaseDeepAD(metaclass=ABCMeta):
 
         self.epoch_time = None
 
-        self.random_state=random_state
+        self.train_data = None
+        self.train_label = None
+
+        self.random_state = random_state
         self.set_seed(random_state)
         return
 
@@ -92,6 +95,9 @@ class BaseDeepAD(metaclass=ABCMeta):
         self : object
             Fitted estimator.
         """
+
+        self.train_data = X
+        self.train_label = y
         self.n_samples, self.n_features = X.shape
 
         self.train_loader, self.net, self.criterion = self.training_prepare(X, y=y)
