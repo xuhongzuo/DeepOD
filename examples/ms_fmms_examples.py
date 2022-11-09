@@ -25,7 +25,8 @@ def get_para(train_params, params):
 
 
 if __name__ == '__main__':
-    ptrain, ptest, ftrain, ftest = utils.get_data(0.1)
+    FEATURE_FILE, TARGET_FILE, TRAIN_IDS, TEST_IDS = get_path()
+    ptrain, ptest, ftrain, ftest = utils.get_data(0.1, FEATURE_FILE, TARGET_FILE, TRAIN_IDS, TEST_IDS)
     ptrain = ptrain[:, :modelnum]
     ptest = ptest[:, :modelnum]
     ftrain, ptrain, fvalid, pvalid = utils.train_test_val_split(ftrain, ptrain, 0.1)
