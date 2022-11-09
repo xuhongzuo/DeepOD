@@ -7,7 +7,6 @@ from FMMS import FMMS
 import torch
 import torch.utils.data as Data
 import pickle
-import plot
 
 
 def Train(params, train_params, xtrain, xvalid, xtest, ytrain, yvalid, ytest, txt=''):
@@ -141,8 +140,6 @@ def main(txt=''):
         'embedding_size': 4,
         'feature_size': xtrain.shape[1],
         'model_size': ytrain.shape[1],
-        'FM': True,
-        'DNN': False,
         'layer_size': 3,
         'hiddensize': 64
     }
@@ -161,7 +158,7 @@ def main(txt=''):
     # ytest = utils.scaleY(ytest)
     xtrain, ytrain, xvalid, yvalid = utils.train_test_val_split(xtrain, ytrain, rate)
     log = Train(params, train_params, xtrain, xvalid, xtest, ytrain, yvalid, ytest)
-    log.to_csv('./experiments/convergence/fmms%s_%s.csv'%(config.get_para(train_params, params),txt))  # fmms在pmf数据集上参数为path时第r次实验的中间结果
+    # log.to_csv('./experiments/convergence/fmms%s_%s.csv'%(config.get_para(train_params, params),txt))  # fmms在pmf数据集上参数为path时第r次实验的中间结果
     ypred = Test(params, train_params, xtest, ytest)
     evaluation.ERank(ypred, ytest, 'fmms')                                          # 所推荐的模型的平均排名
     evaluation.ETopnk(ypred, ytest, int(config.modelnum*0.05), 5, 'fmms')           # 所推荐的模型中，排在前n个的里有几个
