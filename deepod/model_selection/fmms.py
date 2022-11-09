@@ -11,9 +11,17 @@ from gene_feature import generate_meta_features
 
 
 class FMMS:
-    def __init__(self, Fmap, Pmap, Fmapvalid=None, Pmapvalid=None, embedding_size=4, batch=4, lr=0.001, epoch=50,
+    def __init__(self, Fmap, Pmap,
+                 Fmapvalid=None, Pmapvalid=None,
+                 embedding_size=4, batch=4, lr=0.001, epoch=50,
                  opt='adam', loss='cos'):
         """
+        Factorization Machine-based Unsupervised Model Selection Method.
+        FMMS is trained by historical performance on a large suite of data collection
+        and the characteristics of these datasets. Fitted FMMS can be used to
+        recommend more suitable detection model on new datasets according to
+        their characteristics.
+
         Parameters
         ----------
         Fmap: The feature Map of the historical dataset (D*F)
@@ -24,6 +32,7 @@ class FMMS:
         epoch: Training epoch
         opt: Optimizer
         loss: Loss function
+
         """
         self.feature_size = Fmap.shape[1]
         self.model_size = Pmap.shape[1]
@@ -142,8 +151,6 @@ class FMMS:
 
     @staticmethod
     def rmse_loss(pred, real):
-        # 使用均方根误差作为评价指标
-        # sum(x2-y2)
         loss_func = torch.nn.MSELoss(reduction='mean')
         mse_loss = loss_func(pred, torch.tensor(real).float())
         loss = torch.sqrt(mse_loss)
@@ -172,26 +179,26 @@ class FMMS:
         loss = L1(pred, torch.tensor(real).float())
         return loss
 
-
+    @staticmethod
     def SmoothL1_loss(pred, real):
         sl1 = torch.nn.SmoothL1Loss()
         loss = sl1(pred, torch.tensor(real).float())
         return loss
 
-
+    @staticmethod
     def KLDiv_loss(pred, real):
         kd = torch.nn.KLDivLoss()
         loss = kd(pred, torch.tensor(real).float())
         return loss
 
-
+    @staticmethod
     def DCG_loss(pred, real):
         data_size, model_size = real.shape
         treal = torch.tensor(real).double()
         DCG = torch.zeros(1).type(torch.DoubleTensor)
         for ii in range(data_size):
             for jj in range(model_size):
-                part = sum(torch.sigmoid(pred[ii] - pred[ii][jj])).type(torch.DoubleTensor)        # 统计比jj小的数量
+                part = sum(torch.sigmoid(pred[ii] - pred[ii][jj])).type(torch.DoubleTensor)
                 DCG = DCG + (torch.pow(10, treal[ii][jj])-1)/torch.log2(1+part)
         return -DCG/data_size
 
