@@ -1,6 +1,6 @@
+import examples.utils as utils
+from deepod.model_selection.fmms import FMMS
 import os
-import torch
-import utils
 
 dataset = 'pmf'
 random_state = 0
@@ -22,3 +22,15 @@ def get_para(train_params, params):
                                   str(train_params['batch']),
                                   str(train_params['epoch']),
                                   str(train_params['lr']))
+
+
+if __name__ == '__main__':
+    ptrain, ptest, ftrain, ftest = utils.get_data(0.1)
+    ptrain = ptrain[:, :modelnum]
+    ptest = ptest[:, :modelnum]
+    ftrain, ptrain, fvalid, pvalid = utils.train_test_val_split(ftrain, ptrain, 0.1)
+
+    fmms = FMMS(ftrain, ptrain, fvalid, pvalid)
+    fmms.fit(save=True)
+    fmms.predict(f=ftest[0], load=True)
+
