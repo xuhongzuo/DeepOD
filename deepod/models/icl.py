@@ -104,7 +104,7 @@ class ICL(BaseDeepAD):
             rep_dim=self.rep_dim,
             activation=self.act,
             bias=self.bias
-        )
+        ).to(self.device)
 
         criterion = torch.nn.CrossEntropyLoss()
 
@@ -248,7 +248,7 @@ if __name__ == '__main__':
     y_semi = np.zeros_like(y)
     y_semi[known_anom_id] = 1
 
-    clf = ICL(device='cpu', epochs=10, verbose=2)
+    clf = ICL(device='cuda', epochs=10, verbose=2)
     clf.fit(x, y_semi)
 
     scores = clf.decision_function(x)
