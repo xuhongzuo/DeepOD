@@ -7,14 +7,6 @@ random_state = 0
 modelnum = 200
 
 
-def get_rate():
-    if dataset == 'pmf':
-        rate = 0.1
-    else:
-        rate = 0.2
-    return rate
-
-
 def get_path():
     FEATURE_FILE = os.path.join("data", dataset, "feature.csv")
     TARGET_FILE = os.path.join("data", dataset, "target.csv")

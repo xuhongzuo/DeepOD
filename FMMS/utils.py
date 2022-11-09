@@ -12,7 +12,7 @@ def train_test_val_split(x, y, ratio_test):
     return X_train, y_train, X_test, y_test
 
 
-def get_data2(rate=0.1):
+def get_data(rate=0.1):
     FEATURE_FILE, TARGET_FILE, TRAIN_IDS, TEST_IDS = config.get_path()
     # 提取target
     df = pd.read_csv(TARGET_FILE)
@@ -30,48 +30,6 @@ def get_data2(rate=0.1):
     Xtrain, ytrain, Xtest, ytest = train_test_val_split(X, Y, rate)
 
     return ytrain, ytest, Xtrain, Xtest
-
-
-def get_data():
-    FEATURE_FILE, TARGET_FILE, TRAIN_IDS, TEST_IDS = config.get_path()
-    # 提取target
-    df = pd.read_csv(TARGET_FILE)
-    dataset_ids = df.columns.tolist()[1:]
-    dataset_ids = [int(dataset_ids[i]) for i in range(len(dataset_ids))]
-    # df = df.fillna(0)
-    Y = df.values[:, 1:].astype(np.float64)
-
-    imp = sklearn.impute.SimpleImputer(missing_values=np.nan, strategy='mean')
-    Y = imp.fit(Y).transform(Y)         # 替换为对应列的均值，全nan则删除
-
-    ids_train = np.loadtxt(TRAIN_IDS).astype(int).tolist()
-    ids_test = np.loadtxt(TEST_IDS).astype(int).tolist()
-
-    ix_train = [dataset_ids.index(i) for i in ids_train]
-    ix_test = [dataset_ids.index(i) for i in ids_test]
-
-    Ytrain = Y[:, ix_train]
-    Ytest = Y[:, ix_test]
-
-    # 提取feature
-    df = pd.read_csv(FEATURE_FILE)
-    dataset_ids = df[df.columns[0]].tolist()
-
-    ix_train = [dataset_ids.index(i) for i in ids_train]
-    ix_test = [dataset_ids.index(i) for i in ids_test]
-
-    df = df.fillna(0)
-    df = MinMaxNorm(df)     # 归一化
-    df = df.fillna(0)
-    X = df.values.astype(np.float32)
-
-    # impx = sklearn.impute.SimpleImputer(missing_values=np.nan, strategy='mean')
-    # X = impx.fit(X).transform(X)         # 替换为对应列的均值
-
-    Ftrain = X[ix_train, 1:]
-    Ftest = X[ix_test, 1:]
-
-    return Ytrain.T, Ytest.T, Ftrain, Ftest
 
 
 def MinMaxNorm(df):     # 最大最小归一

@@ -6,7 +6,8 @@ import utils
 from FMMS import FMMS
 import torch
 import torch.utils.data as Data
-import pickle
+import numpy as np
+from gene_feature import generate_meta_features
 
 optlsit = {
     'sgd': torch.optim.SGD,
@@ -21,7 +22,7 @@ losslist = {
 
 
 class run_FMMS():
-    def __init__(self, Fmap, Pmap, embedding_size=4, batch=4, lr=0.001, epoch=50, opt='adam', loss='cos'):
+    def __init__(self, Fmap, Pmap, Fmapvalid=None, Pmapvalid=None, embedding_size=4, batch=4, lr=0.001, epoch=50, opt='adam', loss='cos'):
         """
         Parameters
         ----------
@@ -34,9 +35,13 @@ class run_FMMS():
         opt: Optimizer
         loss: Loss function
         """
-        self.fmms = FMMS(feature_size=Fmap.shape[1], model_size=Pmap.shape[1], embedding_size=embedding_size)
+        self.feature_size = Fmap.shape[1]
+        self.model_size = Pmap.shape[1]
+        self.fmms = FMMS(feature_size=self.feature_size, model_size=self.model_size, embedding_size=embedding_size)
         self.Fmap = Fmap
         self.Pmap = Pmap
+        self.Fmapvalid = Fmapvalid
+        self.Pmapvalid = Pmapvalid
         self.batch = batch
         self.lr = lr
         self.epoch = epoch
@@ -44,7 +49,7 @@ class run_FMMS():
         self.loss = losslist[loss]
         return
 
-    def fit(self):
+    def fit(self, save=False):
         train_dataset = Data.TensorDataset(torch.tensor(self.Fmap), torch.tensor(self.Pmap))
         loader = Data.DataLoader(
             dataset=train_dataset,  # torch TensorDataset format
@@ -56,12 +61,13 @@ class run_FMMS():
         np_ctr = 1      # 提升幅度小于0.1%的累计次数
         for epoch in range(self.epoch):  # 对数据集进行训练
             # 早停机制
-            if epoch >= 2 and (loss_valid_set[-2] - loss_valid_set[-1]) / loss_valid_set[-1] <= 0.001:
-                np_ctr += 1
-            else:
-                np_ctr = 1
-            if np_ctr > 5:
-                break
+            if self.Fmapvalid is not None:
+                if epoch >= 2 and (loss_valid_set[-2] - loss_valid_set[-1]) / loss_valid_set[-1] <= 0.001:
+                    np_ctr += 1
+                else:
+                    np_ctr = 1
+                if np_ctr > 5:
+                    break
 
             # train
             for step, (batch_x, batch_y) in enumerate(loader):  # 每个训练步骤
@@ -80,11 +86,38 @@ class run_FMMS():
                 optimizer.step()  # 进行更新
                 print("batch loss:", step, loss_train.item())
 
+            # valid
+            if self.Fmapvalid is not None:
+                Pmapvalidpred = self.fmms(torch.tensor(self.Fmapvalid))
+                loss_valid = self.loss(Pmapvalidpred, self.Pmapvalid)
+                loss_valid_set.append(loss_valid.item())
+
             print("epoch: %d" % epoch, "loss_train:", loss_train.item())
         # # 保存训练好的模型
-        # torch.save(self.fmms.state_dict(), "models/%s/FMMS_%s_%s.pt" % (config.dataset, path, txt))
+        if save:
+            torch.save(self.fmms.state_dict(), "models/fmms.pt")
 
-    def predict(self, Feature):
-        pred = self.fmms(torch.tensor([Feature]))
-        pred = pred.detach().numpy()
-        return pred
+    def predict(self, x=None, f=None, topn=5, load=False):
+        if load:
+            self.fmms.load_state_dict(torch.load("models/fmms.pt"))
+        if f is None:
+            f = generate_meta_features(x)[0]
+        if f.shape[0] != self.feature_size:
+            print('The feature size of historical dataset (%d) and target dataset (%d) is not match' % (f.shape[0], self.feature_size))
+        pred = self.fmms(torch.tensor([f]))         # 预测的性能得分（仅保证相对排序准确，不保证绝对值准确）
+        pred = pred.detach().numpy()[0]
+        argsort_pred = np.argsort(pred)             # 对应的排名
+        recommend = argsort_pred[::-1]
+        print("预测性能最优的%d位模型的索引值:" % topn, recommend[:topn])
+        return
+
+
+if __name__ == '__main__':
+    ptrain, ptest, ftrain, ftest = utils.get_data2(0.1)
+    ptrain = ptrain[:, :config.modelnum]
+    ptest = ptest[:, :config.modelnum]
+    ftrain, ptrain, fvalid, pvalid = utils.train_test_val_split(ftrain, ptrain, 0.1)
+    rfmms = run_FMMS(ftrain, ptrain, fvalid, pvalid)
+    # rfmms.fit(save=True)
+    rfmms.predict(f=ftest[0], load=True)
+
