@@ -68,9 +68,9 @@ class FMMS:
             shuffle=False
         )
 
-        optimizer = self.opt(self.net.parameters(), lr=self.lr)
+        optimizer = self.opt(self.net.parameters(), lr=self.lr, weight_decay=1e-5)
         loss_valid_set = []
-        np_ctr = 1      # 提升幅度小于0.1%的累计次数
+        np_ctr = 1
 
         for epoch in range(self.epoch):
             if self.Fmapvalid is not None:
@@ -82,20 +82,18 @@ class FMMS:
                     break
 
             # train
-            for step, (batch_x, batch_y) in enumerate(loader):  # 每个训练步骤
-                # 此处省略一些训练步骤
-                optimizer.zero_grad()  # 如果不置零，Variable的梯度在每次backwrd的时候都会累加
+            for step, (batch_x, batch_y) in enumerate(loader):
+                optimizer.zero_grad()
                 output = self.net(batch_x)
-                # 平方差
                 loss_train = self.loss(output, batch_y)
                 l2_regularization = torch.tensor(0).float()
-                # 加入l2正则
                 for param in self.net.parameters():
                     l2_regularization += torch.norm(param, 2)
+
                 # loss = rmse_loss + l2_regularization
                 loss_train.backward()
-                # loss_train.backward(torch.ones(train_params['batch'], model_size))
-                optimizer.step()  # 进行更新
+
+                optimizer.step()
                 print("batch loss:", step, loss_train.item())
 
             # valid
@@ -107,16 +105,16 @@ class FMMS:
             print("epoch: %d" % epoch, "loss_train:", loss_train.item())
 
         # # save trained models
-        if save:
-            torch.save(self.net.state_dict(), "models/fmms.pt")
+        if save_path is not None:
+            torch.save(self.net.state_dict(), save_path)
 
-    def predict(self, x=None, f=None, topn=5, load=False):
-        if load:
-            self.net.load_state_dict(torch.load("models/fmms.pt"))
+    def predict(self, x=None, f=None, topn=5, load_path=None):
+        if load_path is not None:
+            self.net.load_state_dict(torch.load(load_path))
         if f is None:
             f = generate_meta_features(x)[0]
 
-        assert  f.shape[0] == self.feature_size, \
+        assert f.shape[0] == self.feature_size, \
             f'The feature size of historical dataset ({f.shape[0]}) ' \
             f'and target dataset (%{self.feature_size}) does not match'
 
@@ -125,6 +123,7 @@ class FMMS:
         ranking = np.argsort(pred) # ranking
 
         recommend = ranking[::-1]
+        # @TODO return the ranking of model names
         print(f"Predicted Top {topn} better models are {recommend[:topn]}")
 
         return
@@ -133,6 +132,16 @@ class FMMS:
     def topn_loss(ypred, yreal, n=10):
         data_size, model_size = yreal.shape
 
+        ypred_idx = np.array([np.argmax(ypred[i]) for i in range(data_size)])
+        ypred_max = np.array([yreal[i][idx] for i, idx in enumerate(ypred_idx)])
+
+        # 选出实际上的topn
+        topn = np.ones((data_size, n))
+        for ii in range(data_size):
+            # 第ii列，即第ii个数据（nan已经被填充为0，因此不会被排为最大，当所有数都是nan时，也不会报错）
+            best_value = list(np.sort(yreal[ii])[::-1])
+            # 第ii个数据的前n个最大值
+            topn[ii] = best_value[:n]
         ypred_idx = np.array([np.argmax(ypred[i]) for i in range(data_size)])    # 每个data选出最大model对应的idx
         ypred_max = np.array([yreal[i][idx] for i, idx in enumerate(ypred_idx)])
 
@@ -203,8 +212,6 @@ class FMMS:
         return -DCG/data_size
 
 
-
-
 class FMMSNet(torch.nn.Module):
     def __init__(self, feature_size, model_size, embedding_size):
         super(FMMSNet, self).__init__()
@@ -231,10 +238,10 @@ class FMMSNet(torch.nn.Module):
         return out
 
     def show(self):
-        for parameters in self.parameters():  # 打印出参数矩阵及值
+        for parameters in self.parameters():
             print(parameters)
 
-        for name, parameters in self.named_parameters():  # 打印出每一层的参数的大小
+        for name, parameters in self.named_parameters():
             print(name, ':', parameters.size())
 
 
