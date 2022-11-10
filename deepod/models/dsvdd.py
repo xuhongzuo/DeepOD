@@ -90,7 +90,7 @@ class DeepSVDD(BaseDeepAD):
             bias=self.bias,
         ).to(self.device)
 
-        # c = torch.randn(net.n_emb).to(self.device)
+        # self.c = torch.randn(net.n_emb).to(self.device)
         self.c = self._set_c(net, train_loader)
         criterion = DSVDDLoss(c=self.c)
 
