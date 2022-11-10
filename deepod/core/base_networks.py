@@ -104,7 +104,6 @@ class LinearBlock(torch.nn.Module):
         if batch_norm is True:
             self.bn_layer = torch.nn.BatchNorm1d(out_channels, affine=bias)
 
-
     def forward(self, x):
         x1 = self.linear(x)
         x1 = self.act_layer(x1)

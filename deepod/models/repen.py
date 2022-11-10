@@ -2,6 +2,8 @@
 """
 Representation learning-based unsupervised/weakly-supervised anomaly detection
 PyTorch's implementation
+this script is partially adapted from the official keras's implementation
+https://www.google.com/url?q=https%3A%2F%2Fgithub.com%2FGuansongPang%2Fdeep-outlier-detection&sa=D&sntz=1&usg=AOvVaw2GbqWiY-Y2wkZSjKgU5eQs
 @Author: Hongzuo Xu <hongzuoxu@126.com, xuhongzuo13@nudt.edu.cn>
 """
 
