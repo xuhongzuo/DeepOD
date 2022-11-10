@@ -1,35 +1,11 @@
 import numpy as np
-import pandas as pd
-import config
 import torch
-import sklearn
-import sklearn.impute
 from sklearn.model_selection import train_test_split
 
 
 def train_test_val_split(x, y, ratio_test):
-    X_train, X_test, y_train, y_test = train_test_split(x, y, test_size=ratio_test, random_state=config.random_state)
+    X_train, X_test, y_train, y_test = train_test_split(x, y, test_size=ratio_test)
     return X_train, y_train, X_test, y_test
-
-
-def get_data(rate=0.1):
-    FEATURE_FILE, TARGET_FILE, TRAIN_IDS, TEST_IDS = config.get_path()
-    # 提取target
-    df = pd.read_csv(TARGET_FILE)
-    Y = df.values[:, 1:].astype(np.float64)
-    imp = sklearn.impute.SimpleImputer(missing_values=np.nan, strategy='mean')
-    Y = imp.fit(Y).transform(Y).T         # 替换为对应列的均值，全nan则删除
-
-    # 提取feature
-    df = pd.read_csv(FEATURE_FILE)
-    df = df.drop(['Data'], axis=1)
-    df = df.fillna(0)
-    df = MinMaxNorm(df)     # 归一化
-    df = df.fillna(0)
-    X = df.values.astype(np.float32)
-    Xtrain, ytrain, Xtest, ytest = train_test_val_split(X, Y, rate)
-
-    return ytrain, ytest, Xtrain, Xtest
 
 
 def MinMaxNorm(df):     # 最大最小归一

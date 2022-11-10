@@ -1,12 +1,12 @@
 import pandas as pd
 
-import config
-import utils
-from FMMS import FMMS
+from deepod.model_selection import config
+from deepod.model_selection import utils
+from deepod.model_selection.fmms import FMMS
 import torch
 import torch.utils.data as Data
 import numpy as np
-from gene_feature import generate_meta_features
+from deepod.model_selection.gene_feature import generate_meta_features
 
 optlsit = {
     'sgd': torch.optim.SGD,
@@ -79,11 +79,8 @@ class run_FMMS():
                 # 加入l2正则
                 for param in self.fmms.parameters():
                     l2_regularization += torch.norm(param, 2)
-                # loss = rmse_loss + l2_regularization
                 loss_train.backward()
-                # loss_train.backward(torch.ones(train_params['batch'], model_size))
                 optimizer.step()  # 进行更新
-                print("batch loss:", step, loss_train.item())
 
             # valid
             if self.Fmapvalid is not None:
@@ -94,11 +91,11 @@ class run_FMMS():
             print("epoch: %d" % epoch, "loss_train:", loss_train.item())
         # # 保存训练好的模型
         if save:
-            torch.save(self.fmms.state_dict(), "models/fmms.pt")
+            torch.save(self.fmms.state_dict(), "data/fmms.pt")
 
     def predict(self, x=None, f=None, topn=5, load=False):
         if load:
-            self.fmms.load_state_dict(torch.load("models/fmms.pt"))
+            self.fmms.load_state_dict(torch.load("data/fmms.pt"))
         if f is None:
             f = generate_meta_features(x)[0]
         if f.shape[0] != self.feature_size:
