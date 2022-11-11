@@ -2,5 +2,5 @@ deepod.egg-info/
 dist/
 build/
 .idea
-data/
+
 **/__pycache__
