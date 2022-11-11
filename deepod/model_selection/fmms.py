@@ -24,14 +24,29 @@ class FMMS:
 
         Parameters
         ----------
-        Fmap: The feature Map of the historical dataset (D*F)
-        Pmap: The performance of the candidate models on the historical dataset (M*D)
-        embedding_size: The dimension of the auxiliary vector
-        batch: Batch size
-        lr: Learning rate
-        epoch: Training epoch
-        opt: Optimizer
-        loss: Loss function
+        Fmap:   np.array (D*F)
+            The feature Map of the historical dataset
+
+        Pmap:   np.array (M*D)
+            The performance of the candidate models on the historical dataset
+
+        embedding_size: int, optional (default=4)
+            The dimension of the auxiliary vector
+
+        batch: int, optional (default=4)
+            Batch size
+
+        lr: float, optional (default=0.001)
+            Learning rate
+
+        epoch: int, optional (default=50)
+            Training epoch
+
+        opt: str, optional (default='adam')
+            Optimizer
+
+        loss: str, opti
+            Loss function
 
         """
         self.feature_size = Fmap.shape[1]
@@ -60,7 +75,7 @@ class FMMS:
         self.loss = loss_lst[loss]
         return
 
-    def fit(self, save=False):
+    def fit(self, save_path=None):
         train_dataset = Data.TensorDataset(torch.tensor(self.Fmap), torch.tensor(self.Pmap))
         loader = Data.DataLoader(
             dataset=train_dataset,
