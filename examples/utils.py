@@ -15,13 +15,13 @@ def get_data(rate, FEATURE_FILE, TARGET_FILE, TRAIN_IDS, TEST_IDS):
     df = pd.read_csv(TARGET_FILE)
     Y = df.values[:, 1:].astype(np.float64)
     imp = sklearn.impute.SimpleImputer(missing_values=np.nan, strategy='mean')
-    Y = imp.fit(Y).transform(Y).T         # 替换为对应列的均值，全nan则删除
+    Y = imp.fit(Y).transform(Y).T
 
     # 提取feature
     df = pd.read_csv(FEATURE_FILE)
     df = df.drop(['Data'], axis=1)
     df = df.fillna(0)
-    df = MinMaxNorm(df)     # 归一化
+    df = min_max_norm(df)
     df = df.fillna(0)
     X = df.values.astype(np.float32)
     Xtrain, ytrain, Xtest, ytest = train_test_val_split(X, Y, rate)
@@ -29,12 +29,8 @@ def get_data(rate, FEATURE_FILE, TARGET_FILE, TRAIN_IDS, TEST_IDS):
     return ytrain, ytest, Xtrain, Xtest
 
 
-def MinMaxNorm(df):     # 最大最小归一
+def min_max_norm(df):
     return (df - df.min()) / (df.max() - df.min())
-
-
-def scaleY(Y):
-    return -1/Y
 
 
 if __name__ == '__main__':
