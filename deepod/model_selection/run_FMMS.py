@@ -39,7 +39,7 @@ class run_FMMS():
             Training epoch
         opt: str, optional (default='adam')
             Optimizer
-        loss: str, opti 
+        loss: str, opti
             Loss function
         """
         self.feature_size = Fmap.shape[1]
