@@ -104,6 +104,7 @@ class FMMS:
                 for param in self.net.parameters():
                     l2_regularization += torch.norm(param, 2)
 
+
                 loss_train.backward()
 
                 optimizer.step()
@@ -118,6 +119,7 @@ class FMMS:
 
         # # save trained models
         if save_path is not None:
+
             torch.save(self.net, save_path)
 
     def predict(self, x=None, f=None, topn=5, load_path=None):
