@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Factorization Machine-based Unsupervised Model Selection Method
-@Author: Ruyi Zhang
+@Author: Ruyi Zhang & Hongzuo Xu <hongzuoxu@126.com, xuhongzuo13@nudt.edu.cn>
 """
 
 import torch
@@ -12,8 +12,8 @@ from sklearn.model_selection import train_test_split
 
 
 class FMMS:
-    def __init__(self,
-                 embedding_size=4, batch=4, lr=0.001, epoch=50, random_state=0):
+    def __init__(self, embedding_size=4, batch=4, lr=0.001, epoch=50,
+                 prt_steps=10, verbose=1, random_state=0):
         """
         Factorization Machine-based Unsupervised Model Selection Method.
         FMMS is trained by historical performance on a large suite of data collection
@@ -35,23 +35,37 @@ class FMMS:
 
         epoch: int, optional (default=50)
             Training epoch
-            
+
+        verbose: int, optional (default=1)
+            Verbosity mode
+
+        prt_steps: int, optional (default=10)
+            Number of epoch intervals per printing
+
         random_state: int, optional (default=0)
             Random statement
 
         """
-        self.net = None
-        self.model_size = None
-        self.feature_size = None
+
         self.embedding_size = embedding_size
         self.batch = batch
         self.lr = lr
         self.epoch = epoch
         self.random_state = random_state
+
+        self.verbose = verbose
+        self.prt_steps = prt_steps
+
+        self.net = None
+        self.model_size = None
+        self.feature_size = None
+
         return
 
     def fit(self, Fmap, Pmap, save_path=None):
         """
+        Fit model selection model.
+
         Parameters
         ----------
 
@@ -64,15 +78,21 @@ class FMMS:
         save_path: str, optional (default=None)
             The location where the trained model is stored.
 
+        Returns
         -------
-
+        self : object
+            Fitted estimator.
         """
         self.feature_size = Fmap.shape[1]
         self.model_size = Pmap.shape[1]
 
-        f_train, f_valid, p_train, p_valid = train_test_split(Fmap, Pmap, test_size=0.2, random_state=self.random_state)
+        f_train, f_valid, p_train, p_valid = train_test_split(Fmap, Pmap, test_size=0.2,
+                                                              random_state=self.random_state)
+        f_valid = torch.from_numpy(f_valid)
+        p_valid = torch.from_numpy(p_valid)
 
-        self.net = FMMSNet(feature_size=self.feature_size, model_size=self.model_size, embedding_size=self.embedding_size)
+        self.net = FMMSNet(feature_size=self.feature_size, model_size=self.model_size,
+                           embedding_size=self.embedding_size)
 
         train_dataset = Data.TensorDataset(torch.tensor(f_train), torch.tensor(p_train))
         loader = Data.DataLoader(
@@ -85,58 +105,89 @@ class FMMS:
         loss_valid_set = []
         np_ctr = 1
 
-        for epoch in range(self.epoch):
+        total_loss = 0.
+        cnt = 0
+        for i in range(self.epoch):
             # early stop
             if f_valid is not None:
-                if epoch >= 2 and (loss_valid_set[-2] - loss_valid_set[-1]) / loss_valid_set[-1] <= 0.001:
+                if i >= 2 and (loss_valid_set[-2] - loss_valid_set[-1]) / loss_valid_set[-1] <= 0.001:
                     np_ctr += 1
                 else:
                     np_ctr = 1
                 if np_ctr > 5:
                     break
 
-            # train
             for step, (batch_x, batch_y) in enumerate(loader):
                 optimizer.zero_grad()
                 output = self.net(batch_x)
                 loss_train = self.cos_loss(output, batch_y)
+
+                # @TODO: seems not used
                 l2_regularization = torch.tensor(0).float()
                 for param in self.net.parameters():
                     l2_regularization += torch.norm(param, 2)
 
-
                 loss_train.backward()
-
                 optimizer.step()
-                # print("batch loss:", step, loss_train.item())
 
-            # valid
-            Pmapvalidpred = self.net(torch.tensor(f_valid))
-            loss_valid = self.cos_loss(Pmapvalidpred, p_valid)
+                total_loss += loss_train.item()
+                cnt += 1
+
+            # validation phase
+            valid_output = self.net(f_valid)
+            loss_valid = self.cos_loss(valid_output, p_valid)
             loss_valid_set.append(loss_valid.item())
 
-            print("epoch: %d" % epoch, "loss_train:", loss_train.item())
+            if self.verbose >= 1 and (i == 0 or (i+1) % self.prt_steps == 0):
+                print(f'epoch {i+1:3d}, '
+                      f'training loss: {total_loss / cnt:.6f}, ')
 
-        # # save trained models
+        # save trained models
         if save_path is not None:
-
             torch.save(self.net, save_path)
 
+        return self
+
     def predict(self, x=None, f=None, topn=5, load_path=None):
+        """
+
+        Parameters
+        ----------
+        x: np.array, optional (default=None)
+            Target dataset
+
+        f: np.array, optional (default=None)
+            Features of the target dataset, x and f should be
+
+        topn: int, optional (default=5)
+            Number of the recommended models
+
+        load_path: str, optional (default=None)
+
+        Returns
+        -------
+
+        """
         if load_path is not None:
             self.net = torch.load(load_path)
             self.feature_size = self.net.feature_size
             self.model_size = self.net.embedding_size
-        if f is None:
+
+        if f is None and x is None:
+            raise AttributeError('Either x or f should be fitted.')
+        if f is not None and x is not None:
+            raise Warning('f is deprecated by re-generate features from the target dataset x')
+
+        if x is not None:
             f = generate_meta_features(x)[0]
 
-        assert f.shape[0] == self.feature_size, \
+        assert f.shape[1] == self.feature_size, \
             f'The feature size of historical dataset ({f.shape[0]}) ' \
-            f'and target dataset (%{self.feature_size}) does not match'
+            f'and target dataset ({self.feature_size}) does not match'
 
-        pred = self.net(torch.tensor([f]))
+        pred = self.net(torch.tensor(f))
         pred = pred.detach().numpy()[0]
-        ranking = np.argsort(pred) # ranking
+        ranking = np.argsort(pred)  # ranking
 
         recommend = ranking[::-1]
         # @TODO return the ranking of model names
@@ -146,26 +197,29 @@ class FMMS:
 
     @staticmethod
     def cos_loss(pred, real):
-        pred = pred.type(torch.DoubleTensor)
-        real = torch.tensor(real).double()
+        # pred = pred.type(torch.DoubleTensor)
+        # real = torch.tensor(real).double()
+        pred = pred.double()
+        real = real.double()
+
         mul = pred * real
         mul = torch.sum(mul, dim=1)
         length = torch.norm(pred, p=2, dim=1) * torch.norm(real, p=2, dim=1)
-        loss = 1 - mul/length
-        loss = sum(loss)/len(pred)
+        loss = 1 - mul / length
+        loss = sum(loss) / len(pred)
         return loss
 
 
 class FMMSNet(torch.nn.Module):
     def __init__(self, feature_size, model_size, embedding_size):
         super(FMMSNet, self).__init__()
-        self.feature_size = feature_size        # denote as F, size of the feature dictionary
-        self.embedding_size = embedding_size    # denote as K, size of the feature embedding
-        self.model_size = model_size            # denote as M, size of the model list
+        self.feature_size = feature_size  # denote as F, the size of the feature dictionary
+        self.embedding_size = embedding_size  # denote as K, the size of the feature embedding
+        self.model_size = model_size  # denote as M, the size of the model list
         self.linear = torch.nn.Sequential(torch.nn.Linear(self.feature_size, self.model_size, bias=True))
         self.weight = torch.nn.Parameter(torch.rand(self.embedding_size, self.feature_size, self.model_size))
 
-    def forward(self, x):         # 1*M
+    def forward(self, x):
         # FM part
         outFM = self.linear(x.clone().detach().float())
         for i in range(self.embedding_size):
@@ -177,7 +231,7 @@ class FMMSNet(torch.nn.Module):
             P = torch.pow(v, 2)
             zp = torch.mm(z, P)
 
-            outFM = outFM + (xv2 - zp)/2
+            outFM = outFM + (xv2 - zp) / 2
         out = outFM
         return out
 
@@ -187,4 +241,3 @@ class FMMSNet(torch.nn.Module):
 
         for name, parameters in self.named_parameters():
             print(name, ':', parameters.size())
-

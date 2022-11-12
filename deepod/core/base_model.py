@@ -155,7 +155,7 @@ class BaseDeepAD(metaclass=ABCMeta):
                     break
 
             t = time.time() - t1
-            if self.verbose >=1 and (i == 0 or (i+1) % self.prt_steps == 0):
+            if self.verbose >= 1 and (i == 0 or (i+1) % self.prt_steps == 0):
                 print(f'epoch{i+1}, '
                       f'training loss: {total_loss/cnt:.6f}, '
                       f'time: {t:.1f}s')

@@ -35,6 +35,7 @@ install a developing version
 Supported Models
 ~~~~~~~~~~~~~~~~~
 
+**Detection models:**
 
 .. csv-table:: 
  :header: "Model", "Venue", "Year", "Type", "Title"  

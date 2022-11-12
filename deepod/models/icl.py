@@ -162,6 +162,7 @@ class ICL(BaseDeepAD):
         logit = torch.div(logit, self.tau)
         return logit
 
+
 class ICLNet(torch.nn.Module):
     def __init__(self, n_features, kernel_size,
                  hidden_dims='100,50', rep_dim=64,
@@ -171,6 +172,7 @@ class ICLNet(torch.nn.Module):
         self.kernel_size = kernel_size
 
         # @TODO: dimensionality in batch_norm layer for 3-d vectors
+        # @TODO: first layer's activation is tanh, others are leaky_relu
 
         self.enc_f_net = MLPnet(
             n_features=n_features-kernel_size,
