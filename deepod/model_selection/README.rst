@@ -1,6 +1,15 @@
-[Environment]: Pytorch, PyOD, scikit-learn
-[Function]: For a given new dataset, select the most suitable outlier detection model from the candidate models.
-[How to use]: 
+Python Deep Outlier/Model Selection (FMMS)
+==================================================
+For a given new dataset, FMMS is to select the most suitable outlier detection model from the candidate models.
+
+Environment
+~~~~~~~~~~~~~~
+Pytorch, PyOD, scikit-learn
+
+
+Usages
+~~~~~~~~~~~~~~
+.. code-block:: python
 
     from deepod.model_selection.fmms import FMMS
 
