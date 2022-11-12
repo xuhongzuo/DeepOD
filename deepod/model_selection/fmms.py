@@ -7,14 +7,13 @@ Factorization Machine-based Unsupervised Model Selection Method
 import torch
 import torch.utils.data as Data
 import numpy as np
-from gene_feature import generate_meta_features
+from deepod.model_selection.gene_feature import generate_meta_features
+from sklearn.model_selection import train_test_split
 
 
 class FMMS:
-    def __init__(self, Fmap, Pmap,
-                 Fmapvalid=None, Pmapvalid=None,
-                 embedding_size=4, batch=4, lr=0.001, epoch=50,
-                 opt='adam', loss='cos'):
+    def __init__(self,
+                 embedding_size=4, batch=4, lr=0.001, epoch=50, random_state=0):
         """
         Factorization Machine-based Unsupervised Model Selection Method.
         FMMS is trained by historical performance on a large suite of data collection
@@ -24,11 +23,6 @@ class FMMS:
 
         Parameters
         ----------
-        Fmap:   np.array (D*F)
-            The feature Map of the historical dataset
-
-        Pmap:   np.array (M*D)
-            The performance of the candidate models on the historical dataset
 
         embedding_size: int, optional (default=4)
             The dimension of the auxiliary vector
@@ -41,54 +35,59 @@ class FMMS:
 
         epoch: int, optional (default=50)
             Training epoch
+            
+        random_state: int, optional (default=0)
+            Random statement
 
-        opt: str, optional (default='adam')
-            Optimizer
+        """
+        self.net = None
+        self.model_size = None
+        self.feature_size = None
+        self.embedding_size = embedding_size
+        self.batch = batch
+        self.lr = lr
+        self.epoch = epoch
+        self.random_state = random_state
+        return
 
-        loss: str, opti
-            Loss function
+    def fit(self, Fmap, Pmap, save_path=None):
+        """
+        Parameters
+        ----------
+
+        Fmap: np.array (D*F), required
+            The feature Map of the historical dataset.
+
+        Pmap: np.array (M*D), required
+            The performance of the candidate models on the historical dataset.
+
+        save_path: str, optional (default=None)
+            The location where the trained model is stored.
+
+        -------
 
         """
         self.feature_size = Fmap.shape[1]
         self.model_size = Pmap.shape[1]
-        self.net = FMMSNet(feature_size=self.feature_size, model_size=self.model_size, embedding_size=embedding_size)
-        self.Fmap = Fmap
-        self.Pmap = Pmap
-        self.Fmapvalid = Fmapvalid
-        self.Pmapvalid = Pmapvalid
-        self.batch = batch
-        self.lr = lr
-        self.epoch = epoch
 
-        optim_lst = {
-            'sgd': torch.optim.SGD,
-            'adam': torch.optim.Adam,
-            'adagrad': torch.optim.Adagrad}
+        f_train, f_valid, p_train, p_valid = train_test_split(Fmap, Pmap, test_size=0.2, random_state=self.random_state)
 
-        loss_lst = {
-            'rmse': self.rmse_loss, 'mse': self.mse_loss,
-            'cos': self.cos_loss, 'L1': self.l1_loss,
-            'sL1': self.SmoothL1_loss, 'kd': self.KLDiv_loss,
-            'DCG': self.DCG_loss}
+        self.net = FMMSNet(feature_size=self.feature_size, model_size=self.model_size, embedding_size=self.embedding_size)
 
-        self.opt = optim_lst[opt]
-        self.loss = loss_lst[loss]
-        return
-
-    def fit(self, save_path=None):
-        train_dataset = Data.TensorDataset(torch.tensor(self.Fmap), torch.tensor(self.Pmap))
+        train_dataset = Data.TensorDataset(torch.tensor(f_train), torch.tensor(p_train))
         loader = Data.DataLoader(
             dataset=train_dataset,
             batch_size=self.batch,
             shuffle=False
         )
 
-        optimizer = self.opt(self.net.parameters(), lr=self.lr, weight_decay=1e-5)
+        optimizer = torch.optim.Adam(self.net.parameters(), lr=self.lr, weight_decay=1e-5)
         loss_valid_set = []
         np_ctr = 1
 
         for epoch in range(self.epoch):
-            if self.Fmapvalid is not None:
+            # early stop
+            if f_valid is not None:
                 if epoch >= 2 and (loss_valid_set[-2] - loss_valid_set[-1]) / loss_valid_set[-1] <= 0.001:
                     np_ctr += 1
                 else:
@@ -100,32 +99,34 @@ class FMMS:
             for step, (batch_x, batch_y) in enumerate(loader):
                 optimizer.zero_grad()
                 output = self.net(batch_x)
-                loss_train = self.loss(output, batch_y)
+                loss_train = self.cos_loss(output, batch_y)
                 l2_regularization = torch.tensor(0).float()
                 for param in self.net.parameters():
                     l2_regularization += torch.norm(param, 2)
 
-                # loss = rmse_loss + l2_regularization
+
                 loss_train.backward()
 
                 optimizer.step()
-                print("batch loss:", step, loss_train.item())
+                # print("batch loss:", step, loss_train.item())
 
             # valid
-            if self.Fmapvalid is not None:
-                Pmapvalidpred = self.net(torch.tensor(self.Fmapvalid))
-                loss_valid = self.loss(Pmapvalidpred, self.Pmapvalid)
-                loss_valid_set.append(loss_valid.item())
+            Pmapvalidpred = self.net(torch.tensor(f_valid))
+            loss_valid = self.cos_loss(Pmapvalidpred, p_valid)
+            loss_valid_set.append(loss_valid.item())
 
             print("epoch: %d" % epoch, "loss_train:", loss_train.item())
 
         # # save trained models
         if save_path is not None:
-            torch.save(self.net.state_dict(), save_path)
+
+            torch.save(self.net, save_path)
 
     def predict(self, x=None, f=None, topn=5, load_path=None):
         if load_path is not None:
-            self.net.load_state_dict(torch.load(load_path))
+            self.net = torch.load(load_path)
+            self.feature_size = self.net.feature_size
+            self.model_size = self.net.embedding_size
         if f is None:
             f = generate_meta_features(x)[0]
 
@@ -144,49 +145,6 @@ class FMMS:
         return
 
     @staticmethod
-    def topn_loss(ypred, yreal, n=10):
-        data_size, model_size = yreal.shape
-
-        ypred_idx = np.array([np.argmax(ypred[i]) for i in range(data_size)])
-        ypred_max = np.array([yreal[i][idx] for i, idx in enumerate(ypred_idx)])
-
-        # 选出实际上的topn
-        topn = np.ones((data_size, n))
-        for ii in range(data_size):
-            # 第ii列，即第ii个数据（nan已经被填充为0，因此不会被排为最大，当所有数都是nan时，也不会报错）
-            best_value = list(np.sort(yreal[ii])[::-1])
-            # 第ii个数据的前n个最大值
-            topn[ii] = best_value[:n]
-        ypred_idx = np.array([np.argmax(ypred[i]) for i in range(data_size)])    # 每个data选出最大model对应的idx
-        ypred_max = np.array([yreal[i][idx] for i, idx in enumerate(ypred_idx)])
-
-        # 选出实际上的topn
-        topn = np.ones((data_size, n))          # data*n
-        for ii in range(data_size):             # 对每个数据
-            best_value = list(np.sort(yreal[ii])[::-1])         # 第ii列，即第ii个数据（nan已经被填充为0，因此不会被排为最大，当所有数都是nan时，也不会报错）
-            topn[ii] = best_value[:n]                           # 第ii个数据的前n个最大值
-
-        correct = 0
-        for ii, pred in enumerate(ypred_max):  # 对每个数据
-            if pred in topn[ii]:
-                correct += 1
-
-        return -correct/data_size
-
-    @staticmethod
-    def rmse_loss(pred, real):
-        loss_func = torch.nn.MSELoss(reduction='mean')
-        mse_loss = loss_func(pred, torch.tensor(real).float())
-        loss = torch.sqrt(mse_loss)
-        return loss
-
-    @staticmethod
-    def mse_loss(pred, real):
-        loss_func = torch.nn.MSELoss(reduction='mean')
-        loss = loss_func(pred, torch.tensor(real).float())
-        return loss
-
-    @staticmethod
     def cos_loss(pred, real):
         pred = pred.type(torch.DoubleTensor)
         real = torch.tensor(real).double()
@@ -196,35 +154,6 @@ class FMMS:
         loss = 1 - mul/length
         loss = sum(loss)/len(pred)
         return loss
-
-    @staticmethod
-    def l1_loss(pred, real):
-        L1 = torch.nn.L1Loss()
-        loss = L1(pred, torch.tensor(real).float())
-        return loss
-
-    @staticmethod
-    def SmoothL1_loss(pred, real):
-        sl1 = torch.nn.SmoothL1Loss()
-        loss = sl1(pred, torch.tensor(real).float())
-        return loss
-
-    @staticmethod
-    def KLDiv_loss(pred, real):
-        kd = torch.nn.KLDivLoss()
-        loss = kd(pred, torch.tensor(real).float())
-        return loss
-
-    @staticmethod
-    def DCG_loss(pred, real):
-        data_size, model_size = real.shape
-        treal = torch.tensor(real).double()
-        DCG = torch.zeros(1).type(torch.DoubleTensor)
-        for ii in range(data_size):
-            for jj in range(model_size):
-                part = sum(torch.sigmoid(pred[ii] - pred[ii][jj])).type(torch.DoubleTensor)
-                DCG = DCG + (torch.pow(10, treal[ii][jj])-1)/torch.log2(1+part)
-        return -DCG/data_size
 
 
 class FMMSNet(torch.nn.Module):
@@ -258,5 +187,4 @@ class FMMSNet(torch.nn.Module):
 
         for name, parameters in self.named_parameters():
             print(name, ':', parameters.size())
-
 

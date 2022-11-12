@@ -12,7 +12,7 @@ Installation
 ~~~~~~~~~~~~~~
 The DeepOD framework can be installed via:
 
-install a stable version
+install a stable version (we have six models in this version, please clone this repository for more models)
 
 
 .. code-block:: bash

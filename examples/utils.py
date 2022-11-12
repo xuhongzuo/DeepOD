@@ -10,27 +10,34 @@ def train_test_val_split(x, y, ratio_test, random_state=42):
     return X_train, y_train, X_test, y_test
 
 
-def get_data(rate, FEATURE_FILE, TARGET_FILE, TRAIN_IDS, TEST_IDS):
+
+def get_data(FEATURE_FILE, TARGET_FILE):
     # 提取target
     df = pd.read_csv(TARGET_FILE)
     Y = df.values[:, 1:].astype(np.float64)
     imp = sklearn.impute.SimpleImputer(missing_values=np.nan, strategy='mean')
     Y = imp.fit(Y).transform(Y).T
 
+
     # 提取feature
     df = pd.read_csv(FEATURE_FILE)
     df = df.drop(['Data'], axis=1)
     df = df.fillna(0)
-    df = min_max_norm(df)
+
+    df = MinMaxNorm(df)     # 归一化
     df = df.fillna(0)
     X = df.values.astype(np.float32)
-    Xtrain, ytrain, Xtest, ytest = train_test_val_split(X, Y, rate)
+    # Xtrain, ytrain, Xtest, ytest = train_test_val_split(X, Y, rate)
 
-    return ytrain, ytest, Xtrain, Xtest
+    return Y, X
 
 
-def min_max_norm(df):
+def MinMaxNorm(df):     # 最大最小归一
     return (df - df.min()) / (df.max() - df.min())
+
+
+def scaleY(Y):
+    return -1/Y
 
 
 if __name__ == '__main__':
