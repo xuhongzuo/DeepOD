@@ -14,6 +14,7 @@ import torch
 import torch.nn.functional as F
 from sklearn.utils.random import sample_without_replacement
 from sklearn.neighbors import KDTree
+import numpy as np
 
 
 class REPEN(BaseDeepAD):
@@ -25,7 +26,7 @@ class REPEN(BaseDeepAD):
     """
     def __init__(self, epochs=100, batch_size=64, lr=1e-3,
                  init_score_ensemble_size=50, init_score_subsample_size=8,
-                 hidden_dims='100,50', act='ReLU', bias=False,
+                 hidden_dims='100,50', act='LeakyReLU', bias=False,
                  epoch_steps=-1, prt_steps=10, device='cuda',
                  verbose=2, random_state=42):
         super(REPEN, self).__init__(
