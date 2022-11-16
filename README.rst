@@ -1,10 +1,18 @@
 Python Deep Outlier/Anomaly Detection (DeepOD)
 ==================================================
 
-.. image:: https://github.com/xuhongzuo/DeepOD/actions/workflows/python-package-conda.yml/badge.svg
-   :target: https://github.com/xuhongzuo/DeepOD/actions/workflows/python-package-conda.yml
+.. image:: https://github.com/xuhongzuo/DeepOD/actions/workflows/testing_conda.yml/badge.svg
+   :target: https://github.com/xuhongzuo/DeepOD/actions/workflows/testing_conda.yml
    :alt: testing
 
+.. image:: https://github.com/xuhongzuo/DeepOD/actions/workflows/testing.yml/badge.svg
+   :target: https://github.com/xuhongzuo/DeepOD/actions/workflows/testing.yml
+   :alt: testing2
+   
+.. image:: https://pepy.tech/badge/deepod
+   :target: https://pepy.tech/project/deepod
+   :alt: downlods
+   
 
 **DeepOD** is an open-source python framework for deep learning-based anomaly detection on multivariate data. DeepOD provides unified low-code implementation of different detection models based on PyTorch.
 
