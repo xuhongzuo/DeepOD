@@ -4,4 +4,4 @@ dependencies:
   - pandas
   - scikit-learn
   - scipy
-  - torch
+  - pytorch
