@@ -16,7 +16,7 @@ install:
 
 # command to run tests
 script:
-   pytest --cov=pyod/
+   pytest --cov=deepod/
 
 after_success:
   - coveralls
