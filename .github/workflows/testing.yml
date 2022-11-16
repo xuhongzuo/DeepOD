@@ -44,10 +44,7 @@ jobs:
         pip install coverage
         pip install build
         pip install coveralls
-        
-    - name: Build package
-      run: python -m build
-      
+
     - name: Test with pytest
       run: |
         coverage run --source=pyod -m pytest
@@ -57,6 +54,9 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         coveralls --service=github
+
+#    - name: Build package
+#      run: python -m build
 
 #     - name: Publish package
 #       uses: pypa/gh-action-pypi-publish@27b31702a0e7fc50959f5ad993c78deac1bdfc29
