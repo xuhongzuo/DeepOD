@@ -14,6 +14,7 @@ from numpy.testing import assert_raises
 from scipy.stats import rankdata
 from sklearn.base import clone
 from sklearn.metrics import roc_auc_score
+import torch
 
 # temporary solution for relative imports in case pyod is not installed
 # if deepod is installed, no need to use the following line
@@ -33,7 +34,8 @@ class TestDeepSVDD(unittest.TestCase):
             n_train=self.n_train, n_test=self.n_test, n_features=10,
             contamination=self.contamination, random_state=42)
 
-        self.clf = DeepSVDD()
+        device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        self.clf = DeepSVDD(device=device)
         self.clf.fit(self.X_train)
 
     # def test_parameters(self):
