@@ -1,0 +1,7 @@
+name: deepod
+dependencies:
+  - numpy
+  - pandas
+  - scikit-learn
+  - scipy
+  - torch
