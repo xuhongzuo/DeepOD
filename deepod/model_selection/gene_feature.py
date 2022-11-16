@@ -17,10 +17,10 @@ from scipy.stats import entropy
 from scipy.stats import moment
 from scipy.stats import normaltest
 
-from pyod.models.hbos import HBOS
-from pyod.models.iforest import IForest
-from pyod.models.pca import PCA
-from pyod.models.loda import LODA
+# from pyod.models.hbos import HBOS
+# from pyod.models.iforest import IForest
+# from pyod.models.pca import PCA
+# from pyod.models.loda import LODA
 from sklearn.utils import check_array
 
 
@@ -321,86 +321,86 @@ def generate_meta_features(X):
     meta_vec.extend(entropy_values)
     meta_vec_names.extend(list_process_name('entropy'))
 
-    ##############################Landmarkers######################################
-    # HBOS
-    clf = HBOS(n_bins=10)
-    clf.fit(X)
-    HBOS_hists = clf.hist_
-    HBOS_mean = np.mean(HBOS_hists, axis=0)
-    HBOS_max = np.max(HBOS_hists, axis=0)
-    HBOS_min = np.min(HBOS_hists, axis=0)
-    meta_vec.extend(list_process(HBOS_mean))
-    meta_vec.extend(list_process(HBOS_max))
-    meta_vec.extend(list_process(HBOS_min))
-    meta_vec_names.extend(list_process_name('HBOS_mean'))
-    meta_vec_names.extend(list_process_name('HBOS_max'))
-    meta_vec_names.extend(list_process_name('HBOS_min'))
-
-    # IForest
-    n_estimators = 100
-    clf = IForest(n_estimators=n_estimators)
-    clf.fit(X)
-
-    n_leaves = []
-    n_depth = []
-    fi_mean = []
-    fi_max = []
-
-    # doing this for each sub-trees
-    for i in range(n_estimators):
-        n_leaves.append(clf.estimators_[i].get_n_leaves())
-        n_depth.append(clf.estimators_[i].get_depth())
-        fi_mean.append(clf.estimators_[i].feature_importances_.mean())
-        fi_max.append(clf.estimators_[i].feature_importances_.max())
-        # print(clf.estimators_[i].tree_)
-
-    meta_vec.extend(list_process(n_leaves))
-    meta_vec.extend(list_process(n_depth))
-    meta_vec.extend(list_process(fi_mean))
-    meta_vec.extend(list_process(fi_max))
-
-    meta_vec_names.extend(list_process_name('IForest_n_leaves'))
-    meta_vec_names.extend(list_process_name('IForest_n_depth'))
-    meta_vec_names.extend(list_process_name('IForest_fi_mean'))
-    meta_vec_names.extend(list_process_name('IForest_fi_max'))
-
-    # PCA
-    clf = PCA(n_components=3)
-    clf.fit(X)
-    meta_vec.extend(clf.explained_variance_ratio_)
-    meta_vec.extend(clf.singular_values_)
-    meta_vec_names.extend(
-        ['pca_expl_ratio_1', 'pca_expl_ratio_2', 'pca_expl_ratio_3'])
-    meta_vec_names.extend(['pca_sv_1', 'pca_sv_2', 'pca_sv_3'])
-
-    # LODA
-    n_bins = 10
-    n_random_cuts = 100
-
-    n_hists_mean = []
-    n_hists_max = []
-
-    n_cuts_mean = []
-    n_cuts_max = []
-
-    clf = LODA(n_bins=n_bins, n_random_cuts=n_random_cuts)
-    clf.fit(X)
-
-    for i in range(n_bins):
-        n_hists_mean.append(clf.histograms_[:, i].mean())
-        n_hists_max.append(clf.histograms_[:, i].max())
-    for i in range(n_random_cuts):
-        n_cuts_mean.append(clf.histograms_[i, :].mean())
-        n_cuts_max.append(clf.histograms_[i, :].max())
-
-    meta_vec.extend(list_process(n_hists_mean))
-    meta_vec.extend(list_process(n_hists_max))
-    meta_vec.extend(list_process(n_cuts_mean))
-    meta_vec.extend(list_process(n_cuts_max))
-
-    meta_vec_names.extend(list_process_name('LODA_n_hists_mean'))
-    meta_vec_names.extend(list_process_name('LODA_n_hists_max'))
-    meta_vec_names.extend(list_process_name('LODA_n_cuts_mean'))
-    meta_vec_names.extend(list_process_name('LODA_n_cuts_max'))
+    # ##############################Landmarkers######################################
+    # # HBOS
+    # clf = HBOS(n_bins=10)
+    # clf.fit(X)
+    # HBOS_hists = clf.hist_
+    # HBOS_mean = np.mean(HBOS_hists, axis=0)
+    # HBOS_max = np.max(HBOS_hists, axis=0)
+    # HBOS_min = np.min(HBOS_hists, axis=0)
+    # meta_vec.extend(list_process(HBOS_mean))
+    # meta_vec.extend(list_process(HBOS_max))
+    # meta_vec.extend(list_process(HBOS_min))
+    # meta_vec_names.extend(list_process_name('HBOS_mean'))
+    # meta_vec_names.extend(list_process_name('HBOS_max'))
+    # meta_vec_names.extend(list_process_name('HBOS_min'))
+    #
+    # # IForest
+    # n_estimators = 100
+    # clf = IForest(n_estimators=n_estimators)
+    # clf.fit(X)
+    #
+    # n_leaves = []
+    # n_depth = []
+    # fi_mean = []
+    # fi_max = []
+    #
+    # # doing this for each sub-trees
+    # for i in range(n_estimators):
+    #     n_leaves.append(clf.estimators_[i].get_n_leaves())
+    #     n_depth.append(clf.estimators_[i].get_depth())
+    #     fi_mean.append(clf.estimators_[i].feature_importances_.mean())
+    #     fi_max.append(clf.estimators_[i].feature_importances_.max())
+    #     # print(clf.estimators_[i].tree_)
+    #
+    # meta_vec.extend(list_process(n_leaves))
+    # meta_vec.extend(list_process(n_depth))
+    # meta_vec.extend(list_process(fi_mean))
+    # meta_vec.extend(list_process(fi_max))
+    #
+    # meta_vec_names.extend(list_process_name('IForest_n_leaves'))
+    # meta_vec_names.extend(list_process_name('IForest_n_depth'))
+    # meta_vec_names.extend(list_process_name('IForest_fi_mean'))
+    # meta_vec_names.extend(list_process_name('IForest_fi_max'))
+    #
+    # # PCA
+    # clf = PCA(n_components=3)
+    # clf.fit(X)
+    # meta_vec.extend(clf.explained_variance_ratio_)
+    # meta_vec.extend(clf.singular_values_)
+    # meta_vec_names.extend(
+    #     ['pca_expl_ratio_1', 'pca_expl_ratio_2', 'pca_expl_ratio_3'])
+    # meta_vec_names.extend(['pca_sv_1', 'pca_sv_2', 'pca_sv_3'])
+    #
+    # # LODA
+    # n_bins = 10
+    # n_random_cuts = 100
+    #
+    # n_hists_mean = []
+    # n_hists_max = []
+    #
+    # n_cuts_mean = []
+    # n_cuts_max = []
+    #
+    # clf = LODA(n_bins=n_bins, n_random_cuts=n_random_cuts)
+    # clf.fit(X)
+    #
+    # for i in range(n_bins):
+    #     n_hists_mean.append(clf.histograms_[:, i].mean())
+    #     n_hists_max.append(clf.histograms_[:, i].max())
+    # for i in range(n_random_cuts):
+    #     n_cuts_mean.append(clf.histograms_[i, :].mean())
+    #     n_cuts_max.append(clf.histograms_[i, :].max())
+    #
+    # meta_vec.extend(list_process(n_hists_mean))
+    # meta_vec.extend(list_process(n_hists_max))
+    # meta_vec.extend(list_process(n_cuts_mean))
+    # meta_vec.extend(list_process(n_cuts_max))
+    #
+    # meta_vec_names.extend(list_process_name('LODA_n_hists_mean'))
+    # meta_vec_names.extend(list_process_name('LODA_n_hists_max'))
+    # meta_vec_names.extend(list_process_name('LODA_n_cuts_mean'))
+    # meta_vec_names.extend(list_process_name('LODA_n_cuts_max'))
 
     return meta_vec, meta_vec_names
