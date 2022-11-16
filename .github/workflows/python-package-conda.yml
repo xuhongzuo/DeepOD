@@ -31,5 +31,7 @@ jobs:
     - name: Test with pytest
       run: |
         conda install pytest
+        conda install coverage
+        conda install coveralls
         pytest
         coverage run --source=deepod -m pytest
