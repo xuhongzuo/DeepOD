@@ -32,3 +32,4 @@ jobs:
       run: |
         conda install pytest
         pytest
+        coverage run --source=deepod -m pytest
