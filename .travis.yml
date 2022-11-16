@@ -11,9 +11,6 @@ install:
   - pip install --upgrade pip
   - pip install -r requirements.txt
   - pip install -r requirements_ci.yml
-  - pip install pytest
-  - pip install pytest-cov
-  - pip install coveralls
 
 # command to run tests
 script:
