@@ -16,8 +16,8 @@ import numpy as np
 class NeuTraL(BaseDeepAD):
     def __init__(self, epochs=100, batch_size=64, lr=1e-3,
                  n_trans=11, trans_type='residual', temp=0.1,
-                 rep_dim=24, hidden_dims='24,24,24,24', trans_hidden_dims=24,
-                 act='ReLU', bias=False,
+                 rep_dim=128, hidden_dims='100,50', trans_hidden_dims=50,
+                 act='LeakyReLU', bias=False,
                  epoch_steps=-1, prt_steps=10, device='cuda',
                  verbose=1, random_state=42):
         super(NeuTraL, self).__init__(
