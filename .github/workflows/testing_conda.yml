@@ -35,3 +35,9 @@ jobs:
         conda install coveralls
         pytest
         coverage run --source=deepod -m pytest
+
+    - name: coverage report
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        coveralls --service=github
