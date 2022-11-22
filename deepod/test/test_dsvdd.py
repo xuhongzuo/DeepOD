@@ -38,13 +38,13 @@ class TestDeepSVDD(unittest.TestCase):
         self.clf = DeepSVDD(device=device)
         self.clf.fit(self.X_train)
 
-    # def test_parameters(self):
-    #     assert (hasattr(self.clf, 'decision_scores_') and
-    #             self.clf.decision_scores_ is not None)
-    #     assert (hasattr(self.clf, 'labels_') and
-    #             self.clf.labels_ is not None)
-    #     assert (hasattr(self.clf, 'threshold_') and
-    #             self.clf.threshold_ is not None)
+    def test_parameters(self):
+        assert (hasattr(self.clf, 'decision_scores_') and
+                self.clf.decision_scores_ is not None)
+        assert (hasattr(self.clf, 'labels_') and
+                self.clf.labels_ is not None)
+        assert (hasattr(self.clf, 'threshold_') and
+                self.clf.threshold_ is not None)
 
     # def test_train_scores(self):
     #     assert_equal(len(self.clf.decision_scores_), self.X_train.shape[0])
@@ -58,10 +58,10 @@ class TestDeepSVDD(unittest.TestCase):
         # check performance
         assert (roc_auc_score(self.y_test, pred_scores) >= self.roc_floor)
 
-    # def test_prediction_labels(self):
-    #     pred_labels = self.clf.predict(self.X_test)
-    #     assert_equal(pred_labels.shape, self.y_test.shape)
-    #
+    def test_prediction_labels(self):
+        pred_labels = self.clf.predict(self.X_test)
+        assert_equal(pred_labels.shape, self.y_test.shape)
+
     # def test_prediction_proba(self):
     #     pred_proba = self.clf.predict_proba(self.X_test)
     #     assert (pred_proba.min() >= 0)
@@ -80,15 +80,16 @@ class TestDeepSVDD(unittest.TestCase):
     # def test_prediction_proba_parameter(self):
     #     with assert_raises(ValueError):
     #         self.clf.predict_proba(self.X_test, method='something')
-    #
-    # def test_prediction_labels_confidence(self):
-    #     pred_labels, confidence = self.clf.predict(self.X_test,
-    #                                                return_confidence=True)
-    #     assert_equal(pred_labels.shape, self.y_test.shape)
-    #     assert_equal(confidence.shape, self.y_test.shape)
-    #     assert (confidence.min() >= 0)
-    #     assert (confidence.max() <= 1)
-    #
+
+    def test_prediction_labels_confidence(self):
+        pred_labels, confidence = self.clf.predict(self.X_test,
+                                                   return_confidence=True)
+
+        assert_equal(pred_labels.shape, self.y_test.shape)
+        assert_equal(confidence.shape, self.y_test.shape)
+        assert (confidence.min() >= 0)
+        assert (confidence.max() <= 1)
+
     # def test_prediction_proba_linear_confidence(self):
     #     pred_proba, confidence = self.clf.predict_proba(self.X_test,
     #                                                     method='linear',
