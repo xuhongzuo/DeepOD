@@ -10,6 +10,7 @@ from deepod.core.base_networks import MLPnet
 from torch.utils.data import DataLoader, TensorDataset
 from torch.utils.data.sampler import WeightedRandomSampler
 import torch
+import numpy as np
 
 
 class DevNet(BaseDeepAD):
