@@ -33,23 +33,26 @@ class ConvNet(torch.nn.Module):
 
 
 class MLPnet(torch.nn.Module):
-    def __init__(self, n_features, n_hidden=[500, 100], n_output=20,
+    def __init__(self, n_features, n_hidden='500,100', n_output=20,
                  activation='ReLU', bias=False, batch_norm=False,
                  skip_connection=None, dropout=None):
         super(MLPnet, self).__init__()
         self.skip_connection = skip_connection
         self.n_output = n_output
 
-        # for k,v in kwargs.iteritems():
-        #     setattr(self, k, v)
-
         if type(n_hidden)==int:
             n_hidden = [n_hidden]
         if type(n_hidden)==str:
             n_hidden = n_hidden.split(',')
             n_hidden = [int(a) for a in n_hidden]
-
         num_layers = len(n_hidden)
+
+        # for only use one kind of activation layer
+        if type(activation) == str:
+            activation = [activation] * num_layers
+            activation.append(None)
+
+        assert len(activation) == len(n_hidden)+1, 'activation and n_hidden are not matched'
 
         self.layers = []
         for i in range(num_layers+1):
@@ -58,7 +61,7 @@ class MLPnet(torch.nn.Module):
             self.layers += [
                 LinearBlock(in_channels, out_channels,
                             bias=bias, batch_norm=batch_norm,
-                            activation=activation if i != num_layers else None,
+                            activation=activation[i],
                             skip_connection=skip_connection if i != num_layers else 0,
                             dropout=dropout)
             ]

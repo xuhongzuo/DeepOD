@@ -31,6 +31,9 @@ class BaseDeepAD(metaclass=ABCMeta):
     lr: float, optional (default=1e-3)
         Learning rate
 
+    n_ensemble: int, optional (default=1)
+        Number of ensemble size
+
     epoch_steps: int, optional (default=-1)
         Maximum steps in an epoch
             - If -1, all the batches will be processed
@@ -72,7 +75,9 @@ class BaseDeepAD(metaclass=ABCMeta):
 
     """
     def __init__(self, model_name, epochs=100, batch_size=64, lr=1e-3,
-                 epoch_steps=-1, prt_steps=10, device='cuda', contamination=0.1,
+                 n_ensemble=1,
+                 epoch_steps=-1, prt_steps=10,
+                 device='cuda', contamination=0.1,
                  verbose=1, random_state=42):
         self.model_name = model_name
 
@@ -91,6 +96,8 @@ class BaseDeepAD(metaclass=ABCMeta):
         self.n_samples = -1
         self.criterion = None
         self.net = None
+
+        self.n_ensemble = n_ensemble
 
         self.train_loader = None
         self.test_loader = None
@@ -134,8 +141,9 @@ class BaseDeepAD(metaclass=ABCMeta):
         if self.verbose >= 1:
             print('Start Training...')
 
-        self.train_loader, self.net, self.criterion = self.training_prepare(X, y=y)
-        self._training()
+        for _ in range(self.n_ensemble):
+            self.train_loader, self.net, self.criterion = self.training_prepare(X, y=y)
+            self._training()
 
         if self.verbose >= 1:
             print('Start Inference on the training data...')
@@ -163,11 +171,15 @@ class BaseDeepAD(metaclass=ABCMeta):
         anomaly_scores : numpy array of shape (n_samples,)
             The anomaly score of the input samples.
         """
+        testing_n_samples = X.shape[0]
+        s_final = np.zeros(testing_n_samples)
+        for _ in range(self.n_ensemble):
+            self.test_loader = self.inference_prepare(X)
+            z, scores = self._inference()
+            z, scores = self.decision_function_update(z, scores)
+            s_final += scores
 
-        self.test_loader = self.inference_prepare(X)
-        z, scores = self._inference()
-        z, scores = self.decision_function_update(z, scores)
-        return scores
+        return s_final
 
     def predict(self, X, return_confidence=False):
         """Predict if a particular sample is an outlier or not.
