@@ -31,7 +31,7 @@ class BaseDeepAD(metaclass=ABCMeta):
     lr: float, optional (default=1e-3)
         Learning rate
 
-    n_ensemble: int, optional (default=1)
+    n_ensemble: int or str, optional (default=1)
         Number of ensemble size
 
     epoch_steps: int, optional (default=-1)
@@ -140,6 +140,11 @@ class BaseDeepAD(metaclass=ABCMeta):
 
         if self.verbose >= 1:
             print('Start Training...')
+
+        if self.n_ensemble == 'auto':
+            self.n_ensemble = int(np.floor(100 / (np.log(self.n_samples) + self.n_features)) + 1)
+        if self.verbose >= 1:
+            print(f'ensemble size: {self.n_ensemble}')
 
         for _ in range(self.n_ensemble):
             self.train_loader, self.net, self.criterion = self.training_prepare(X, y=y)

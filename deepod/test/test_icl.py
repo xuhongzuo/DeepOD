@@ -35,7 +35,7 @@ class TestICL(unittest.TestCase):
             contamination=self.contamination, random_state=42)
 
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        self.clf = ICL(device=device, n_ensemble=2)
+        self.clf = ICL(device=device, n_ensemble='auto')
         self.clf.fit(self.X_train)
 
     def test_parameters(self):

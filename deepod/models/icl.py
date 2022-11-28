@@ -74,7 +74,7 @@ class ICL(BaseDeepAD):
         the seed used by the random
 
     """
-    def __init__(self, epochs=100, batch_size=64, lr=1e-3, n_ensemble=2,
+    def __init__(self, epochs=100, batch_size=64, lr=1e-3, n_ensemble='auto',
                  rep_dim=128, hidden_dims='100,50', act='LeakyReLU', bias=False,
                  kernel_size='auto', temperature=0.01, max_negatives=1000,
                  epoch_steps=-1, prt_steps=10, device='cuda',
@@ -109,11 +109,8 @@ class ICL(BaseDeepAD):
             if self.n_features > 160:
                 self.kernel_size = self.n_features - 150
 
-        self.n_ensemble = int(np.floor(100 / (np.log(self.n_samples) + self.n_features)) + 1)
-
         if self.verbose >= 1:
             print(f'kernel size: {self.kernel_size}')
-            print(f'ensemble size: {self.n_ensemble}')
 
         net = ICLNet(
             n_features=self.n_features,
@@ -208,12 +205,16 @@ class ICLNet(torch.nn.Module):
             bias=bias,
         )
 
+        g_act = []
+        for _ in range(n_layers+1):
+            g_act.append(activation)
+
         self.enc_g_net = MLPnet(
             n_features=kernel_size,
             n_hidden=hidden_dims,
             n_output=rep_dim,
             batch_norm=False,
-            activation=activation,
+            activation=g_act,
             bias=bias,
         )
 
