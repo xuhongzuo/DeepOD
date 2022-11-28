@@ -20,11 +20,11 @@ import torch
 # if deepod is installed, no need to use the following line
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from deepod.models.dsvdd import DeepSVDD
+from deepod.models.rca import RCA
 from deepod.utils.data import generate_data
 
 
-class TestDeepSVDD(unittest.TestCase):
+class TestRCA(unittest.TestCase):
     def setUp(self):
         self.n_train = 200
         self.n_test = 100
@@ -35,7 +35,7 @@ class TestDeepSVDD(unittest.TestCase):
             contamination=self.contamination, random_state=42)
 
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        self.clf = DeepSVDD(device=device)
+        self.clf = RCA(device=device)
         self.clf.fit(self.X_train)
 
     def test_parameters(self):

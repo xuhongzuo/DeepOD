@@ -7,6 +7,7 @@ Weakly-supervised anomaly detection by pairwise relation prediction task
 from deepod.core.base_model import BaseDeepAD
 from deepod.core.base_networks import MLPnet, LinearBlock
 import torch
+import numpy as np
 
 
 class PReNet(BaseDeepAD):

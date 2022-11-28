@@ -29,6 +29,9 @@ class ICL(BaseDeepAD):
     lr: float, optional (default=1e-3)
         Learning rate
 
+    n_ensemble: int, optional (default=2)
+        Number of the ensemble size (make use of the bagging effect)
+
     rep_dim: int, optional (default=128)
         Dimensionality of the representation space
 
@@ -71,13 +74,14 @@ class ICL(BaseDeepAD):
         the seed used by the random
 
     """
-    def __init__(self, epochs=100, batch_size=64, lr=1e-3,
+    def __init__(self, epochs=100, batch_size=64, lr=1e-3, n_ensemble='auto',
                  rep_dim=128, hidden_dims='100,50', act='LeakyReLU', bias=False,
-                 kernel_size=2, temperature=0.01, max_negatives=1000,
+                 kernel_size='auto', temperature=0.01, max_negatives=1000,
                  epoch_steps=-1, prt_steps=10, device='cuda',
                  verbose=2, random_state=42):
         super(ICL, self).__init__(
-            model_name='DeepSVDD', epochs=epochs, batch_size=batch_size, lr=lr,
+            model_name='ICL', epochs=epochs, batch_size=batch_size,
+            lr=lr, n_ensemble=n_ensemble,
             epoch_steps=epoch_steps, prt_steps=prt_steps, device=device,
             verbose=verbose, random_state=random_state
         )
@@ -96,6 +100,17 @@ class ICL(BaseDeepAD):
     def training_prepare(self, X, y):
         train_loader = DataLoader(X, batch_size=self.batch_size,
                                   shuffle=True, pin_memory=True)
+
+        if self.kernel_size == 'auto':
+            if self.n_features <= 40:
+                self.kernel_size = 2
+            if 40 < self.n_features <= 160:
+                self.kernel_size = 10
+            if self.n_features > 160:
+                self.kernel_size = self.n_features - 150
+
+        if self.verbose >= 1:
+            print(f'kernel size: {self.kernel_size}')
 
         net = ICLNet(
             n_features=self.n_features,
@@ -172,23 +187,34 @@ class ICLNet(torch.nn.Module):
         self.kernel_size = kernel_size
 
         # @TODO: dimensionality in batch_norm layer for 3-d vectors
-        # @TODO: first layer's activation is tanh, others are leaky_relu
+
+        if type(hidden_dims)==str:
+            hidden_dims = hidden_dims.split(',')
+            hidden_dims = [int(a) for a in hidden_dims]
+        n_layers = len(hidden_dims) # hidden layers
+        f_act = ['Tanh']
+        for _ in range(n_layers):
+            f_act.append(activation)
 
         self.enc_f_net = MLPnet(
             n_features=n_features-kernel_size,
             n_hidden=hidden_dims,
             n_output=rep_dim,
             batch_norm=False,
-            activation=activation,
+            activation=f_act,
             bias=bias,
         )
+
+        g_act = []
+        for _ in range(n_layers+1):
+            g_act.append(activation)
 
         self.enc_g_net = MLPnet(
             n_features=kernel_size,
             n_hidden=hidden_dims,
             n_output=rep_dim,
             batch_norm=False,
-            activation=activation,
+            activation=g_act,
             bias=bias,
         )
 
