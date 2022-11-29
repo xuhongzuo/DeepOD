@@ -220,7 +220,7 @@ class ICLNet(torch.nn.Module):
             n_hidden=hidden_dims2,
             n_output=rep_dim,
             mid_channels=len(self.all_idx),
-            batch_norm=False,
+            batch_norm=True,
             activation=g_act,
             bias=bias,
         )
