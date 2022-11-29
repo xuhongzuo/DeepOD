@@ -43,6 +43,12 @@ class RCA(BaseDeepAD):
     alpha: float, optional (default=0.5)
         decay rate in determining beta
 
+    anom_ratio: float, optional (default=0.5)
+        decay rate in determining beta
+
+    dropout: float or None, optional (default=0.5)
+        dropout probability, the default setting is 0.5
+
     epoch_steps: int, optional (default=-1)
         Maximum steps in an epoch
             - If -1, all the batches will be processed
@@ -61,7 +67,7 @@ class RCA(BaseDeepAD):
     """
     def __init__(self, epochs=100, batch_size=64, lr=1e-3,
                  rep_dim=128, hidden_dims='100,50', act='LeakyReLU', bias=False,
-                 alpha=0.5, anom_ratio=None,
+                 alpha=0.5, anom_ratio=0.02, dropout=0.5,
                  epoch_steps=-1, prt_steps=10, device='cuda',
                  verbose=2, random_state=42):
         super(RCA, self).__init__(
@@ -78,6 +84,7 @@ class RCA(BaseDeepAD):
         self.anom_ratio = anom_ratio
         self.beta = 1.
         self.alpha = alpha
+        self.dropout = dropout
         return
 
     def training_prepare(self, X, y):
@@ -89,7 +96,7 @@ class RCA(BaseDeepAD):
             rep_dim=self.rep_dim,
             activation=self.act,
             bias=False,
-            dropout=0.5
+            dropout=self.dropout
         ).to(self.device)
 
         criterion = torch.nn.MSELoss(reduction='mean')
@@ -143,10 +150,18 @@ class RCA(BaseDeepAD):
         return batch_z, s
 
     def _inference(self):
-        self.net.train()
+        #   As introduced in the published paper, dropout is used to
+        # emulate the ensemble process.
+        #   RCA employs dropout during testing by using many networks of
+        # perturbed structures to perform multiple forward passes over
+        # the data in order to obtain a set of reconstruction errors for
+        # each test point.
+
+        repeat_times = 10 if self.dropout is not None else 1
 
         s_lsts = []
-        for _ in trange(10):
+        self.net.train()
+        for _ in trange(repeat_times):
             with torch.no_grad():
                 z_lst = []
                 score_lst = []
