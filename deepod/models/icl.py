@@ -186,7 +186,11 @@ class ICLNet(torch.nn.Module):
         self.n_features = n_features
         self.kernel_size = kernel_size
 
-        # @TODO: dimensionality in batch_norm layer for 3-d vectors
+        # get consecutive subspace indices and the corresponding complement indices
+        start_idx = np.arange(n_features)[: -kernel_size + 1]  # [0,1,2,...,dim-kernel_size+1]
+        self.all_idx = start_idx[:, None] + np.arange(kernel_size)
+        self.all_idx_complement = np.array([np.setdiff1d(np.arange(n_features), row)
+                                            for row in self.all_idx])
 
         if type(hidden_dims)==str:
             hidden_dims = hidden_dims.split(',')
@@ -200,19 +204,22 @@ class ICLNet(torch.nn.Module):
             n_features=n_features-kernel_size,
             n_hidden=hidden_dims,
             n_output=rep_dim,
-            batch_norm=False,
+            mid_channels=len(self.all_idx),
+            batch_norm=True,
             activation=f_act,
             bias=bias,
         )
 
+        hidden_dims2 = [int(0.5*h) for h in hidden_dims]
         g_act = []
         for _ in range(n_layers+1):
             g_act.append(activation)
 
         self.enc_g_net = MLPnet(
             n_features=kernel_size,
-            n_hidden=hidden_dims,
+            n_hidden=hidden_dims2,
             n_output=rep_dim,
+            mid_channels=len(self.all_idx),
             batch_norm=False,
             activation=g_act,
             bias=bias,
@@ -246,19 +253,13 @@ class ICLNet(torch.nn.Module):
             Complement vector of derived sub-vectors.
 
         """
-        kernel_size = self.kernel_size
         dim = self.n_features
 
         data = torch.unsqueeze(data, 1)  # [size, 1, dim]
         data = data.repeat(1, dim, 1)  # [size, dim, dim]
 
-        # get consecutive subspace indices and the corresponding complement indices
-        start_idx = np.arange(dim)[: -kernel_size + 1]  # [0,1,2,...,dim-kernel_size+1]
-        all_idx = start_idx[:, None] + np.arange(kernel_size)
-        all_idx_complement = np.array([np.setdiff1d(np.arange(dim), row) for row in all_idx])
-
-        matrix = data[:, np.arange(all_idx.shape[0])[:, None], all_idx]
-        complement_matrix = data[:, np.arange(all_idx.shape[0])[:, None], all_idx_complement]
+        matrix = data[:, np.arange(self.all_idx.shape[0])[:, None], self.all_idx]
+        complement_matrix = data[:, np.arange(self.all_idx.shape[0])[:, None], self.all_idx_complement]
 
         return matrix, complement_matrix
 

@@ -6,9 +6,11 @@ this script is partially adapted from https://hub.nuaa.cf/illidanlab/RCA
 
 from deepod.core.base_model import BaseDeepAD
 from deepod.core.base_networks import MLPnet
+from tqdm import trange
 from torch.utils.data import DataLoader
 import torch
 import torch.nn.functional as F
+import numpy as np
 
 
 class RCA(BaseDeepAD):
@@ -38,9 +40,8 @@ class RCA(BaseDeepAD):
     bias: bool, optional (default=False)
         Additive bias in linear layer
 
-    beta: float, optional (default=0.)
-        RCA selects (β × 100)% of the data points with the lowest reconstruction errors
-        in the mini-batch to update the autoencoder.
+    alpha: float, optional (default=0.5)
+        decay rate in determining beta
 
     epoch_steps: int, optional (default=-1)
         Maximum steps in an epoch
@@ -60,7 +61,7 @@ class RCA(BaseDeepAD):
     """
     def __init__(self, epochs=100, batch_size=64, lr=1e-3,
                  rep_dim=128, hidden_dims='100,50', act='LeakyReLU', bias=False,
-                 beta=0.,
+                 alpha=0.5, anom_ratio=None,
                  epoch_steps=-1, prt_steps=10, device='cuda',
                  verbose=2, random_state=42):
         super(RCA, self).__init__(
@@ -74,7 +75,9 @@ class RCA(BaseDeepAD):
         self.act = act
         self.bias = bias
 
-        self.beta = beta
+        self.anom_ratio = anom_ratio
+        self.beta = 1.
+        self.alpha = alpha
         return
 
     def training_prepare(self, X, y):
@@ -84,9 +87,9 @@ class RCA(BaseDeepAD):
             self.n_features,
             hidden_dims=self.hidden_dims,
             rep_dim=self.rep_dim,
-            activation='ReLU',
+            activation=self.act,
             bias=False,
-            dropout=None
+            dropout=0.5
         ).to(self.device)
 
         criterion = torch.nn.MSELoss(reduction='mean')
@@ -97,15 +100,14 @@ class RCA(BaseDeepAD):
         return train_loader, net, criterion
 
     def inference_prepare(self, X):
-        test_loader = DataLoader(X, batch_size=self.batch_size,
-                                drop_last=False, shuffle=False)
+        test_loader = DataLoader(X, batch_size=self.batch_size, drop_last=False, shuffle=False)
         self.criterion.reduction = 'none'
         return test_loader
 
     def training_forward(self, batch_x, net, criterion):
         x = batch_x.float().to(self.device)
 
-        n_selected = int(x.shape[0] * (1-self.beta))
+        n_selected = int(x.shape[0] * self.beta)
         net.eval()
         with torch.no_grad():
             z1, z2, x_hat1, x_hat2 = net(x, x)
@@ -140,11 +142,30 @@ class RCA(BaseDeepAD):
 
         return batch_z, s
 
+    def _inference(self):
+        self.net.train()
+
+        s_lsts = []
+        for _ in trange(10):
+            with torch.no_grad():
+                z_lst = []
+                score_lst = []
+                for batch_x in self.test_loader:
+                    batch_z, s = self.inference_forward(batch_x, self.net, self.criterion)
+                    z_lst.append(batch_z)
+                    score_lst.append(s)
+            z = torch.cat(z_lst).data.cpu().numpy()
+            s = torch.cat(score_lst).data.cpu().numpy()
+            s_lsts.append(s)
+        scores = np.array(s_lsts).mean(axis=0)
+        return z, scores
+
     def epoch_update(self):
-        # the anomaly ratio is normally unknown, set 0.05 by default
-        anomaly_ratio = 0.05
-        alpha = 0.1
-        self.beta = self.beta - anomaly_ratio / (alpha * self.epochs)
+        if self.anom_ratio is not None:
+            self.beta = self.beta - self.anom_ratio / (self.alpha * self.epochs)
+            self.beta = max(1.-self.anom_ratio, self.beta)
+        if self.verbose >=2:
+            print(f'beta: {self.beta}')
         return
 
 class RCANet(torch.nn.Module):
@@ -224,7 +245,7 @@ if __name__ == '__main__':
     y_semi = np.zeros_like(y)
     y_semi[known_anom_id] = 1
 
-    clf = RCA(device='cpu')
+    clf = RCA(epochs=10, device='cpu')
     clf.fit(x, y_semi)
 
     scores = clf.decision_function(x)
