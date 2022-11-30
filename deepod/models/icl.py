@@ -104,10 +104,20 @@ class ICL(BaseDeepAD):
         if self.kernel_size == 'auto':
             if self.n_features <= 40:
                 self.kernel_size = 2
-            if 40 < self.n_features <= 160:
+            elif 40 < self.n_features <= 160:
                 self.kernel_size = 10
-            if self.n_features > 160:
+
+            # else:
+            #     self.kernel_size = self.n_features - 150
+
+            elif 160 < self.n_features <= 320:
                 self.kernel_size = self.n_features - 150
+
+            elif 320 < self.n_features <= 480:
+                self.kernel_size = self.n_features - 300
+
+            else:
+                self.kernel_size = self.n_features - 450
 
         if self.verbose >= 1:
             print(f'kernel size: {self.kernel_size}')
@@ -266,24 +276,43 @@ class ICLNet(torch.nn.Module):
 
 if __name__ == '__main__':
     import numpy as np
+    import pandas as pd
 
-    file = '../../data/38_thyroid.npz'
-    data_ = np.load(file, allow_pickle=True)
-    x, y = data_['X'], data_['y']
-    y = np.array(y, dtype=int)
+    file = '/home/xuhz/dataset/1-tabular/fmnist.inlier_var.3percent.5dup/fmnist_anom7_nnormal9_id9_1.csv'
+    df = pd.read_csv(file)
+    df.replace([np.inf, -np.inf], np.nan, inplace=True)
+    df.fillna(method='ffill', inplace=True)
+    x = df.values[:, :-1]
+    y = np.array(df.values[:, -1], dtype=int)
 
-    anom_id = np.where(y==1)[0]
-    known_anom_id = np.random.choice(anom_id, 30)
-    y_semi = np.zeros_like(y)
-    y_semi[known_anom_id] = 1
+    norm_idx = np.where(y == 0)[0]
+    anom_idx = np.where(y == 1)[0]
+    split = int(0.5 * len(norm_idx))
+    train_norm_idx, test_norm_idx = norm_idx[:split], norm_idx[split:]
 
-    clf = ICL(device='cuda', epochs=10, verbose=2)
-    clf.fit(x, y_semi)
+    x_train = x[train_norm_idx]
+    y_train = y[train_norm_idx]
 
-    scores = clf.decision_function(x)
+    x_test = x[np.hstack([test_norm_idx, anom_idx])]
+    y_test = y[np.hstack([test_norm_idx, anom_idx])]
+    x_train = x_train / 255
+    x_test = x_test / 255
+
+    # file = '../../data/38_thyroid.npz'
+    # data_ = np.load(file, allow_pickle=True)
+    # x, y = data_['X'], data_['y']
+    # y = np.array(y, dtype=int)
+    # x_train = x
+    # x_test = x
+    # y_test = y
+
+    clf = ICL(device='cuda', epochs=100, hidden_dims='100', act='LeakyReLU', verbose=2)
+    clf.fit(x_train)
+
+    scores = clf.decision_function(x_test)
 
     from sklearn.metrics import roc_auc_score
 
-    auc = roc_auc_score(y_score=scores, y_true=y)
+    auc = roc_auc_score(y_score=scores, y_true=y_test)
 
     print(auc)

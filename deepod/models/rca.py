@@ -49,6 +49,9 @@ class RCA(BaseDeepAD):
     dropout: float or None, optional (default=0.5)
         dropout probability, the default setting is 0.5
 
+    inference_ensemble: int, optional(default=10)
+        the ensemble size during the inference stage
+
     epoch_steps: int, optional (default=-1)
         Maximum steps in an epoch
             - If -1, all the batches will be processed
@@ -67,7 +70,7 @@ class RCA(BaseDeepAD):
     """
     def __init__(self, epochs=100, batch_size=64, lr=1e-3,
                  rep_dim=128, hidden_dims='100,50', act='LeakyReLU', bias=False,
-                 alpha=0.5, anom_ratio=0.02, dropout=0.5,
+                 alpha=0.5, anom_ratio=0.02, dropout=0.5, inference_ensemble=10,
                  epoch_steps=-1, prt_steps=10, device='cuda',
                  verbose=2, random_state=42):
         super(RCA, self).__init__(
@@ -80,6 +83,8 @@ class RCA(BaseDeepAD):
         self.rep_dim = rep_dim
         self.act = act
         self.bias = bias
+
+        self.inference_ensemble = inference_ensemble
 
         self.anom_ratio = anom_ratio
         self.beta = 1.
@@ -157,7 +162,7 @@ class RCA(BaseDeepAD):
         # the data in order to obtain a set of reconstruction errors for
         # each test point.
 
-        repeat_times = 10 if self.dropout is not None else 1
+        repeat_times = self.inference_ensemble if self.dropout is not None else 1
 
         s_lsts = []
         self.net.train()
