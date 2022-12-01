@@ -12,9 +12,11 @@ on:
   push:
     branches:
       - main
+      - dev
   pull_request:
     branches:
       - main
+      - dev
 
 permissions:
   contents: read
@@ -47,7 +49,7 @@ jobs:
 
     - name: Test with pytest
       run: |
-        coverage run --source=pyod -m pytest
+        coverage run --source=deepod -m pytest
 
     - name: coverage report
       env:

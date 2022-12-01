@@ -1,5 +1,6 @@
 from .rca import RCA
 from .dsvdd import DeepSVDD
+from .dsad import DeepSAD
 from .devnet import DevNet
 from .prenet import PReNet
 from .repen import REPEN
@@ -9,4 +10,5 @@ from .rdp import RDP
 from .icl import ICL
 from .neutral import NeuTraL
 
-__all__ = ['RCA', 'DeepSVDD', 'DevNet', 'PReNet', 'REPEN', 'GOAD', 'NeuTraL', 'RDP', 'ICL']
+__all__ = ['RCA', 'DeepSVDD', 'DeepSAD', 'DevNet', 'PReNet',
+           'REPEN', 'GOAD', 'NeuTraL', 'RDP', 'ICL']

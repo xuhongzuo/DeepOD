@@ -33,7 +33,7 @@ class ConvNet(torch.nn.Module):
 
 
 class MLPnet(torch.nn.Module):
-    def __init__(self, n_features, n_hidden='500,100', n_output=20,
+    def __init__(self, n_features, n_hidden='500,100', n_output=20, mid_channels=None,
                  activation='ReLU', bias=False, batch_norm=False,
                  skip_connection=None, dropout=None):
         super(MLPnet, self).__init__()
@@ -60,10 +60,11 @@ class MLPnet(torch.nn.Module):
                                                                  n_hidden, n_output, skip_connection)
             self.layers += [
                 LinearBlock(in_channels, out_channels,
+                            mid_channels=mid_channels,
                             bias=bias, batch_norm=batch_norm,
                             activation=activation[i],
                             skip_connection=skip_connection if i != num_layers else 0,
-                            dropout=dropout)
+                            dropout=dropout if i !=num_layers else None)
             ]
         self.network = torch.nn.Sequential(*self.layers)
 
@@ -84,8 +85,8 @@ class MLPnet(torch.nn.Module):
 
 
 class LinearBlock(torch.nn.Module):
-    def __init__(self, in_channels, out_channels,
-                 activation='tanh', bias=False, batch_norm=False,
+    def __init__(self, in_channels, out_channels, mid_channels=None,
+                 activation='Tanh', bias=False, batch_norm=False,
                  skip_connection=None, dropout=None):
         super(LinearBlock, self).__init__()
 
@@ -105,7 +106,8 @@ class LinearBlock(torch.nn.Module):
 
         self.batch_norm = batch_norm
         if batch_norm is True:
-            self.bn_layer = torch.nn.BatchNorm1d(out_channels, affine=bias)
+            dim = out_channels if mid_channels is None else mid_channels
+            self.bn_layer = torch.nn.BatchNorm1d(dim, affine=bias)
 
     def forward(self, x):
         x1 = self.linear(x)

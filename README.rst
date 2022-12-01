@@ -11,7 +11,7 @@ Python Deep Outlier/Anomaly Detection (DeepOD)
    
 .. image:: https://pepy.tech/badge/deepod
    :target: https://pepy.tech/project/deepod
-   :alt: downlods
+   :alt: downloads
    
 
 **DeepOD** is an open-source python framework for deep learning-based anomaly detection on multivariate data. DeepOD provides unified low-code implementation of different detection models based on PyTorch.
@@ -63,6 +63,7 @@ Supported Models
  ICL, ICLR, 2022, unsupervised, Anomaly Detection for Tabular Data with Internal Contrastive Learning
  DevNet, KDD, 2019, weakly-supervised, Deep Anomaly Detection with Deviation Networks
  PReNet, ArXiv, 2020, weakly-supervised, Deep Weakly-supervised Anomaly Detection
+ Deep SAD, ICLR, 2020, weakly-supervised, Deep Semi-Supervised Anomaly Detection
 ~~~~~~~~~~~~~~
 
 

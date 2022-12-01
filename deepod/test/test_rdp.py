@@ -20,11 +20,11 @@ import torch
 # if deepod is installed, no need to use the following line
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from deepod.models.rca import RCA
+from deepod.models import RDP
 from deepod.utils.data import generate_data
 
 
-class TestRCA(unittest.TestCase):
+class TestRDP(unittest.TestCase):
     def setUp(self):
         self.n_train = 200
         self.n_test = 100
@@ -35,7 +35,7 @@ class TestRCA(unittest.TestCase):
             contamination=self.contamination, random_state=42)
 
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        self.clf = RCA(device=device, act='LeakyReLU')
+        self.clf = RDP(hidden_dims=100, device=device)
         self.clf.fit(self.X_train)
 
     def test_parameters(self):
