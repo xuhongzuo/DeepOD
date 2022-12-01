@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """
+!! this is in development now. !!
 One-class classification
 this script is partially adapted from https://github.com/jmjeon94/AnoGAN-pytorch
 @Author: Hongzuo Xu <hongzuoxu@126.com, xuhongzuo13@nudt.edu.cn>

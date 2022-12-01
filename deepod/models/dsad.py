@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 One-class classification
+this is partially adapted from
 @Author: Hongzuo Xu <hongzuoxu@126.com, xuhongzuo13@nudt.edu.cn>
 """
 
