@@ -6,7 +6,7 @@ with open(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'README.rst')
 
 setuptools.setup(
     name="deepod",
-    version="0.1.1",
+    version="0.2.1",
     author="Hongzuo Xu",
     author_email="hongzuoxu@126.com",
     description="",
