@@ -1,20 +1,19 @@
 # -*- coding: utf-8 -*-
 """
-Deep anomaly detection with deviation networks.
-PyTorch's implementation
+One-class classification
 @Author: Hongzuo Xu <hongzuoxu@126.com, xuhongzuo13@nudt.edu.cn>
 """
 
 from deepod.core.base_model import BaseDeepAD
 from deepod.core.base_networks import MLPnet
 from torch.utils.data import DataLoader, TensorDataset
-from torch.utils.data.sampler import WeightedRandomSampler
 import torch
-import numpy as np
 
 
-class DevNet(BaseDeepAD):
-    """
+class DeepSAD(BaseDeepAD):
+    """ Deep Semi-supervised Anomaly Detection (Deep SAD)
+    See :cite:`ruff2020dsad` for details
+
     Parameters
     ----------
     epochs: int, optional (default=100)
@@ -25,6 +24,9 @@ class DevNet(BaseDeepAD):
 
     lr: float, optional (default=1e-3)
         Learning rate
+
+    rep_dim: int, optional (default=128)
+        Dimensionality of the representation space
 
     hidden_dims: list, str or int, optional (default='100,50')
         Number of neural units in hidden layers
@@ -38,12 +40,6 @@ class DevNet(BaseDeepAD):
 
     bias: bool, optional (default=False)
         Additive bias in linear layer
-
-    margin: float, optional (default=5.)
-        margin value used in the deviation loss function
-
-    l: int, optional (default=5000.)
-        the size of samples of the Gaussian distribution used in the deviation loss function
 
     epoch_steps: int, optional (default=-1)
         Maximum steps in an epoch
@@ -60,48 +56,48 @@ class DevNet(BaseDeepAD):
 
     random_state： int, optional (default=42)
         the seed used by the random
+
     """
+
     def __init__(self, epochs=100, batch_size=64, lr=1e-3,
-                 hidden_dims='100,50', act='ReLU', bias=False,
-                 margin=5., l=5000,
+                 rep_dim=128, hidden_dims='100,50', act='ReLU', bias=False,
                  epoch_steps=-1, prt_steps=10, device='cuda',
                  verbose=2, random_state=42):
-        super(DevNet, self).__init__(
-            model_name='DevNet', epochs=epochs, batch_size=batch_size, lr=lr,
+        super(DeepSAD, self).__init__(
+            model_name='DeepSAD', epochs=epochs, batch_size=batch_size, lr=lr,
             epoch_steps=epoch_steps, prt_steps=prt_steps, device=device,
             verbose=verbose, random_state=random_state
         )
 
-        self.margin = margin
-        self.l = l
-
         self.hidden_dims = hidden_dims
+        self.rep_dim = rep_dim
         self.act = act
         self.bias = bias
+
+        self.c = None
 
         return
 
     def training_prepare(self, X, y):
-        # loader: balanced loader, a mini-batch contains a half of normal data and a half of anomalies
-        n_anom = np.where(y == 1)[0].shape[0]
-        n_norm = self.n_samples - n_anom
-        weight_map = {0: 1. / n_norm, 1: 1. / n_anom}
 
-        dataset = TensorDataset(torch.from_numpy(X).float(), torch.from_numpy(y).long())
-        print([weight_map[label.item()] for data, label in dataset])
-        sampler = WeightedRandomSampler(weights=[weight_map[label.item()] for data, label in dataset],
-                                        num_samples=self.batch_size, replacement=True)
-        train_loader = DataLoader(dataset, batch_size=self.batch_size, sampler=sampler)
+        semi_y2 = y.copy()
+        semi_y2[np.where(y == 1)[0]] = -1
+        dataset = TensorDataset(torch.from_numpy(X).float(),
+                                torch.from_numpy(semi_y2).long())
+
+        train_loader = DataLoader(dataset, batch_size=self.batch_size, shuffle=True)
 
         net = MLPnet(
             n_features=self.n_features,
             n_hidden=self.hidden_dims,
-            n_output=1,
+            n_output=self.rep_dim,
             activation=self.act,
             bias=self.bias,
         ).to(self.device)
 
-        criterion = DevLoss(margin=self.margin, l=self.l)
+        # self.c = torch.randn(net.n_emb).to(self.device)
+        self.c = self._set_c(net, train_loader)
+        criterion = DSADLoss(c=self.c)
 
         if self.verbose >= 2:
             print(net)
@@ -117,28 +113,42 @@ class DevNet(BaseDeepAD):
     def training_forward(self, batch_x, net, criterion):
         batch_x, batch_y = batch_x
         batch_x = batch_x.float().to(self.device)
-        pred = net(batch_x)
-        loss = criterion(batch_y, pred)
+        z = net(batch_x)
+        loss = criterion(z, batch_y)
         return loss
 
     def inference_forward(self, batch_x, net, criterion):
         batch_x = batch_x.float().to(self.device)
         batch_z = net(batch_x)
-        s = batch_z
+        s = criterion(batch_z)
         return batch_z, s
 
+    def _set_c(self, net, dataloader, eps=0.1):
+        """Initializing the center for the hypersphere"""
+        net.eval()
+        z_ = []
+        with torch.no_grad():
+            for x, _ in dataloader:
+                x = x.float().to(self.device)
+                z = net(x)
+                z_.append(z.detach())
+        z_ = torch.cat(z_)
+        c = torch.mean(z_, dim=0)
 
-class DevLoss(torch.nn.Module):
+        # if c i s too close to zero, set to +- eps
+        # a zero unit can be trivially matched with zero weights
+        c[(abs(c) < eps) & (c < 0)] = -eps
+        c[(abs(c) < eps) & (c > 0)] = eps
+        return c
+
+
+class DSADLoss(torch.nn.Module):
     """
-    Deviation Loss
 
     Parameters
     ----------
-    margin: float, optional (default=5.)
+    c: torch.Tensor
         Center of the pre-defined hyper-sphere in the representation space
-
-    l: int, optional (default=5000.)
-        the size of samples of the Gaussian distribution used in the deviation loss function
 
     reduction: str, optional (default='mean')
         choice = [``'none'`` | ``'mean'`` | ``'sum'``]
@@ -148,32 +158,35 @@ class DevLoss(torch.nn.Module):
             - If ``'sum'``: the output will be summed
 
     """
-    def __init__(self, margin=5., l=5000, reduction='mean'):
-        super(DevLoss, self).__init__()
-        self.margin = margin
-        self.loss_l = l
+
+    def __init__(self, c, eta=1.0, eps=1e-6, reduction='mean'):
+        super(DSADLoss, self).__init__()
+        self.c = c
         self.reduction = reduction
-        return
+        self.eta = eta
+        self.eps = eps
 
-    def forward(self, y_true, y_pred):
-        ref = torch.randn(self.loss_l)
-        dev = (y_pred - torch.mean(ref)) / torch.std(ref)
-        inlier_loss = torch.abs(dev)
-        outlier_loss = torch.abs(torch.max(self.margin - dev, torch.zeros_like(dev)))
-        loss = (1 - y_true) * inlier_loss + y_true * outlier_loss
+    def forward(self, rep, semi_targets=None, reduction=None):
+        dist = torch.sum((rep - self.c) ** 2, dim=1)
 
-        if self.reduction == 'mean':
+        if semi_targets is not None:
+            loss = torch.where(semi_targets == 0, dist,
+                               self.eta * ((dist+self.eps) ** semi_targets.float()))
+        else:
+            loss = dist
+
+        if reduction is None:
+            reduction = self.reduction
+
+        if reduction == 'mean':
             return torch.mean(loss)
-        elif self.reduction == 'sum':
+        elif reduction == 'sum':
             return torch.sum(loss)
-        elif self.reduction == 'none':
+        elif reduction == 'none':
             return loss
-
-        return loss
 
 
 if __name__ == '__main__':
-    import pandas as pd
     import numpy as np
 
     file = '../../data/38_thyroid.npz'
@@ -181,12 +194,12 @@ if __name__ == '__main__':
     x, y = data['X'], data['y']
     y = np.array(y, dtype=int)
 
-    anom_id = np.where(y==1)[0]
+    anom_id = np.where(y == 1)[0]
     known_anom_id = np.random.choice(anom_id, 30)
     y_semi = np.zeros_like(y)
     y_semi[known_anom_id] = 1
 
-    clf = DevNet(device='cpu')
+    clf = DeepSAD(device='cpu')
     clf.fit(x, y_semi)
 
     scores = clf.decision_function(x)

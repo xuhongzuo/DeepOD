@@ -134,7 +134,7 @@ def evaluate(y_true, scores):
     ap = metrics.average_precision_score(y_true, scores)
 
     # F1@k, using real percentage to calculate F1-score
-    ratio =  100.0 * len(np.where(y_true==0)[0]) / len(y_true)
+    ratio = 100.0 * len(np.where(y_true==0)[0]) / len(y_true)
     thresh = np.percentile(scores, ratio)
     y_pred = (scores >= thresh).astype(int)
     y_true = y_true.astype(int)
