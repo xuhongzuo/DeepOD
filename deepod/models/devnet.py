@@ -88,7 +88,7 @@ class DevNet(BaseDeepAD):
         weight_map = {0: 1. / n_norm, 1: 1. / n_anom}
 
         dataset = TensorDataset(torch.from_numpy(X).float(), torch.from_numpy(y).long())
-        print([weight_map[label.item()] for data, label in dataset])
+        # print([weight_map[label.item()] for data, label in dataset])
         sampler = WeightedRandomSampler(weights=[weight_map[label.item()] for data, label in dataset],
                                         num_samples=self.batch_size, replacement=True)
         train_loader = DataLoader(dataset, batch_size=self.batch_size, sampler=sampler)
@@ -117,14 +117,16 @@ class DevNet(BaseDeepAD):
     def training_forward(self, batch_x, net, criterion):
         batch_x, batch_y = batch_x
         batch_x = batch_x.float().to(self.device)
+        batch_y = batch_y.to(self.device)
         pred = net(batch_x)
         loss = criterion(batch_y, pred)
         return loss
 
     def inference_forward(self, batch_x, net, criterion):
         batch_x = batch_x.float().to(self.device)
-        batch_z = net(batch_x)
-        s = batch_z
+        s = net(batch_x)
+        s = s.view(-1)
+        batch_z = batch_x
         return batch_z, s
 
 

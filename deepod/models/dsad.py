@@ -9,6 +9,7 @@ from deepod.core.base_model import BaseDeepAD
 from deepod.core.base_networks import MLPnet
 from torch.utils.data import DataLoader, TensorDataset
 import torch
+import numpy as np
 
 
 class DeepSAD(BaseDeepAD):
@@ -114,6 +115,7 @@ class DeepSAD(BaseDeepAD):
     def training_forward(self, batch_x, net, criterion):
         batch_x, batch_y = batch_x
         batch_x = batch_x.float().to(self.device)
+        batch_y = batch_y.to(self.device)
         z = net(batch_x)
         loss = criterion(z, batch_y)
         return loss
