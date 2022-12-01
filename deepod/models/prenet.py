@@ -148,7 +148,7 @@ class PReNetLoader:
 
         self.X = X
         self.y = y
-        self.batch_size = batch_size
+        self.batch_size = min(batch_size, len(X))
 
         self.unlabeled_id = np.where(y == 0)[0]
         self.known_anom_id = np.where(y == 1)[0]
@@ -158,7 +158,7 @@ class PReNetLoader:
         self.counter = 0
 
         self.steps_per_epoch = steps_per_epoch if steps_per_epoch is not None \
-            else int(len(X) / batch_size)
+            else int(len(X) / self.batch_size)
 
         return
 
@@ -207,13 +207,14 @@ if __name__ == '__main__':
     import pandas as pd
     import numpy as np
 
-    file = '../../data/38_thyroid.npz'
+    # file = '../../data/38_thyroid.npz'
+    file = '/home/xuhz/dataset/1-tabular/ADBench-classical/27_PageBlocks.npz'
     data = np.load(file, allow_pickle=True)
     x, y = data['X'], data['y']
     y = np.array(y, dtype=int)
 
     anom_id = np.where(y == 1)[0]
-    k_anom_id = np.random.choice(anom_id, 30)
+    k_anom_id = np.random.choice(anom_id, 30, replace=False)
     y_semi = np.zeros_like(y)
     y_semi[k_anom_id] = 1
 

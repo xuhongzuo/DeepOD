@@ -96,11 +96,11 @@ class REPENLoader:
     """
     def __init__(self, X, batch_size, init_scores, steps_per_epoch=None):
         self.X = X
-        self.batch_size = batch_size
+        self.batch_size = min(batch_size, len(X))
         self.init_scores = init_scores
         self.inlier_ids, self.outlier_ids = self.cutoff_unsorted(init_scores)
         self.steps_per_epoch = steps_per_epoch if steps_per_epoch is not None \
-            else int(len(X)/batch_size)
+            else int(len(X)/self.batch_size)
         self.counter = 0
         return
 

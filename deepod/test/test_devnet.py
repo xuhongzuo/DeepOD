@@ -32,27 +32,24 @@ class TestDevNet(unittest.TestCase):
         self.contamination = 0.1
         self.roc_floor = 0.8
 
-        # self.X_train, self.X_test, self.y_train, self.y_test = generate_data(
-        #     n_train=self.n_train, n_test=self.n_test, n_features=10,
-        #     contamination=self.contamination, random_state=42)
+        self.X_train, self.X_test, self.y_train, self.y_test = generate_data(
+            n_train=self.n_train, n_test=self.n_test, n_features=10,
+            contamination=self.contamination, random_state=42)
 
-        file = '../../data/38_thyroid.npz'
-        data = np.load(file, allow_pickle=True)
-        x, y = data['X'], data['y']
-        y = np.array(y, dtype=int)
-        anom_id = np.where(y == 1)[0]
-        known_anom_id = np.random.choice(anom_id, 30)
-        y_semi = np.zeros_like(y)
+        # file = '../../data/38_thyroid.npz'
+        # data = np.load(file, allow_pickle=True)
+        # x, y = data['X'], data['y']
+        # y = np.array(y, dtype=int)
+
+        anom_id = np.where(self.y_train == 1)[0]
+        known_anom_id = np.random.choice(anom_id, 10, replace=False)
+        y_semi = np.zeros_like(self.y_train, dtype=int)
         y_semi[known_anom_id] = 1
 
-        self.X_train = x
-        self.y_train = y_semi
-        self.X_test = x
-        self.y_test = y
-
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        self.clf = DevNet(epochs=10, hidden_dims=100, device=device, random_state=42)
-        self.clf.fit(self.X_train, self.y_train)
+        self.clf = DevNet(epochs=1, hidden_dims=20, device=device,
+                          random_state=42)
+        self.clf.fit(self.X_train, y_semi)
 
     def test_parameters(self):
         assert (hasattr(self.clf, 'decision_scores_') and
@@ -67,6 +64,8 @@ class TestDevNet(unittest.TestCase):
 
     def test_prediction_scores(self):
         pred_scores = self.clf.decision_function(self.X_test)
+        print(pred_scores)
+        print(self.y_test)
 
         # check score shapes
         assert_equal(pred_scores.shape[0], self.X_test.shape[0])
