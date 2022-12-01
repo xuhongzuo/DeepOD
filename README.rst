@@ -8,7 +8,11 @@ Python Deep Outlier/Anomaly Detection (DeepOD)
 .. image:: https://github.com/xuhongzuo/DeepOD/actions/workflows/testing.yml/badge.svg
    :target: https://github.com/xuhongzuo/DeepOD/actions/workflows/testing.yml
    :alt: testing2
-   
+
+.. image:: https://coveralls.io/repos/github/xuhongzuo/DeepOD/badge.svg?branch=main
+    :target: https://coveralls.io/github/xuhongzuo/DeepOD?branch=main
+    :alt: coveralls
+
 .. image:: https://pepy.tech/badge/deepod
    :target: https://pepy.tech/project/deepod
    :alt: downloads
