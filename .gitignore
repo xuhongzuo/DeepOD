@@ -2,5 +2,6 @@ deepod.egg-info/
 dist/
 build/
 .idea
-#data/
+deepod/models/_local_test_.py
+data/
 **/__pycache__

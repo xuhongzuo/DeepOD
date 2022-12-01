@@ -9,7 +9,7 @@ with open(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'requirements
 
 setuptools.setup(
     name="deepod",
-    version="0.2.1",
+    version="0.2.0",
     author="Hongzuo Xu",
     author_email="hongzuoxu@126.com",
     description="",

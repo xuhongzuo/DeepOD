@@ -201,30 +201,3 @@ class PReNetLoader:
                 batch_y[i] = 8
 
         return batch_x1, batch_x2, batch_y
-
-
-if __name__ == '__main__':
-    import pandas as pd
-    import numpy as np
-
-    # file = '../../data/38_thyroid.npz'
-    file = '/home/xuhz/dataset/1-tabular/ADBench-classical/27_PageBlocks.npz'
-    data = np.load(file, allow_pickle=True)
-    x, y = data['X'], data['y']
-    y = np.array(y, dtype=int)
-
-    anom_id = np.where(y == 1)[0]
-    k_anom_id = np.random.choice(anom_id, 30, replace=False)
-    y_semi = np.zeros_like(y)
-    y_semi[k_anom_id] = 1
-
-    clf = PReNet(device='cpu', batch_size=256, epochs=10)
-    clf.fit(x, y_semi)
-
-    scores = clf.decision_function(x)
-
-    from sklearn.metrics import roc_auc_score
-
-    auc = roc_auc_score(y_score=scores, y_true=y)
-
-    print(auc)
