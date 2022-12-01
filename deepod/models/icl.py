@@ -110,14 +110,18 @@ class ICL(BaseDeepAD):
             # else:
             #     self.kernel_size = self.n_features - 150
 
-            elif 160 < self.n_features <= 320:
+            elif 160 < self.n_features <= 240:
                 self.kernel_size = self.n_features - 150
-
-            elif 320 < self.n_features <= 480:
-                self.kernel_size = self.n_features - 300
-
+            elif 240 < self.n_features <= 480:
+                self.kernel_size = self.n_features - 200
             else:
-                self.kernel_size = self.n_features - 450
+                self.kernel_size = self.n_features - 400
+
+            # elif 320 < self.n_features <= 480:
+            #     self.kernel_size = self.n_features - 300
+            #
+            # else:
+            #     self.kernel_size = self.n_features - 450
 
         if self.verbose >= 1:
             print(f'kernel size: {self.kernel_size}')
