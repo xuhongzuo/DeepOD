@@ -72,7 +72,7 @@ Usages
 ~~~~~~~~~~~~~~~~~
 
 
-DeepOD can be used in a few lines of code. This API style is the same with sklearn and PyOD.
+DeepOD can be used in a few lines of code. This API style is the same with sklearn and PyOD..
 
 
 .. code-block:: python
