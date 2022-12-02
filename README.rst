@@ -13,7 +13,7 @@ Python Deep Outlier/Anomaly Detection (DeepOD)
     :target: https://coveralls.io/github/xuhongzuo/DeepOD?branch=main
     :alt: coveralls
 
-.. image:: https://pepy.tech/badge/deepod
+.. image:: https://static.pepy.tech/personalized-badge/deepod?period=total&units=international_system&left_color=black&right_color=orange&left_text=Downloads
    :target: https://pepy.tech/project/deepod
    :alt: downloads
    
