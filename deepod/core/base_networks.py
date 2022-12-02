@@ -1,7 +1,8 @@
 import importlib
 import torch
 import numpy as np
-
+from typing import List
+from tcn_utils import TemporalBlock, TemporalBlockTranspose
 
 class ConvNet(torch.nn.Module):
     def __init__(self, n_features, kernel_size=1, n_hidden=8, n_layers=5,
@@ -124,11 +125,63 @@ class LinearBlock(torch.nn.Module):
 
         return x1
 
+class TcnEDBlock(torch.nn.Module):
+    def __init__(self, in_channels:int, num_channels:List, kernel_size=2, dropout=0.2):
+        super(TcnEDBlock, self).__init__()
+        self.num_channels = num_channels
+        self.num_inputs = in_channels
+        num_levels = len(num_channels)
+
+        # encoder
+        self.encoder_layers = []
+        for i in range(num_levels):
+            dilation_size = 2 ** i
+            padding_size = (kernel_size - 1) * dilation_size
+            in_channel = in_channels if i == 0 else num_channels[i - 1]
+            out_channel = num_channels[i]
+            self.encoder_layers += [
+                TemporalBlock(in_channel, out_channel, kernel_size, stride=1, dilation=dilation_size,
+                              padding=padding_size, dropout=dropout)]
+
+        # decoder
+        decoder_channels = list(reversed(num_channels))
+        self.decoder_layers = []
+        for i in range(num_levels):
+            # no dilation in decoder
+            in_channel = decoder_channels[i]
+            out_channel = in_channels if i == (num_levels - 1) else decoder_channels[i + 1]
+            dilation_size = 2 ** (num_levels - 1 - i)
+            padding_size = (kernel_size - 1) * dilation_size
+            self.decoder_layers += [
+                TemporalBlockTranspose(in_channel, out_channel, kernel_size, stride=1, dilation=dilation_size,
+                                       padding=padding_size, dropout=dropout)]
+
+        # to register parameters in list of layers, each layer must be an object
+        self.enc_layer_names = ["enc_" + str(num) for num in range(len(self.encoder_layers))]
+        self.dec_layer_names = ["dec_" + str(num) for num in range(len(self.decoder_layers))]
+        for name, layer in zip(self.enc_layer_names, self.encoder_layers):
+            setattr(self, name, layer)
+        for name, layer in zip(self.dec_layer_names, self.decoder_layers):
+            setattr(self, name, layer)
+
+    def forward(self, x, return_latent=False):
+        # x shape[bs, seq_len, embed]
+        out = x.permute(0, 2, 1)  # shape[bs, embed, seq_len]
+        enc = torch.nn.Sequential(*self.encoder_layers)(out)
+        dec = torch.nn.Sequential(*self.decoder_layers)(enc)
+        if return_latent:
+            return dec.permute(0, 2, 1), enc
+        else:
+            return dec.permute(0, 2, 1) # [bs, seq_len, embed]
+
+
+
 
 def instantiate_class(module_name: str, class_name: str):
     module = importlib.import_module(module_name)
     class_ = getattr(module, class_name)
     return class_()
+
 
 
 if __name__ == '__main__':
