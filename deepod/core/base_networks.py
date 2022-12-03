@@ -185,7 +185,7 @@ class TCNnet(torch.nn.Module):
     def forward(self, x):
         # x shape[bs, seq_len, embed]
         x = x.permute(0, 2, 1)
-        out = self.network(x) # out shape[bs, n_output, seq_len-kernel_size+1]
+        out = self.network(x) # out shape[bs, n_output, seq_len]
         return out.permute(0, 2, 1)
 
 
@@ -212,4 +212,8 @@ if __name__ == '__main__':
     print(net)
 
     net2 = TCNnet(n_features=10)
-    print(net2)
+    input = torch.randn((16, 40, 10))
+    out = net2(input)
+    print(out.shape)
+    # print(net2)
+
