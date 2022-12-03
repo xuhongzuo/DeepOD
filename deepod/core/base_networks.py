@@ -1,7 +1,7 @@
 import importlib
 import torch
 import numpy as np
-
+from torch.nn.utils import weight_norm
 
 class ConvNet(torch.nn.Module):
     def __init__(self, n_features, kernel_size=1, n_hidden=8, n_layers=5,
@@ -124,6 +124,82 @@ class LinearBlock(torch.nn.Module):
 
         return x1
 
+class TcnResidualBlock(torch.nn.Module):
+    def __init__(self, n_inputs, n_outputs, kernel_size, stride, dilation, padding, dropout=0.2, activation='ReLU'):
+        super(TcnResidualBlock, self).__init__()
+        self.conv1 = weight_norm(torch.nn.Conv1d(n_inputs, n_outputs, kernel_size,
+                                           stride=stride, padding=padding,
+                                           dilation=dilation))
+        self.chomp1 = Chomp1d(padding)
+        self.act1 = instantiate_class("torch.nn.modules.activation", activation)
+        self.dropout1 = torch.nn.Dropout(dropout)
+
+        self.conv2 = weight_norm(torch.nn.Conv1d(n_outputs, n_outputs, kernel_size,
+                                           stride=stride, padding=padding,
+                                           dilation=dilation))
+        self.chomp2 = Chomp1d(padding)
+        self.act2 = instantiate_class("torch.nn.modules.activation", activation)
+        self.dropout2 = torch.nn.Dropout(dropout)
+
+        self.net = torch.nn.Sequential(self.conv1, self.chomp1, self.act1, self.dropout1,
+                                 self.conv2, self.chomp2, self.act2, self.dropout2)
+        self.downsample = torch.nn.Conv1d(n_inputs, n_outputs, 1) if n_inputs != n_outputs else None
+        self.relu = instantiate_class("torch.nn.modules.activation", activation)
+        self.init_weights()
+
+    def init_weights(self):
+        self.conv1.weight.data.normal_(0, 0.01)
+        self.conv2.weight.data.normal_(0, 0.01)
+        if self.downsample is not None:
+            self.downsample.weight.data.normal_(0, 0.01)
+
+    def forward(self, x):
+        # x shape:(bs, embed, seq_len)
+        out = self.net(x)
+        res = x if self.downsample is None else self.downsample(x)
+        return self.relu(out + res)
+
+class TCNnet(torch.nn.Module):
+    """TCN is adapted from https://github.com/locuslab/TCN"""
+    def __init__(self, n_features, n_hidden='500, 100', n_output=20, kernel_size=2, dropout=0.2, activation='ReLU'):
+        super(TCNnet, self).__init__()
+        self.layers = []
+        self.num_inputs = n_features
+
+        if type(n_hidden)==int:
+            n_hidden = [n_hidden]
+        if type(n_hidden)==str:
+            n_hidden = n_hidden.split(',')
+            n_hidden = [int(a) for a in n_hidden]
+        num_layers = len(n_hidden)
+
+        for i in range(num_layers + 1):
+            dilation_size = 2 ** i
+            padding_size = (kernel_size-1) * dilation_size
+            in_channels = n_features if i == 0 else n_hidden[i-1]
+            out_channels = n_output if i == num_layers else n_hidden[i]
+            self.layers += [TcnResidualBlock(in_channels, out_channels, kernel_size, stride=1, dilation=dilation_size,
+                padding=padding_size, dropout=dropout, activation=activation)]
+        self.network = torch.nn.Sequential(*self.layers)
+
+    def forward(self, x):
+        # x shape[bs, seq_len, embed]
+        x = x.permute(0, 2, 1)
+        out = self.network(x) # out shape[bs, n_output, seq_len]
+        return out.permute(0, 2, 1)
+
+
+class Chomp1d(torch.nn.Module):
+    def __init__(self, chomp_size):
+        super(Chomp1d, self).__init__()
+        self.chomp_size = chomp_size
+
+    def forward(self, x):
+        """
+        Clipped module, clipped the extra padding
+        """
+        return x[:, :, :-self.chomp_size].contiguous()
+
 
 def instantiate_class(module_name: str, class_name: str):
     module = importlib.import_module(module_name)
@@ -134,3 +210,10 @@ def instantiate_class(module_name: str, class_name: str):
 if __name__ == '__main__':
     net = MLPnet(n_features=10)
     print(net)
+
+    net2 = TCNnet(n_features=10)
+    input = torch.randn((16, 40, 10))
+    out = net2(input)
+    print(out.shape)
+    # print(net2)
+
