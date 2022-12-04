@@ -5,7 +5,8 @@ One-class classification
 """
 
 from deepod.core.base_model import BaseDeepAD
-from deepod.core.base_networks import MLPnet
+from deepod.core.base_networks import MLPnet, TCNnet
+from deepod.utils.utility import get_sub_seqs
 from torch.utils.data import DataLoader
 import torch
 
@@ -16,6 +17,9 @@ class DeepSVDD(BaseDeepAD):
 
     Parameters
     ----------
+    data_type: str, optional (default='tabular')
+        Data type
+
     epochs: int, optional (default=100)
         Number of training epochs
 
@@ -24,6 +28,17 @@ class DeepSVDD(BaseDeepAD):
 
     lr: float, optional (default=1e-3)
         Learning rate
+
+    network: str, optional (default='MLP')
+        network structure for different data structures
+
+    seq_len: int, optional (default=100)
+        Size of window used to create subsequences from the data
+        deprecated when handling tabular data (network=='MLP')
+
+    stride: int, optional (default=1)
+        number of time points the window will move between two subsequences
+        deprecated when handling tabular data (network=='MLP')
 
     rep_dim: int, optional (default=128)
         Dimensionality of the representation space
@@ -58,12 +73,14 @@ class DeepSVDD(BaseDeepAD):
         the seed used by the random
 
     """
-    def __init__(self, epochs=100, batch_size=64, lr=1e-3,
+    def __init__(self, data_type='tabular', epochs=100, batch_size=64, lr=1e-3,
+                 network='MLP', seq_len=100, stride=1,
                  rep_dim=128, hidden_dims='100,50', act='ReLU', bias=False,
                  epoch_steps=-1, prt_steps=10, device='cuda',
                  verbose=2, random_state=42):
         super(DeepSVDD, self).__init__(
-            model_name='DeepSVDD', epochs=epochs, batch_size=batch_size, lr=lr,
+            data_type=data_type, model_name='DeepSVDD', epochs=epochs, batch_size=batch_size, lr=lr,
+            network=network, seq_len=seq_len, stride=stride,
             epoch_steps=epoch_steps, prt_steps=prt_steps, device=device,
             verbose=verbose, random_state=random_state
         )
@@ -74,21 +91,28 @@ class DeepSVDD(BaseDeepAD):
         self.bias = bias
 
         self.c = None
-
-        # setattr(self,k,v)
-
         return
 
     def training_prepare(self, X, y):
         train_loader = DataLoader(X, batch_size=self.batch_size, shuffle=True)
 
-        net = MLPnet(
-            n_features=self.n_features,
-            n_hidden=self.hidden_dims,
-            n_output=self.rep_dim,
-            activation=self.act,
-            bias=self.bias,
-        ).to(self.device)
+        if self.network == 'MLP':
+            net = MLPnet(
+                n_features=self.n_features,
+                n_hidden=self.hidden_dims,
+                n_output=self.rep_dim,
+                activation=self.act,
+                bias=self.bias,
+            ).to(self.device)
+        elif self.network == 'TCN':
+            net = TCNnet(
+                n_features=self.n_features,
+                n_hidden=self.hidden_dims,
+                n_output=self.rep_dim,
+                activation=self.act
+            )
+        else:
+            raise NotImplementedError('Not supported network structures')
 
         # self.c = torch.randn(net.n_emb).to(self.device)
         self.c = self._set_c(net, train_loader)

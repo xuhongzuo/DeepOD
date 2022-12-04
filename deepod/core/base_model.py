@@ -11,6 +11,7 @@ import random
 import time
 from abc import ABCMeta, abstractmethod
 from scipy.stats import binom
+from deepod.utils.utility import sequential_net_name, get_sub_seqs
 from sklearn.utils import check_array
 from sklearn.utils.validation import check_is_fitted
 
@@ -21,6 +22,9 @@ class BaseDeepAD(metaclass=ABCMeta):
 
     Parameters
     ----------
+
+    data_type: str, optional (default='tabular')
+        Data type
 
     epochs: int, optional (default=100)
         Number of training epochs
@@ -33,6 +37,17 @@ class BaseDeepAD(metaclass=ABCMeta):
 
     n_ensemble: int or str, optional (default=1)
         Number of ensemble size
+
+    network: str, optional (default='MLP')
+        network structure for different data structures
+
+    seq_len: int, optional (default=100)
+        Size of window used to create subsequences from the data
+        deprecated when handling tabular data (network=='MLP')
+
+    stride: int, optional (default=1)
+        number of time points the window will move between two subsequences
+        deprecated when handling tabular data (network=='MLP')
 
     epoch_steps: int, optional (default=-1)
         Maximum steps in an epoch
@@ -74,12 +89,22 @@ class BaseDeepAD(metaclass=ABCMeta):
         ``threshold_`` on ``decision_scores_``.
 
     """
-    def __init__(self, model_name, epochs=100, batch_size=64, lr=1e-3,
-                 n_ensemble=1,
+    def __init__(self, model_name, data_type='tabular', epochs=100, batch_size=64, lr=1e-3,
+                 n_ensemble=1, network='MLP', seq_len=100, stride=1,
                  epoch_steps=-1, prt_steps=10,
                  device='cuda', contamination=0.1,
                  verbose=1, random_state=42):
         self.model_name = model_name
+
+        self.data_type = data_type
+        self.network = network
+
+        if data_type == 'ts':
+            assert self.network in sequential_net_name, \
+                'Assigned network cannot handle time-series data'
+
+        self.seq_len = seq_len
+        self.stride = stride
 
         self.epochs = epochs
         self.batch_size = batch_size
@@ -134,9 +159,16 @@ class BaseDeepAD(metaclass=ABCMeta):
             Fitted estimator.
         """
 
-        self.train_data = X
-        self.train_label = y
-        self.n_samples, self.n_features = X.shape
+        if self.data_type == 'ts':
+            X_seqs = get_sub_seqs(X, seq_len=self.seq_len, stride=self.stride)
+            y_seqs = get_sub_seqs(y, seq_len=self.seq_len, stride=self.stride) if y is not None else None
+            self.train_data = X_seqs
+            self.train_label = y_seqs
+            self.n_samples, self.n_features = X_seqs.shape[0], X_seqs.shape[2]
+        else:
+            self.train_data = X
+            self.train_label = y
+            self.n_samples, self.n_features = X.shape
 
         if self.verbose >= 1:
             print('Start Training...')
@@ -147,7 +179,7 @@ class BaseDeepAD(metaclass=ABCMeta):
             print(f'ensemble size: {self.n_ensemble}')
 
         for _ in range(self.n_ensemble):
-            self.train_loader, self.net, self.criterion = self.training_prepare(X, y=y)
+            self.train_loader, self.net, self.criterion = self.training_prepare(self.train_data, y=self.train_label)
             self._training()
 
         if self.verbose >= 1:
@@ -176,12 +208,23 @@ class BaseDeepAD(metaclass=ABCMeta):
         anomaly_scores : numpy array of shape (n_samples,)
             The anomaly score of the input samples.
         """
+
         testing_n_samples = X.shape[0]
+
+        if self.data_type == 'ts':
+            X = get_sub_seqs(X, seq_len=self.seq_len, stride=1)
+
         s_final = np.zeros(testing_n_samples)
         for _ in range(self.n_ensemble):
             self.test_loader = self.inference_prepare(X)
+
             z, scores = self._inference()
             z, scores = self.decision_function_update(z, scores)
+
+            if self.data_type == 'ts':
+                padding = np.zeros(self.seq_len-1)
+                scores = np.hstack((padding, scores))
+
             s_final += scores
 
         return s_final
@@ -269,7 +312,6 @@ class BaseDeepAD(metaclass=ABCMeta):
 
         return self
 
-
     def _training(self):
         optimizer = torch.optim.Adam(self.net.parameters(),
                                      lr=self.lr,
@@ -313,7 +355,6 @@ class BaseDeepAD(metaclass=ABCMeta):
             score_lst = []
             for batch_x in self.test_loader:
                 batch_z, s = self.inference_forward(batch_x, self.net, self.criterion)
-
                 z_lst.append(batch_z)
                 score_lst.append(s)
 

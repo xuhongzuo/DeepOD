@@ -27,6 +27,9 @@ class DeepSAD(BaseDeepAD):
     lr: float, optional (default=1e-3)
         Learning rate
 
+    network: str, optional (default='MLP')
+        network structure for different data structures
+
     rep_dim: int, optional (default=128)
         Dimensionality of the representation space
 
@@ -61,12 +64,13 @@ class DeepSAD(BaseDeepAD):
 
     """
 
-    def __init__(self, epochs=100, batch_size=64, lr=1e-3,
+    def __init__(self, epochs=100, batch_size=64, lr=1e-3, network='MLP',
                  rep_dim=128, hidden_dims='100,50', act='ReLU', bias=False,
                  epoch_steps=-1, prt_steps=10, device='cuda',
                  verbose=2, random_state=42):
         super(DeepSAD, self).__init__(
             model_name='DeepSAD', epochs=epochs, batch_size=batch_size, lr=lr,
+            network=network,
             epoch_steps=epoch_steps, prt_steps=prt_steps, device=device,
             verbose=verbose, random_state=random_state
         )
@@ -81,7 +85,6 @@ class DeepSAD(BaseDeepAD):
         return
 
     def training_prepare(self, X, y):
-
         semi_y2 = y.copy()
         semi_y2[np.where(y == 1)[0]] = -1
         dataset = TensorDataset(torch.from_numpy(X).float(),
