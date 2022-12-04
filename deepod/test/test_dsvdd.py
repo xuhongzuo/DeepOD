@@ -77,7 +77,7 @@ class TestDeepSVDD(unittest.TestCase):
 
         # check performance
         assert (roc_auc_score(self.y_test, pred_scores) >= self.roc_floor)
-        adj_eval_info = cal_metrics(self.y_test, pred_scores2, pa=True)
+        adj_eval_info = cal_metrics(self.yts_test, pred_scores2, pa=True)
         assert (adj_eval_info[2] >= self.ts_f1_floor)
 
     def test_prediction_labels(self):

@@ -26,6 +26,9 @@ class BaseDeepAD(metaclass=ABCMeta):
     data_type: str, optional (default='tabular')
         Data type
 
+    network: str, optional (default='MLP')
+        network structure for different data structures
+
     epochs: int, optional (default=100)
         Number of training epochs
 
@@ -37,9 +40,6 @@ class BaseDeepAD(metaclass=ABCMeta):
 
     n_ensemble: int or str, optional (default=1)
         Number of ensemble size
-
-    network: str, optional (default='MLP')
-        network structure for different data structures
 
     seq_len: int, optional (default=100)
         Size of window used to create subsequences from the data
@@ -89,8 +89,9 @@ class BaseDeepAD(metaclass=ABCMeta):
         ``threshold_`` on ``decision_scores_``.
 
     """
-    def __init__(self, model_name, data_type='tabular', epochs=100, batch_size=64, lr=1e-3,
-                 n_ensemble=1, network='MLP', seq_len=100, stride=1,
+    def __init__(self, model_name, data_type='tabular', network='MLP',
+                 epochs=100, batch_size=64, lr=1e-3,
+                 n_ensemble=1, seq_len=100, stride=1,
                  epoch_steps=-1, prt_steps=10,
                  device='cuda', contamination=0.1,
                  verbose=1, random_state=42):
