@@ -36,7 +36,7 @@ if __name__ == '__main__':
     # auc = roc_auc_score(y_score=scores, y_true=y)
     # print(auc)
 
-    clf = DeepSVDD(data_type='ts', stride=5, seq_len=100, epochs=20,
+    clf = DeepSVDD(data_type='ts', stride=50, seq_len=100, epochs=20,
                    device='cpu', network='TCN')
     clf.fit(x)
     scores = clf.decision_function(x_test)

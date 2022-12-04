@@ -32,7 +32,7 @@ class TestDeepSVDD(unittest.TestCase):
         self.n_test = 100
         self.contamination = 0.1
         self.roc_floor = 0.8
-        self.ts_f1_floor = 0.7
+        self.ts_f1_floor = 0.8
         self.X_train, self.X_test, self.y_train, self.y_test = generate_data(
             n_train=self.n_train, n_test=self.n_test, n_features=10,
             contamination=self.contamination, random_state=42
@@ -49,11 +49,11 @@ class TestDeepSVDD(unittest.TestCase):
         self.yts_test = y
 
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        self.clf = DeepSVDD(device=device)
+        self.clf = DeepSVDD(device=device, random_state=42)
         self.clf.fit(self.X_train)
 
-        self.clf2 = DeepSVDD(data_type='ts', seq_len=100, stride=5, epochs=50,
-                             device=device, network='TCN')
+        self.clf2 = DeepSVDD(data_type='ts', seq_len=100, stride=5, epochs=20,
+                             device=device, network='TCN', random_state=42)
         self.clf2.fit(self.Xts_train)
 
     def test_parameters(self):
@@ -78,11 +78,13 @@ class TestDeepSVDD(unittest.TestCase):
         # check performance
         assert (roc_auc_score(self.y_test, pred_scores) >= self.roc_floor)
         adj_eval_info = cal_metrics(self.y_test, pred_scores2, pa=True)
-        assert (adj_eval_info[0] >= self.roc_floor)
+        assert (adj_eval_info[2] >= self.ts_f1_floor)
 
     def test_prediction_labels(self):
         pred_labels = self.clf.predict(self.X_test)
+        pred_labels2 = self.clf2.predict(self.Xts_test)
         assert_equal(pred_labels.shape, self.y_test.shape)
+        assert_equal(pred_labels2.shape, self.yts_test.shape)
 
     # def test_prediction_proba(self):
     #     pred_proba = self.clf.predict_proba(self.X_test)
