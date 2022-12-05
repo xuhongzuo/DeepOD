@@ -110,7 +110,7 @@ class DeepSVDD(BaseDeepAD):
                 n_hidden=self.hidden_dims,
                 n_output=self.rep_dim,
                 activation=self.act
-            )
+            ).to(self.device)
         else:
             raise NotImplementedError('Not supported network structures')
 

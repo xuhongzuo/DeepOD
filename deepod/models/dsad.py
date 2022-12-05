@@ -6,7 +6,7 @@ this is partially adapted from
 """
 
 from deepod.core.base_model import BaseDeepAD
-from deepod.core.base_networks import MLPnet
+from deepod.core.base_networks import MLPnet, TCNnet
 from torch.utils.data import DataLoader, TensorDataset
 import torch
 import numpy as np
@@ -64,13 +64,14 @@ class DeepSAD(BaseDeepAD):
 
     """
 
-    def __init__(self, epochs=100, batch_size=64, lr=1e-3, network='MLP',
+    def __init__(self, data_type='tabular', epochs=100, batch_size=64, lr=1e-3,
+                 network='MLP', seq_len=100, stride=1,
                  rep_dim=128, hidden_dims='100,50', act='ReLU', bias=False,
                  epoch_steps=-1, prt_steps=10, device='cuda',
                  verbose=2, random_state=42):
         super(DeepSAD, self).__init__(
-            model_name='DeepSAD', epochs=epochs, batch_size=batch_size, lr=lr,
-            network=network,
+            data_type=data_type, model_name='DeepSAD', epochs=epochs, batch_size=batch_size, lr=lr,
+            network=network, seq_len=seq_len, stride=stride,
             epoch_steps=epoch_steps, prt_steps=prt_steps, device=device,
             verbose=verbose, random_state=random_state
         )
@@ -85,20 +86,27 @@ class DeepSAD(BaseDeepAD):
         return
 
     def training_prepare(self, X, y):
-        semi_y2 = y.copy()
-        semi_y2[np.where(y == 1)[0]] = -1
         dataset = TensorDataset(torch.from_numpy(X).float(),
-                                torch.from_numpy(semi_y2).long())
+                                torch.from_numpy(y).long())
 
         train_loader = DataLoader(dataset, batch_size=self.batch_size, shuffle=True)
-
-        net = MLPnet(
-            n_features=self.n_features,
-            n_hidden=self.hidden_dims,
-            n_output=self.rep_dim,
-            activation=self.act,
-            bias=self.bias,
-        ).to(self.device)
+        if self.network == 'MLP':
+            net = MLPnet(
+                n_features=self.n_features,
+                n_hidden=self.hidden_dims,
+                n_output=self.rep_dim,
+                activation=self.act,
+                bias=self.bias,
+            ).to(self.device)
+        elif self.network == 'TCN':
+            net = TCNnet(
+                n_features=self.n_features,
+                n_hidden=self.hidden_dims,
+                n_output=self.rep_dim,
+                activation=self.act
+            ).to(self.device)
+        else:
+            raise NotImplementedError('Not supported network structures')
 
         # self.c = torch.randn(net.n_emb).to(self.device)
         self.c = self._set_c(net, train_loader)
@@ -117,10 +125,18 @@ class DeepSAD(BaseDeepAD):
 
     def training_forward(self, batch_x, net, criterion):
         batch_x, batch_y = batch_x
-        batch_x = batch_x.float().to(self.device)
-        batch_y = batch_y.to(self.device)
-        z = net(batch_x)
-        loss = criterion(z, batch_y)
+        b_x = batch_x.float().to(self.device)
+        b_y = []
+        for window in batch_y:
+            # [seq_len, 1]
+            if -1 in window and torch.sum(window == -1) >= len(window) / 2: # known anom
+                b_y.append(-1)
+            else:
+                b_y.append(0)
+
+        b_y = torch.tensor(b_y, dtype=torch.long).to(self.device)
+        z = net(b_x)
+        loss = criterion(z, b_y)
         return loss
 
     def inference_forward(self, batch_x, net, criterion):
