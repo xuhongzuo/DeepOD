@@ -4,6 +4,9 @@ import numpy as np
 from torch.nn.utils import weight_norm
 
 
+sequential_net_name = ['TCN', 'GRU', 'LSTM']
+
+
 class ConvNet(torch.nn.Module):
     def __init__(self, n_features, kernel_size=1, n_hidden=8, n_layers=5,
                  activation='ReLU', bias=False):

@@ -1,8 +1,6 @@
 import numpy as np
 from sklearn import metrics
 
-sequential_net_name = ['TCN', 'GRU', 'LSTM']
-
 
 def get_sub_seqs(x_arr, seq_len=100, stride=1):
     """

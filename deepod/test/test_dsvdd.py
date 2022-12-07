@@ -64,8 +64,9 @@ class TestDeepSVDD(unittest.TestCase):
         assert (hasattr(self.clf, 'threshold_') and
                 self.clf.threshold_ is not None)
 
-    # def test_train_scores(self):
-    #     assert_equal(len(self.clf.decision_scores_), self.X_train.shape[0])
+    def test_train_scores(self):
+        assert_equal(len(self.clf.decision_scores_), self.X_train.shape[0])
+        assert_equal(len(self.clf2.decision_scores_), self.Xts_train.shape[0])
 
     def test_prediction_scores(self):
         pred_scores = self.clf.decision_function(self.X_test)

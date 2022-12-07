@@ -89,6 +89,12 @@ class DeepSAD(BaseDeepAD):
         return
 
     def training_prepare(self, X, y):
+        known_anom_id = np.where(y == 1) if len(y.shape) == 2 \
+            else np.where(y == 1)[0]
+
+        y = np.zeros_like(y)
+        y[known_anom_id] = -1
+
         dataset = TensorDataset(torch.from_numpy(X).float(),
                                 torch.from_numpy(y).long())
 
@@ -128,18 +134,16 @@ class DeepSAD(BaseDeepAD):
 
     def training_forward(self, batch_x, net, criterion):
         batch_x, batch_y = batch_x
-        b_x = batch_x.float().to(self.device)
-        b_y = []
-        for window in batch_y:
-            # [seq_len, 1]
-            if -1 in window and torch.sum(window == -1) >= len(window) / 2: # known anom
-                b_y.append(-1)
-            else:
-                b_y.append(0)
+        batch_x = batch_x.float().to(self.device)
 
-        b_y = torch.tensor(b_y, dtype=torch.long).to(self.device)
-        z = net(b_x)
-        loss = criterion(z, b_y)
+        if len(batch_y.shape) == 2:
+            batch_y = torch.sum(batch_y, dim=1)
+            batch_y = torch.where(batch_y < -int(0.5*self.seq_len),
+                                  -1 * torch.ones_like(batch_y),
+                                  torch.zeros_like(batch_y))
+
+        z = net(batch_x)
+        loss = criterion(z, batch_y)
         return loss
 
     def inference_forward(self, batch_x, net, criterion):
@@ -160,7 +164,7 @@ class DeepSAD(BaseDeepAD):
         z_ = torch.cat(z_)
         c = torch.mean(z_, dim=0)
 
-        # if c i s too close to zero, set to +- eps
+        # if c is too close to zero, set to +- eps
         # a zero unit can be trivially matched with zero weights
         c[(abs(c) < eps) & (c < 0)] = -eps
         c[(abs(c) < eps) & (c > 0)] = eps
