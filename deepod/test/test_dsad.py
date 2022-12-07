@@ -23,7 +23,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from deepod.models.dsad import DeepSAD
 from deepod.utils.data import generate_data
 import numpy as np
-
+import pandas as pd
 
 class TestDSAD(unittest.TestCase):
     def setUp(self):
@@ -41,40 +41,61 @@ class TestDSAD(unittest.TestCase):
         # x, y = data['X'], data['y']
         # y = np.array(y, dtype=int)
 
-        anom_id = np.where(self.y_train == 1)[0]
-        known_anom_id = np.random.choice(anom_id, 10, replace=False)
-        y_semi = np.zeros_like(self.y_train, dtype=int)
-        y_semi[known_anom_id] = 1
+        # anom_id = np.where(self.y_train == 1)[0]
+        # known_anom_id = np.random.choice(anom_id, 10, replace=False)
+        # y_semi = np.zeros_like(self.y_train, dtype=int)
+        # y_semi[known_anom_id] = 1
+        # ts data
+        train_file = '../../data/omi-1/omi-1_train.csv'
+        test_file = '../../data/omi-1/omi-1_test.csv'
+        train_df = pd.read_csv(train_file, sep=',', index_col=0)
+        test_df = pd.read_csv(test_file, index_col=0)
+        y_test = test_df['label'].values
+        y_train = train_df['label'].values
+        train_df, test_df = train_df.drop('label', axis=1), test_df.drop('label', axis=1)
+        x_train = train_df.values
+        x_test = test_df.values
 
-        device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        n = len(x_test)
+        self.x_dsad_train = x_test[:int(n * 0.8)]
+        self.y_dsad_train = y_test[:int(n * 0.8)]
+
+        self.x_val = x_test[int(n * 0.8):]
+        self.y_val = y_test[int(n * 0.8):]
+        device = 'cpu' # 'cuda' if torch.cuda.is_available() else
         self.clf = DeepSAD(epochs=1, hidden_dims=20,
                            device=device,
                           random_state=42)
-        self.clf.fit(self.X_train, y_semi)
+
+        self.clf2 = DeepSAD(data_type='ts', stride=20, seq_len=100, epochs=20,
+                      device='cpu', network='TCN')
+        self.clf2.fit(self.x_dsad_train, self.y_dsad_train)
 
     def test_parameters(self):
-        assert (hasattr(self.clf, 'decision_scores_') and
-                self.clf.decision_scores_ is not None)
-        assert (hasattr(self.clf, 'labels_') and
-                self.clf.labels_ is not None)
-        assert (hasattr(self.clf, 'threshold_') and
-                self.clf.threshold_ is not None)
+        assert (hasattr(self.clf2, 'decision_scores_') and
+                self.clf2.decision_scores_ is not None)
+        assert (hasattr(self.clf2, 'labels_') and
+                self.clf2.labels_ is not None)
+        assert (hasattr(self.clf2, 'threshold_') and
+                self.clf2.threshold_ is not None)
 
     # def test_train_scores(self):
     #     assert_equal(len(self.clf.decision_scores_), self.X_train.shape[0])
 
     def test_prediction_scores(self):
-        pred_scores = self.clf.decision_function(self.X_test)
+        pred_scores = self.clf2.decision_function(self.x_val)
 
         # check score shapes
-        assert_equal(pred_scores.shape[0], self.X_test.shape[0])
+        assert_equal(pred_scores.shape[0], self.x_val.shape[0])
 
         # check performance
-        assert (roc_auc_score(self.y_test, pred_scores) >= self.roc_floor)
+        print(roc_auc_score(self.y_val, pred_scores))
+        assert (roc_auc_score(self.y_val, pred_scores) >= self.roc_floor)
+
 
     def test_prediction_labels(self):
-        pred_labels = self.clf.predict(self.X_test)
-        assert_equal(pred_labels.shape, self.y_test.shape)
+        pred_labels = self.clf2.predict(self.x_val)
+        assert_equal(pred_labels.shape, self.y_val.shape)
 
     # def test_prediction_proba(self):
     #     pred_proba = self.clf.predict_proba(self.X_test)
@@ -96,11 +117,11 @@ class TestDSAD(unittest.TestCase):
     #         self.clf.predict_proba(self.X_test, method='something')
 
     def test_prediction_labels_confidence(self):
-        pred_labels, confidence = self.clf.predict(self.X_test,
+        pred_labels, confidence = self.clf2.predict(self.x_val,
                                                    return_confidence=True)
 
-        assert_equal(pred_labels.shape, self.y_test.shape)
-        assert_equal(confidence.shape, self.y_test.shape)
+        assert_equal(pred_labels.shape, self.y_val.shape)
+        assert_equal(confidence.shape, self.y_val.shape)
         assert (confidence.min() >= 0)
         assert (confidence.max() <= 1)
 

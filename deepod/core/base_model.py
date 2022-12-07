@@ -14,6 +14,7 @@ from scipy.stats import binom
 from deepod.utils.utility import sequential_net_name, get_sub_seqs
 from sklearn.utils import check_array
 from sklearn.utils.validation import check_is_fitted
+from tqdm import tqdm
 
 
 class BaseDeepAD(metaclass=ABCMeta):
@@ -159,6 +160,11 @@ class BaseDeepAD(metaclass=ABCMeta):
         self : object
             Fitted estimator.
         """
+        if self.model_name == 'DeepSAD':
+            anom_id = np.where(y == 1)[0]
+            known_anom_id = np.random.choice(anom_id, 30)
+            y = np.zeros_like(y)  # 0 indicates unlabeled data
+            y[known_anom_id] = -1
 
         if self.data_type == 'ts':
             X_seqs = get_sub_seqs(X, seq_len=self.seq_len, stride=self.stride)
@@ -225,7 +231,6 @@ class BaseDeepAD(metaclass=ABCMeta):
             if self.data_type == 'ts':
                 padding = np.zeros(self.seq_len-1)
                 scores = np.hstack((padding, scores))
-
             s_final += scores
 
         return s_final
@@ -354,7 +359,7 @@ class BaseDeepAD(metaclass=ABCMeta):
         with torch.no_grad():
             z_lst = []
             score_lst = []
-            for batch_x in self.test_loader:
+            for batch_x in tqdm(self.test_loader):
                 batch_z, s = self.inference_forward(batch_x, self.net, self.criterion)
                 z_lst.append(batch_z)
                 score_lst.append(s)
