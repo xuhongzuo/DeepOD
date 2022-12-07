@@ -38,8 +38,8 @@ class TestDeepSVDD(unittest.TestCase):
             contamination=self.contamination, random_state=42
         )
 
-        train_file = '../../data/omi-1/omi-1_train.csv'
-        test_file = '../../data/omi-1/omi-1_test.csv'
+        train_file = 'data/omi-1/omi-1_train.csv'
+        test_file = 'data/omi-1/omi-1_test.csv'
         train_df = pd.read_csv(train_file, sep=',', index_col=0)
         test_df = pd.read_csv(test_file, index_col=0)
         y = test_df['label'].values

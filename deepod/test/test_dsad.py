@@ -25,6 +25,7 @@ from deepod.utils.data import generate_data
 import numpy as np
 import pandas as pd
 
+
 class TestDSAD(unittest.TestCase):
     def setUp(self):
         self.n_train = 200
@@ -46,8 +47,8 @@ class TestDSAD(unittest.TestCase):
         # y_semi = np.zeros_like(self.y_train, dtype=int)
         # y_semi[known_anom_id] = 1
         # ts data
-        train_file = '../../data/omi-1/omi-1_train.csv'
-        test_file = '../../data/omi-1/omi-1_test.csv'
+        train_file = 'data/omi-1/omi-1_train.csv'
+        test_file = 'data/omi-1/omi-1_test.csv'
         train_df = pd.read_csv(train_file, sep=',', index_col=0)
         test_df = pd.read_csv(test_file, index_col=0)
         y_test = test_df['label'].values
@@ -91,7 +92,6 @@ class TestDSAD(unittest.TestCase):
         # check performance
         print(roc_auc_score(self.y_val, pred_scores))
         assert (roc_auc_score(self.y_val, pred_scores) >= self.roc_floor)
-
 
     def test_prediction_labels(self):
         pred_labels = self.clf2.predict(self.x_val)

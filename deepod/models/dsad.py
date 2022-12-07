@@ -18,6 +18,9 @@ class DeepSAD(BaseDeepAD):
 
     Parameters
     ----------
+    data_type: str, optional (default='tabular')
+        Data type
+
     epochs: int, optional (default=100)
         Number of training epochs
 
