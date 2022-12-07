@@ -38,8 +38,8 @@ class TestDeepSVDD(unittest.TestCase):
             contamination=self.contamination, random_state=42
         )
 
-        train_file = 'data/omi-1/omi-1_train.csv'
-        test_file = 'data/omi-1/omi-1_test.csv'
+        train_file = '../../data/omi-1/omi-1_train.csv'
+        test_file = '../../data/omi-1/omi-1_test.csv'
         train_df = pd.read_csv(train_file, sep=',', index_col=0)
         test_df = pd.read_csv(test_file, index_col=0)
         y = test_df['label'].values
@@ -76,6 +76,7 @@ class TestDeepSVDD(unittest.TestCase):
         assert_equal(pred_scores2.shape[0], self.Xts_test.shape[0])
 
         # check performance
+        print(roc_auc_score(self.y_test, pred_scores))
         assert (roc_auc_score(self.y_test, pred_scores) >= self.roc_floor)
         adj_eval_info = cal_metrics(self.yts_test, pred_scores2, pa=True)
         assert (adj_eval_info[2] >= self.ts_f1_floor)
