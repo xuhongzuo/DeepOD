@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 One-class classification
-this is partially adapted from
+this is partially adapted from https://github.com/lukasruff/Deep-SAD-PyTorch (MIT license)
 @Author: Hongzuo Xu <hongzuoxu@126.com, xuhongzuo13@nudt.edu.cn>
 """
 
@@ -89,9 +89,10 @@ class DeepSAD(BaseDeepAD):
         return
 
     def training_prepare(self, X, y):
+        # By following the original paper,
+        #   use -1 to denote known anomalies, and 1 to denote known inliers
         known_anom_id = np.where(y == 1) if len(y.shape) == 2 \
             else np.where(y == 1)[0]
-
         y = np.zeros_like(y)
         y[known_anom_id] = -1
 
@@ -112,7 +113,8 @@ class DeepSAD(BaseDeepAD):
                 n_features=self.n_features,
                 n_hidden=self.hidden_dims,
                 n_output=self.rep_dim,
-                activation=self.act
+                activation=self.act,
+                bias=self.bias
             ).to(self.device)
         else:
             raise NotImplementedError('Not supported network structures')

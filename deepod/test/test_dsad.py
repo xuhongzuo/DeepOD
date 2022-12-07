@@ -50,8 +50,8 @@ class TestDSAD(unittest.TestCase):
         y_semi[known_anom_id] = 1
 
         # # ts data
-        train_file = '../../data/omi-1/omi-1_train.csv'
-        test_file = '../../data/omi-1/omi-1_test.csv'
+        train_file = 'data/omi-1/omi-1_train.csv'
+        test_file = 'data/omi-1/omi-1_test.csv'
         train_df = pd.read_csv(train_file, index_col=0)
         test_df = pd.read_csv(test_file, index_col=0)
         y_train, y_test = train_df['label'].values, test_df['label'].values
