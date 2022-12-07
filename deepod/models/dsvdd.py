@@ -6,7 +6,6 @@ One-class classification
 
 from deepod.core.base_model import BaseDeepAD
 from deepod.core.base_networks import MLPnet, TCNnet
-from deepod.utils.utility import get_sub_seqs
 from torch.utils.data import DataLoader
 import torch
 

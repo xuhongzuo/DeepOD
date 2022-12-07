@@ -392,7 +392,6 @@ class BaseDeepAD(metaclass=ABCMeta):
         """for any updating operation after decision function"""
         return z, scores
 
-
     @staticmethod
     def set_seed(seed):
         torch.manual_seed(seed)
