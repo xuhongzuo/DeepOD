@@ -35,7 +35,7 @@ class TestREPEN(unittest.TestCase):
             contamination=self.contamination, random_state=42)
 
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        self.clf = REPEN(device=device)
+        self.clf = REPEN(epochs=5, device=device)
         self.clf.fit(self.X_train)
 
     def test_parameters(self):

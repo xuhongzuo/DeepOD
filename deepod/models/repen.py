@@ -26,7 +26,7 @@ class REPEN(BaseDeepAD):
     """
     def __init__(self, epochs=100, batch_size=64, lr=1e-3,
                  init_score_ensemble_size=50, init_score_subsample_size=8,
-                 hidden_dims='100,50', act='LeakyReLU', bias=False,
+                 rep_dim=128, hidden_dims='100,50', act='LeakyReLU', bias=False,
                  epoch_steps=-1, prt_steps=10, device='cuda',
                  verbose=2, random_state=42):
         super(REPEN, self).__init__(
@@ -37,6 +37,7 @@ class REPEN(BaseDeepAD):
 
         self.init_score_ensemble_size = init_score_ensemble_size
         self.init_score_subsample_size = init_score_subsample_size
+        self.rep_dim = rep_dim
         self.hidden_dims = hidden_dims
         self.act = act
         self.bias = bias
@@ -47,7 +48,7 @@ class REPEN(BaseDeepAD):
         net = MLPnet(
             n_features=self.n_features,
             n_hidden=self.hidden_dims,
-            n_output=1,
+            n_output=self.rep_dim,
             activation=self.act,
             bias=self.bias,
         ).to(self.device)
