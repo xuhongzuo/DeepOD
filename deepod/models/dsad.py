@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 """
 One-class classification
-this is partially adapted from
+this is partially adapted from https://github.com/lukasruff/Deep-SAD-PyTorch (MIT license)
 @Author: Hongzuo Xu <hongzuoxu@126.com, xuhongzuo13@nudt.edu.cn>
 """
 
 from deepod.core.base_model import BaseDeepAD
-from deepod.core.base_networks import MLPnet
+from deepod.core.base_networks import MLPnet, TCNnet
 from torch.utils.data import DataLoader, TensorDataset
 import torch
 import numpy as np
@@ -18,6 +18,9 @@ class DeepSAD(BaseDeepAD):
 
     Parameters
     ----------
+    data_type: str, optional (default='tabular')
+        Data type
+
     epochs: int, optional (default=100)
         Number of training epochs
 
@@ -26,6 +29,9 @@ class DeepSAD(BaseDeepAD):
 
     lr: float, optional (default=1e-3)
         Learning rate
+
+    network: str, optional (default='MLP')
+        network structure for different data structures
 
     rep_dim: int, optional (default=128)
         Dimensionality of the representation space
@@ -61,12 +67,14 @@ class DeepSAD(BaseDeepAD):
 
     """
 
-    def __init__(self, epochs=100, batch_size=64, lr=1e-3,
+    def __init__(self, data_type='tabular', epochs=100, batch_size=64, lr=1e-3,
+                 network='MLP', seq_len=100, stride=1,
                  rep_dim=128, hidden_dims='100,50', act='ReLU', bias=False,
                  epoch_steps=-1, prt_steps=10, device='cuda',
                  verbose=2, random_state=42):
         super(DeepSAD, self).__init__(
-            model_name='DeepSAD', epochs=epochs, batch_size=batch_size, lr=lr,
+            data_type=data_type, model_name='DeepSAD', epochs=epochs, batch_size=batch_size, lr=lr,
+            network=network, seq_len=seq_len, stride=stride,
             epoch_steps=epoch_steps, prt_steps=prt_steps, device=device,
             verbose=verbose, random_state=random_state
         )
@@ -81,21 +89,35 @@ class DeepSAD(BaseDeepAD):
         return
 
     def training_prepare(self, X, y):
+        # By following the original paper,
+        #   use -1 to denote known anomalies, and 1 to denote known inliers
+        known_anom_id = np.where(y == 1) if len(y.shape) == 2 \
+            else np.where(y == 1)[0]
+        y = np.zeros_like(y)
+        y[known_anom_id] = -1
 
-        semi_y2 = y.copy()
-        semi_y2[np.where(y == 1)[0]] = -1
         dataset = TensorDataset(torch.from_numpy(X).float(),
-                                torch.from_numpy(semi_y2).long())
+                                torch.from_numpy(y).long())
 
         train_loader = DataLoader(dataset, batch_size=self.batch_size, shuffle=True)
-
-        net = MLPnet(
-            n_features=self.n_features,
-            n_hidden=self.hidden_dims,
-            n_output=self.rep_dim,
-            activation=self.act,
-            bias=self.bias,
-        ).to(self.device)
+        if self.network == 'MLP':
+            net = MLPnet(
+                n_features=self.n_features,
+                n_hidden=self.hidden_dims,
+                n_output=self.rep_dim,
+                activation=self.act,
+                bias=self.bias,
+            ).to(self.device)
+        elif self.network == 'TCN':
+            net = TCNnet(
+                n_features=self.n_features,
+                n_hidden=self.hidden_dims,
+                n_output=self.rep_dim,
+                activation=self.act,
+                bias=self.bias
+            ).to(self.device)
+        else:
+            raise NotImplementedError('Not supported network structures')
 
         # self.c = torch.randn(net.n_emb).to(self.device)
         self.c = self._set_c(net, train_loader)
@@ -115,7 +137,13 @@ class DeepSAD(BaseDeepAD):
     def training_forward(self, batch_x, net, criterion):
         batch_x, batch_y = batch_x
         batch_x = batch_x.float().to(self.device)
-        batch_y = batch_y.to(self.device)
+
+        if len(batch_y.shape) == 2:
+            batch_y = torch.sum(batch_y, dim=1)
+            batch_y = torch.where(batch_y < -int(0.5*self.seq_len),
+                                  -1 * torch.ones_like(batch_y),
+                                  torch.zeros_like(batch_y))
+
         z = net(batch_x)
         loss = criterion(z, batch_y)
         return loss

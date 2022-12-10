@@ -35,7 +35,7 @@ class TestGOAD(unittest.TestCase):
             contamination=self.contamination, random_state=42)
 
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        self.clf = GOAD(device=device)
+        self.clf = GOAD(device=device, n_trans=64)
         self.clf.fit(self.X_train)
 
     def test_parameters(self):
