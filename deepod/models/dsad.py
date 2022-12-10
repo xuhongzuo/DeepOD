@@ -138,7 +138,7 @@ class DeepSAD(BaseDeepAD):
         z_ = torch.cat(z_)
         c = torch.mean(z_, dim=0)
 
-        # if c i s too close to zero, set to +- eps
+        # if c is too close to zero, set to +- eps
         # a zero unit can be trivially matched with zero weights
         c[(abs(c) < eps) & (c < 0)] = -eps
         c[(abs(c) < eps) & (c > 0)] = eps
