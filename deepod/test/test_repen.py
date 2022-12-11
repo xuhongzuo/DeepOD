@@ -5,7 +5,7 @@ from __future__ import print_function
 import os
 import sys
 import unittest
-
+import pandas as pd
 # noinspection PyProtectedMember
 from numpy.testing import assert_allclose
 from numpy.testing import assert_array_less
@@ -22,6 +22,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from deepod.models.repen import REPEN
 from deepod.utils.data import generate_data
+from deepod.utils.utility import cal_metrics
 
 
 class TestREPEN(unittest.TestCase):
@@ -30,13 +31,29 @@ class TestREPEN(unittest.TestCase):
         self.n_test = 100
         self.contamination = 0.1
         self.roc_floor = 0.8
+        self.ts_f1_floor = 0.0
+
         self.X_train, self.X_test, self.y_train, self.y_test = generate_data(
             n_train=self.n_train, n_test=self.n_test, n_features=10,
             contamination=self.contamination, random_state=42)
 
+        train_file = 'data/omi-1/omi-1_train.csv'
+        test_file = 'data/omi-1/omi-1_test.csv'
+        train_df = pd.read_csv(train_file, sep=',', index_col=0)
+        test_df = pd.read_csv(test_file, index_col=0)
+        y = test_df['label'].values
+        train_df, test_df = train_df.drop('label', axis=1), test_df.drop('label', axis=1)
+        self.Xts_train = train_df.values
+        self.Xts_test = test_df.values
+        self.yts_test = y
+
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
         self.clf = REPEN(epochs=5, device=device)
         self.clf.fit(self.X_train)
+        self.clf2 = REPEN(data_type='ts', seq_len=100, stride=5, epochs=20, hidden_dims='100,50',
+                          device=device, network='TCN', random_state=42)
+        self.clf2.fit(self.Xts_train)
+
 
     def test_parameters(self):
         assert (hasattr(self.clf, 'decision_scores_') and
@@ -46,21 +63,29 @@ class TestREPEN(unittest.TestCase):
         assert (hasattr(self.clf, 'threshold_') and
                 self.clf.threshold_ is not None)
 
-    # def test_train_scores(self):
-    #     assert_equal(len(self.clf.decision_scores_), self.X_train.shape[0])
+    def test_train_scores(self):
+        assert_equal(len(self.clf.decision_scores_), self.X_train.shape[0])
+        assert_equal(len(self.clf2.decision_scores_), self.Xts_train.shape[0])
 
     def test_prediction_scores(self):
         pred_scores = self.clf.decision_function(self.X_test)
+        pred_scores2 = self.clf2.decision_function(self.Xts_test)
 
         # check score shapes
         assert_equal(pred_scores.shape[0], self.X_test.shape[0])
+        assert_equal(pred_scores2.shape[0], self.Xts_test.shape[0])
 
         # check performance
         assert (roc_auc_score(self.y_test, pred_scores) >= self.roc_floor)
+        adj_eval_info = cal_metrics(self.yts_test, pred_scores2, pa=True)
+        assert (adj_eval_info[2] >= self.ts_f1_floor)
+
 
     def test_prediction_labels(self):
         pred_labels = self.clf.predict(self.X_test)
+        pred_labels2 = self.clf2.predict(self.Xts_test)
         assert_equal(pred_labels.shape, self.y_test.shape)
+        assert_equal(pred_labels2.shape, self.yts_test.shape)
 
     # def test_prediction_proba(self):
     #     pred_proba = self.clf.predict_proba(self.X_test)

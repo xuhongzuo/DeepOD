@@ -8,7 +8,7 @@ https://www.google.com/url?q=https%3A%2F%2Fgithub.com%2FGuansongPang%2Fdeep-outl
 """
 
 from deepod.core.base_model import BaseDeepAD
-from deepod.core.base_networks import MLPnet
+from deepod.core.base_networks import get_network
 from torch.utils.data import DataLoader
 import torch
 import torch.nn.functional as F
@@ -24,13 +24,15 @@ class REPEN(BaseDeepAD):
     See :cite:`pang2018repen` for details
 
     """
-    def __init__(self, epochs=100, batch_size=64, lr=1e-3,
+    def __init__(self, data_type='tabular', epochs=100, batch_size=64, lr=1e-3,
+                 network='MLP', seq_len=100, stride=1,
                  init_score_ensemble_size=50, init_score_subsample_size=8,
                  rep_dim=128, hidden_dims='100,50', act='LeakyReLU', bias=False,
                  epoch_steps=-1, prt_steps=10, device='cuda',
                  verbose=2, random_state=42):
         super(REPEN, self).__init__(
-            model_name='DevNet', epochs=epochs, batch_size=batch_size, lr=lr,
+            model_name='REPEN', data_type=data_type, epochs=epochs, batch_size=batch_size, lr=lr,
+            network=network, seq_len=seq_len, stride=stride,
             epoch_steps=epoch_steps, prt_steps=prt_steps, device=device,
             verbose=verbose, random_state=random_state
         )
@@ -45,13 +47,17 @@ class REPEN(BaseDeepAD):
         return
 
     def training_prepare(self, X, y):
-        net = MLPnet(
-            n_features=self.n_features,
-            n_hidden=self.hidden_dims,
-            n_output=self.rep_dim,
-            activation=self.act,
-            bias=self.bias,
-        ).to(self.device)
+
+        network_params = {
+            'n_features': self.n_features,
+            'n_hidden': self.hidden_dims,
+            'n_output': self.rep_dim,
+            'activation': self.act,
+            'bias': self.bias
+        }
+        network_class = get_network(self.network)
+        net = network_class(**network_params).to(self.device)
+
         init_scores = repen_init_score_calculator(x_train=X,
                                                   ensemble_size=self.init_score_ensemble_size,
                                                   subsample_size=self.init_score_subsample_size)
@@ -204,6 +210,10 @@ def repen_init_score_calculator(x_train, ensemble_size=50, subsample_size=8):
     "LeSiNN: Detecting anomalies by identifying least similar nearest neighbours."
     In ICDMW15. IEEE.
     """
+    # this is for sub-sequences derived from time-series data
+    if len(x_train.shape) == 3:
+        x_train = x_train[:, -1, :]
+
     scores = np.zeros([x_train.shape[0], 1])
 
     ensemble_seeds = np.random.randint(0, np.iinfo(np.int32).max, ensemble_size)

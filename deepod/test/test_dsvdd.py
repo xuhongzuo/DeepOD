@@ -52,7 +52,7 @@ class TestDeepSVDD(unittest.TestCase):
         self.clf = DeepSVDD(device=device, random_state=42)
         self.clf.fit(self.X_train)
 
-        self.clf2 = DeepSVDD(data_type='ts', seq_len=100, stride=5, epochs=20,
+        self.clf2 = DeepSVDD(data_type='ts', seq_len=100, stride=5, epochs=20, hidden_dims='100,50',
                              device=device, network='TCN', random_state=42)
         self.clf2.fit(self.Xts_train)
 
@@ -77,7 +77,6 @@ class TestDeepSVDD(unittest.TestCase):
         assert_equal(pred_scores2.shape[0], self.Xts_test.shape[0])
 
         # check performance
-        print(roc_auc_score(self.y_test, pred_scores))
         assert (roc_auc_score(self.y_test, pred_scores) >= self.roc_floor)
         adj_eval_info = cal_metrics(self.yts_test, pred_scores2, pa=True)
         assert (adj_eval_info[2] >= self.ts_f1_floor)

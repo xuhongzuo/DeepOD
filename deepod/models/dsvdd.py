@@ -5,7 +5,7 @@ One-class classification
 """
 
 from deepod.core.base_model import BaseDeepAD
-from deepod.core.base_networks import MLPnet, TCNnet
+from deepod.core.base_networks import get_network
 from torch.utils.data import DataLoader
 import torch
 
@@ -95,23 +95,15 @@ class DeepSVDD(BaseDeepAD):
     def training_prepare(self, X, y):
         train_loader = DataLoader(X, batch_size=self.batch_size, shuffle=True)
 
-        if self.network == 'MLP':
-            net = MLPnet(
-                n_features=self.n_features,
-                n_hidden=self.hidden_dims,
-                n_output=self.rep_dim,
-                activation=self.act,
-                bias=self.bias,
-            ).to(self.device)
-        elif self.network == 'TCN':
-            net = TCNnet(
-                n_features=self.n_features,
-                n_hidden=self.hidden_dims,
-                n_output=self.rep_dim,
-                activation=self.act
-            ).to(self.device)
-        else:
-            raise NotImplementedError('Not supported network structures')
+        network_params = {
+            'n_features': self.n_features,
+            'n_hidden': self.hidden_dims,
+            'n_output': self.rep_dim,
+            'activation': self.act,
+            'bias': self.bias
+        }
+        network_class = get_network(self.network)
+        net = network_class(**network_params).to(self.device)
 
         # self.c = torch.randn(net.n_emb).to(self.device)
         self.c = self._set_c(net, train_loader)
