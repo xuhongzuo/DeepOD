@@ -126,6 +126,9 @@ class ICL(BaseDeepAD):
         if self.verbose >= 1:
             print(f'kernel size: {self.kernel_size}')
 
+        if self.n_features < 3:
+            raise ValueError('ICL model cannot handle the data that have less than three features.')
+
         net = ICLNet(
             n_features=self.n_features,
             kernel_size=self.kernel_size,

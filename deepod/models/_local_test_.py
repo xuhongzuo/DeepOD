@@ -9,12 +9,19 @@ from deepod.utils.utility import cal_metrics
 if __name__ == '__main__':
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
+    # # # random data
+    x1 = np.random.rand(10, 1)
+    x2 = np.random.randn(90, 1)
+    x = np.vstack([x1, x2])
+    y = np.zeros(100)
+    y[:10] = 1
+
     # # # thyroid data
-    file = '../../data/38_thyroid.npz'
-    data = np.load(file, allow_pickle=True)
-    x, y = data['X'], data['y']
-    y = np.array(y, dtype=int)
-    #
+    # file = '../../data/38_thyroid.npz'
+    # data = np.load(file, allow_pickle=True)
+    # x, y = data['X'], data['y']
+    # y = np.array(y, dtype=int)
+
     # anom_id = np.where(y == 1)[0]
     # semi_y = np.zeros_like(y)
     # semi_y[np.random.choice(anom_id, 30, replace=False)] = 1
@@ -48,7 +55,8 @@ if __name__ == '__main__':
     """
 
     # ---------------------------------------- #
-    clf = REPEN(epochs=10, device=device)
+    clf = ICL(device=device)
+    # clf = REPEN(epochs=10, device=device)
     clf.fit(x)
     scores = clf.decision_function(x)
     auc = roc_auc_score(y, scores)
