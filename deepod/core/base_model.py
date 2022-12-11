@@ -255,8 +255,6 @@ class BaseDeepAD(metaclass=ABCMeta):
         pred_score = self.decision_function(X)
         prediction = (pred_score > self.threshold_).astype('int').ravel()
 
-        print(prediction.shape)
-
         if return_confidence:
             confidence = self._predict_confidence(pred_score)
             return prediction, confidence
