@@ -89,6 +89,7 @@ class MLPnet(torch.nn.Module):
             ]
         self.network = torch.nn.Sequential(*self.layers)
 
+
     def forward(self, x):
         x = self.network(x)
         return x
