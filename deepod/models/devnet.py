@@ -158,7 +158,7 @@ class DevLoss(torch.nn.Module):
         return
 
     def forward(self, y_true, y_pred):
-        ref = torch.randn(self.loss_l)
+        ref = torch.randn(self.loss_l)  # from the normal dataset
         dev = (y_pred - torch.mean(ref)) / torch.std(ref)
         inlier_loss = torch.abs(dev)
         outlier_loss = torch.abs(torch.max(self.margin - dev, torch.zeros_like(dev)))
