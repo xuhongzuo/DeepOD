@@ -182,7 +182,8 @@ class BaseDeepAD(metaclass=ABCMeta):
             print(f'ensemble size: {self.n_ensemble}')
 
         for _ in range(self.n_ensemble):
-            self.train_loader, self.net, self.criterion = self.training_prepare(self.train_data, y=self.train_label)
+            self.train_loader, self.net, self.criterion = self.training_prepare(self.train_data,
+                                                                                y=self.train_label)
             self._training()
 
         if self.verbose >= 1:
