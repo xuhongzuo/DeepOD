@@ -78,7 +78,7 @@ class DeepSVDD(BaseDeepAD):
                  epoch_steps=-1, prt_steps=10, device='cuda',
                  verbose=2, random_state=42):
         super(DeepSVDD, self).__init__(
-            data_type=data_type, model_name='DeepSVDD', epochs=epochs, batch_size=batch_size, lr=lr,
+            model_name='DeepSVDD', data_type=data_type, epochs=epochs, batch_size=batch_size, lr=lr,
             network=network, seq_len=seq_len, stride=stride,
             epoch_steps=epoch_steps, prt_steps=prt_steps, device=device,
             verbose=verbose, random_state=random_state

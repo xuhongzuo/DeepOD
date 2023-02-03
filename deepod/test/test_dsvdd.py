@@ -107,8 +107,7 @@ class TestDeepSVDD(unittest.TestCase):
     #         self.clf.predict_proba(self.X_test, method='something')
 
     def test_prediction_labels_confidence(self):
-        pred_labels, confidence = self.clf.predict(self.X_test,
-                                                   return_confidence=True)
+        pred_labels, confidence = self.clf.predict(self.X_test, return_confidence=True)
 
         assert_equal(pred_labels.shape, self.y_test.shape)
         assert_equal(confidence.shape, self.y_test.shape)

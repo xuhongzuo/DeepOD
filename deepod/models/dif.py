@@ -17,15 +17,18 @@ import numpy as np
 
 
 class DeepIsolationForest(BaseDeepAD):
-    def __init__(self,
+    def __init__(self, data_type='tabular',
                  epochs=100, batch_size=1000, lr=1e-3,
+                 network='MLP', seq_len=100, stride=1,
                  rep_dim=128, hidden_dims='100,50', act='ReLU', bias=False,
                  n_ensemble=50, n_estimators=6,
                  max_samples=256, n_jobs=1,
                  epoch_steps=-1, prt_steps=10, device='cuda',
                  verbose=2, random_state=42):
         super(DeepIsolationForest, self).__init__(
-            model_name='DIF', epochs=epochs, batch_size=batch_size, lr=lr,
+            model_name='DIF', data_type=data_type,
+            epochs=epochs, batch_size=batch_size, lr=lr,
+            network=network, seq_len=seq_len, stride=stride,
             epoch_steps=epoch_steps, prt_steps=prt_steps, device=device,
             verbose=verbose, random_state=random_state
         )
@@ -49,12 +52,16 @@ class DeepIsolationForest(BaseDeepAD):
     def fit(self, X, y=None):
         """
         Fit detector. y is ignored in unsupervised methods.
+
         Parameters
         ----------
         X : numpy array of shape (n_samples, n_features)
             The input samples.
-        y : Ignored
-            Not used, present for API consistency by convention.
+
+        y : numpy array of shape (n_samples, )
+            Not used in unsupervised methods, present for API consistency by convention.
+            used in (semi-/weakly-) supervised methods
+
         Returns
         -------
         self : object
@@ -75,18 +82,6 @@ class DeepIsolationForest(BaseDeepAD):
         if self.verbose >= 1:
             print('Start Training...')
 
-        if self.data_type == 'tabular' or self.data_type == 'ts':
-            # tabular data are in 2-dim data, n_features should be X.shape[1]
-            # ts data are in 3-dim data, n_features should be in X.shape[2]
-            n_features = X.shape[-1]
-        elif self.data_type == 'graph':
-            n_features = max(X.num_features, 1)
-        else:
-            raise NotImplementedError('')
-
-        ensemble_seeds = np.random.randint(0, 100000, self.n_ensemble)
-
-
         network_params = {
             'n_features': self.n_features,
             'n_hidden': self.hidden_dims,
@@ -101,6 +96,7 @@ class DeepIsolationForest(BaseDeepAD):
         else:
             iteration = range(self.n_ensemble)
 
+        ensemble_seeds = np.random.randint(0, 100000, self.n_ensemble)
         for i in iteration:
             # -------------------------------- for tabular data -------------------------- #
             if self.data_type == 'tabular':
@@ -110,7 +106,7 @@ class DeepIsolationForest(BaseDeepAD):
                     if isinstance(m, torch.nn.Linear):
                         torch.nn.init.normal_(m.weight, mean=0., std=1.)
 
-                x_tensor = torch.from_numpy(X).float()
+                x_tensor = torch.from_numpy(self.train_data).float()
                 x_reduced = net(x_tensor).data.numpy()
 
                 ss = StandardScaler()
@@ -119,17 +115,16 @@ class DeepIsolationForest(BaseDeepAD):
 
             # -------------------------------- for ts data -------------------------- #
             elif self.data_type == 'ts':
-                net = network_class(network_params)
+                net = network_class(**network_params)
                 net = net.to(self.device)
 
                 torch.manual_seed(ensemble_seeds[i])
                 for name, param in net.named_parameters():
                     torch.nn.init.normal_(param, mean=0., std=1.)
-                x_reduced = self.deep_transfer(X, net, self.batch_size, self.device)
+                x_reduced = self._deep_transfer(self.train_data, net, self.batch_size, self.device)
 
             else:
                 raise NotImplementedError('')
-
 
             self.x_reduced_lst.append(x_reduced)
             self.net_lst.append(net)
@@ -170,6 +165,9 @@ class DeepIsolationForest(BaseDeepAD):
             print('Start Inference...')
 
         testing_n_samples = X.shape[0]
+        if self.data_type == 'ts':
+            X = get_sub_seqs(X, seq_len=self.seq_len, stride=1)
+
         self.score_lst = np.zeros([self.n_ensemble, testing_n_samples])
 
         if self.verbose >= 2:
@@ -191,6 +189,11 @@ class DeepIsolationForest(BaseDeepAD):
                 raise NotImplementedError('')
 
             scores = _cal_score(x_reduced, self.iForest_lst[i])
+
+            if self.data_type == 'ts':
+                padding = np.zeros(self.seq_len-1)
+                scores = np.hstack((padding, scores))
+
             self.score_lst[i] = scores
 
         final_scores = np.average(self.score_lst, axis=0)
