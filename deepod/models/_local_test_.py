@@ -10,11 +10,11 @@ if __name__ == '__main__':
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
     # # # # random data
-    # x1 = np.random.rand(10, 1)
-    # x2 = np.random.randn(90, 1)
-    # x = np.vstack([x1, x2])
-    # y = np.zeros(100)
-    # y[:10] = 1
+    x1 = np.random.rand(10, 1)
+    x2 = np.random.randn(90, 1)
+    x = np.vstack([x1, x2])
+    y = np.zeros(100)
+    y[:10] = 1
 
     # # # thyroid data
     # file = '../../data/38_thyroid.npz'
@@ -27,25 +27,25 @@ if __name__ == '__main__':
     # semi_y[np.random.choice(anom_id, 30, replace=False)] = 1
 
     # # # # ts data
-    train_file = '../../data/omi-1/omi-1_train.csv'
-    test_file = '../../data/omi-1/omi-1_test.csv'
-    train_df = pd.read_csv(train_file, sep=',', index_col=0)
-    test_df = pd.read_csv(test_file, index_col=0)
-    y_test = test_df['label'].values
-    y_train = train_df['label'].values
-    train_df, test_df = train_df.drop('label', axis=1), test_df.drop('label', axis=1)
-    x_train = train_df.values
-    x_test = test_df.values
+    # train_file = '../../data/omi-1/omi-1_train.csv'
+    # test_file = '../../data/omi-1/omi-1_test.csv'
+    # train_df = pd.read_csv(train_file, sep=',', index_col=0)
+    # test_df = pd.read_csv(test_file, index_col=0)
+    # y_test = test_df['label'].values
+    # y_train = train_df['label'].values
+    # train_df, test_df = train_df.drop('label', axis=1), test_df.drop('label', axis=1)
+    # x_train = train_df.values
+    # x_test = test_df.values
+    #
+    # n = len(x_test)
+    # x = np.vstack([x_train, x_test[:int(n*0.5)]])
+    # y = np.hstack([y_train, y_test[:int(n*0.5)]])
+    #
+    # x_val = x_test[int(n*0.5):]
+    # y_val = y_test[int(n*0.5):]
 
-    n = len(x_test)
-    xts_train = np.vstack([x_train, x_test[:int(n*0.5)]])
-    yts_train = np.hstack([y_train, y_test[:int(n*0.5)]])
-
-    x_val = x_test[int(n*0.5):]
-    y_val = y_test[int(n*0.5):]
-
-    print(xts_train.shape, x_val.shape)
-    print(np.sum(yts_train), np.sum(y_val))
+    # print(xts_train.shape, x_val.shape)
+    # print(np.sum(yts_train), np.sum(y_val))
     #
     # # @TODO:
     # """
@@ -78,14 +78,14 @@ if __name__ == '__main__':
 
     # -------------------- ts data --------------------- #
 
-    # clf = DeepSVDD(data_type='ts', stride=50, seq_len=100, epochs=20, hidden_dims='100,50',
-    #                device='cpu', network='GRU')
-    clf = REPEN(data_type='ts', stride=50, seq_len=100, epochs=100, hidden_dims='100',
-                   device='cpu', network='TCN', lr=0.01)
-    clf.fit(xts_train)
-    scores = clf.decision_function(x_val)
+    clf = DeepSVDD(data_type='ts', stride=50, seq_len=100, epochs=20, hidden_dims='100,50',
+                   device='cpu', network='TCN')
+    # clf = REPEN(data_type='ts', stride=50, seq_len=100, epochs=100, hidden_dims='100',
+    #                device='cpu', network='TCN', lr=0.01)
+    clf.fit(x)
+    scores = clf.decision_function(x)
 
-    adj_eval_info = cal_metrics(y_val, scores, pa=True)
+    adj_eval_info = cal_metrics(y, scores, pa=True)
     print(adj_eval_info)
 
 
