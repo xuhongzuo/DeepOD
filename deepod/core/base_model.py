@@ -11,7 +11,7 @@ import random
 import time
 from abc import ABCMeta, abstractmethod
 from scipy.stats import binom
-from deepod.utils.utility import get_sub_seqs
+from deepod.utils.utility import get_sub_seqs, get_sub_seqs_label
 from deepod.core.base_networks import sequential_net_name
 from sklearn.utils import check_array
 from sklearn.utils.validation import check_is_fitted
@@ -164,7 +164,7 @@ class BaseDeepAD(metaclass=ABCMeta):
 
         if self.data_type == 'ts':
             X_seqs = get_sub_seqs(X, seq_len=self.seq_len, stride=self.stride)
-            y_seqs = get_sub_seqs(y, seq_len=self.seq_len, stride=self.stride) if y is not None else None
+            y_seqs = get_sub_seqs_label(y, seq_len=self.seq_len, stride=self.stride) if y is not None else None
             self.train_data = X_seqs
             self.train_label = y_seqs
             self.n_samples, self.n_features = X_seqs.shape[0], X_seqs.shape[2]
@@ -407,5 +407,5 @@ class BaseDeepAD(metaclass=ABCMeta):
         torch.cuda.manual_seed_all(seed)
         np.random.seed(seed)
         random.seed(seed)
-        torch.backends.cudnn.benchmark = False
-        torch.backends.cudnn.deterministic = True
+        # torch.backends.cudnn.benchmark = False
+        # torch.backends.cudnn.deterministic = True

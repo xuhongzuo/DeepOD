@@ -91,8 +91,7 @@ class DeepSAD(BaseDeepAD):
     def training_prepare(self, X, y):
         # By following the original paper,
         #   use -1 to denote known anomalies, and 1 to denote known inliers
-        known_anom_id = np.where(y == 1) if len(y.shape) == 2 \
-            else np.where(y == 1)[0]
+        known_anom_id = np.where(y == 1)
         y = np.zeros_like(y)
         y[known_anom_id] = -1
 
@@ -137,12 +136,7 @@ class DeepSAD(BaseDeepAD):
     def training_forward(self, batch_x, net, criterion):
         batch_x, batch_y = batch_x
         batch_x = batch_x.float().to(self.device)
-
-        if len(batch_y.shape) == 2:
-            batch_y = torch.sum(batch_y, dim=1)
-            batch_y = torch.where(batch_y < -int(0.5*self.seq_len),
-                                  -1 * torch.ones_like(batch_y),
-                                  torch.zeros_like(batch_y))
+        batch_y = batch_y.long().to(self.device)
 
         z = net(batch_x)
         loss = criterion(z, batch_y)

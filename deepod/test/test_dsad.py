@@ -49,21 +49,27 @@ class TestDSAD(unittest.TestCase):
         y_semi = np.zeros_like(self.y_train, dtype=int)
         y_semi[known_anom_id] = 1
 
-        # # ts data
-        train_file = 'data/omi-1/omi-1_train.csv'
-        test_file = 'data/omi-1/omi-1_test.csv'
-        train_df = pd.read_csv(train_file, index_col=0)
-        test_df = pd.read_csv(test_file, index_col=0)
-        y_train, y_test = train_df['label'].values, test_df['label'].values
-        train_df, test_df = train_df.drop('label', axis=1), test_df.drop('label', axis=1)
-        x_train = train_df.values
-        x_test = test_df.values
+        # # # ts data
+        # train_file = 'data/omi-1/omi-1_train.csv'
+        # test_file = 'data/omi-1/omi-1_test.csv'
+        # train_df = pd.read_csv(train_file, index_col=0)
+        # test_df = pd.read_csv(test_file, index_col=0)
+        # y_train, y_test = train_df['label'].values, test_df['label'].values
+        # train_df, test_df = train_df.drop('label', axis=1), test_df.drop('label', axis=1)
+        # x_train = train_df.values
+        # x_test = test_df.values
 
-        n = len(x_test)
-        self.Xts_train = np.vstack([x_train, x_test[:int(n * 0.5)]])
-        self.yts_train = np.hstack([y_train, y_test[:int(n * 0.5)]])
-        self.Xts_test = x_test[int(n * 0.5):]
-        self.yts_test = y_test[int(n * 0.5):]
+        # n = len(x_test)
+        # self.Xts_train = np.vstack([x_train, x_test[:int(n * 0.5)]])
+        # self.yts_train = np.hstack([y_train, y_test[:int(n * 0.5)]])
+        # self.Xts_test = x_test[int(n * 0.5):]
+        # self.yts_test = y_test[int(n * 0.5):]
+
+        self.Xts_train = np.random.randn(1000, 19)
+        self.yts_train = np.zeros(1000, dtype=int)
+        self.yts_train[200:250] = 1
+        self.Xts_test = self.Xts_train.copy()
+        self.yts_test = self.yts_train.copy()
 
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
         self.clf = DeepSAD(epochs=1, hidden_dims=20,
