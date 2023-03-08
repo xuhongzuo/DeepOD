@@ -6,7 +6,7 @@ this is partially adapted from https://github.com/lukasruff/Deep-SAD-PyTorch (MI
 """
 
 from deepod.core.base_model import BaseDeepAD
-from deepod.core.base_networks import MLPnet, TCNnet
+from deepod.core.base_networks import get_network
 from torch.utils.data import DataLoader, TensorDataset
 import torch
 import numpy as np
@@ -99,26 +99,17 @@ class DeepSAD(BaseDeepAD):
                                 torch.from_numpy(y).long())
 
         train_loader = DataLoader(dataset, batch_size=self.batch_size, shuffle=True)
-        if self.network == 'MLP':
-            net = MLPnet(
-                n_features=self.n_features,
-                n_hidden=self.hidden_dims,
-                n_output=self.rep_dim,
-                activation=self.act,
-                bias=self.bias,
-            ).to(self.device)
-        elif self.network == 'TCN':
-            net = TCNnet(
-                n_features=self.n_features,
-                n_hidden=self.hidden_dims,
-                n_output=self.rep_dim,
-                activation=self.act,
-                bias=self.bias
-            ).to(self.device)
-        else:
-            raise NotImplementedError('Not supported network structures')
 
-        # self.c = torch.randn(net.n_emb).to(self.device)
+        network_params = {
+            'n_features': self.n_features,
+            'n_hidden': self.hidden_dims,
+            'n_output': self.rep_dim,
+            'activation': self.act,
+            'bias': self.bias
+        }
+        network_class = get_network(self.network)
+        net = network_class(**network_params).to(self.device)
+
         self.c = self._set_c(net, train_loader)
         criterion = DSADLoss(c=self.c)
 

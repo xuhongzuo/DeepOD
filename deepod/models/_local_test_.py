@@ -98,8 +98,10 @@ if __name__ == '__main__':
     # adj_eval_info = cal_metrics(y_val, scores, pa=True)
     # print(adj_eval_info)
 
-    clf = DeepSAD(data_type='ts', stride=10, seq_len=100, epochs=20,
+    clf = DevNet(data_type='ts', stride=10, seq_len=100, epochs=20,
                   device='cuda', network='TCN')
+    # clf = DeepSAD(data_type='ts', stride=10, seq_len=100, epochs=20,
+    #               device='cuda', network='TCN')
     clf.fit(x, y)
     scores = clf.decision_function(x)
     adj_eval_info = cal_metrics(y, scores, pa=True)

@@ -6,7 +6,7 @@ PyTorch's implementation
 """
 
 from deepod.core.base_model import BaseDeepAD
-from deepod.core.base_networks import MLPnet
+from deepod.core.base_networks import get_network
 from torch.utils.data import DataLoader, TensorDataset
 from torch.utils.data.sampler import WeightedRandomSampler
 import torch
@@ -61,13 +61,15 @@ class DevNet(BaseDeepAD):
     random_state： int, optional (default=42)
         the seed used by the random
     """
-    def __init__(self, epochs=100, batch_size=64, lr=1e-3,
+    def __init__(self, data_type='tabular', epochs=100, batch_size=64, lr=1e-3,
+                 network='MLP', seq_len=100, stride=1,
                  hidden_dims='100,50', act='ReLU', bias=False,
                  margin=5., l=5000,
                  epoch_steps=-1, prt_steps=10, device='cuda',
                  verbose=2, random_state=42):
         super(DevNet, self).__init__(
-            model_name='DevNet', epochs=epochs, batch_size=batch_size, lr=lr,
+            data_type=data_type, model_name='DevNet', epochs=epochs, batch_size=batch_size, lr=lr,
+            network=network, seq_len=seq_len, stride=stride,
             epoch_steps=epoch_steps, prt_steps=prt_steps, device=device,
             verbose=verbose, random_state=random_state
         )
@@ -93,13 +95,15 @@ class DevNet(BaseDeepAD):
                                         num_samples=self.batch_size, replacement=True)
         train_loader = DataLoader(dataset, batch_size=self.batch_size, sampler=sampler)
 
-        net = MLPnet(
-            n_features=self.n_features,
-            n_hidden=self.hidden_dims,
-            n_output=1,
-            activation=self.act,
-            bias=self.bias,
-        ).to(self.device)
+        network_params = {
+            'n_features': self.n_features,
+            'n_hidden': self.hidden_dims,
+            'n_output': 1,
+            'activation': self.act,
+            'bias': self.bias
+        }
+        network_class = get_network(self.network)
+        net = network_class(**network_params).to(self.device)
 
         criterion = DevLoss(margin=self.margin, l=self.l)
 
