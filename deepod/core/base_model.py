@@ -340,7 +340,7 @@ class BaseDeepAD(metaclass=ABCMeta):
 
             t = time.time() - t1
             if self.verbose >= 1 and (i == 0 or (i+1) % self.prt_steps == 0):
-                print(f'epoch{i+1}, '
+                print(f'epoch{i+1:3d}, '
                       f'training loss: {total_loss/cnt:.6f}, '
                       f'time: {t:.1f}s')
 

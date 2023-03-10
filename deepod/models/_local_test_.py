@@ -17,16 +17,14 @@ if __name__ == '__main__':
     # y[:10] = 1
 
     # # # thyroid data
-    # file = '../../data/38_thyroid.npz'
-    # data = np.load(file, allow_pickle=True)
-    # x, y = data['X'], data['y']
-    # y = np.array(y, dtype=int)
+    file = '../../data/38_thyroid.npz'
+    data = np.load(file, allow_pickle=True)
+    x, y = data['X'], data['y']
+    y = np.array(y, dtype=int)
 
-    # anom_id = np.where(y == 1)[0]
-    # semi_y = np.zeros_like(y)
-    # semi_y[np.random.choice(anom_id, 30, replace=False)] = 1
-
-
+    anom_id = np.where(y == 1)[0]
+    semi_y = np.zeros_like(y)
+    semi_y[np.random.choice(anom_id, 30, replace=False)] = 1
 
     # # # # # ts data
     # train_file = '../../data/omi-1/omi-1_train.csv'
@@ -50,10 +48,10 @@ if __name__ == '__main__':
     # print(np.sum(yts_train), np.sum(y_val))
 
 
-    # # random ts data
-    x = np.random.randn(1000, 19)
-    y = np.zeros(1000, dtype=int)
-    y[200:250] = 1
+    # # # random ts data
+    # x = np.random.randn(1000, 19)
+    # y = np.zeros(1000, dtype=int)
+    # y[200:250] = 1
 
 
     # ---------------------------------------- #
@@ -78,6 +76,13 @@ if __name__ == '__main__':
     # auc = roc_auc_score(y, scores)
     # print(auc)
 
+    clf = FeaWAD(data_type='tabular', epochs=20,
+                 device='cuda', network='MLP', verbose=2)
+    clf.fit(x, semi_y)
+    scores = clf.decision_function(x)
+    auc = roc_auc_score(y, scores)
+    print(auc)
+
     # clf = DeepIsolationForest()
     # clf.fit(x)
     # scores = clf.decision_function(x)
@@ -98,16 +103,18 @@ if __name__ == '__main__':
     # adj_eval_info = cal_metrics(y_val, scores, pa=True)
     # print(adj_eval_info)
 
-    clf = PReNet(data_type='ts', stride=10, seq_len=100, epochs=20,
-                 device='cuda', network='TCN')
+    # clf = FeaWAD(data_type='ts', stride=10, seq_len=100, epochs=20,
+    #              device='cuda', network='TCN', verbose=2)
+    # clf = PReNet(data_type='ts', stride=10, seq_len=100, epochs=20,
+    #              device='cuda', network='TCN')
     # clf = DevNet(data_type='ts', stride=10, seq_len=100, epochs=20,
     #               device='cuda', network='TCN')
     # clf = DeepSAD(data_type='ts', stride=10, seq_len=100, epochs=20,
     #               device='cuda', network='TCN')
-    clf.fit(x, y)
-    scores = clf.decision_function(x)
-    adj_eval_info = cal_metrics(y, scores, pa=True)
-    print(adj_eval_info)
+    # clf.fit(x, y)
+    # scores = clf.decision_function(x)
+    # adj_eval_info = cal_metrics(y, scores, pa=True)
+    # print(adj_eval_info)
     #
     # pred, conf = clf.predict(x_val, return_confidence=True)
     # print(conf.shape)
