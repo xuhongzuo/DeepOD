@@ -5,18 +5,20 @@ Weakly-supervised anomaly detection by pairwise relation prediction task
 """
 
 from deepod.core.base_model import BaseDeepAD
-from deepod.core.base_networks import MLPnet, LinearBlock
+from deepod.core.base_networks import LinearBlock, get_network
 import torch
 import numpy as np
 
 
 class PReNet(BaseDeepAD):
-    def __init__(self, epochs=100, batch_size=64, lr=1e-3,
+    def __init__(self, data_type='tabular', epochs=100, batch_size=64, lr=1e-3,
+                 network='MLP', seq_len=100, stride=1,
                  rep_dim=128, hidden_dims='100,50', act='LeakyReLU', bias=False,
                  epoch_steps=-1, prt_steps=10, device='cuda',
                  verbose=2, random_state=42):
         super(PReNet, self).__init__(
-            model_name='PReNet', epochs=epochs, batch_size=batch_size, lr=lr,
+            model_name='PReNet', data_type=data_type, epochs=epochs, batch_size=batch_size, lr=lr,
+            network=network, seq_len=seq_len, stride=stride,
             epoch_steps=epoch_steps, prt_steps=prt_steps, device=device,
             verbose=verbose, random_state=random_state
         )
@@ -32,10 +34,11 @@ class PReNet(BaseDeepAD):
         train_loader = PReNetLoader(X, y, batch_size=self.batch_size)
 
         net = DualInputNet(
+            self.network,
             self.n_features,
             hidden_dims=self.hidden_dims,
             rep_dim=self.rep_dim,
-            activation='ReLU',
+            activation=self.act,
             bias=False,
         ).to(self.device)
 
@@ -114,17 +117,19 @@ class PReNet(BaseDeepAD):
 
 
 class DualInputNet(torch.nn.Module):
-    def __init__(self, n_features, hidden_dims='100,50', rep_dim=64,
+    def __init__(self, network_name, n_features, hidden_dims='100,50', rep_dim=64,
                  activation='ReLU', bias=False):
         super(DualInputNet, self).__init__()
 
-        self.enc_net = MLPnet(
-            n_features=n_features,
-            n_hidden=hidden_dims,
-            n_output=rep_dim,
-            activation=activation,
-            bias=bias,
-        )
+        network_params = {
+            'n_features': n_features,
+            'n_hidden': hidden_dims,
+            'n_output': rep_dim,
+            'activation': activation,
+            'bias': bias
+        }
+        network_class = get_network(network_name)
+        self.enc_net = network_class(**network_params)
 
         self.out_layer = LinearBlock(
             in_channels=2 * rep_dim,
@@ -177,27 +182,33 @@ class PReNetLoader:
         return x1, x2, y
 
     def batch_generation(self):
-        batch_x1 = np.empty([self.batch_size, self.dim])
-        batch_x2 = np.empty([self.batch_size, self.dim])
-        batch_y = np.empty(self.batch_size)
+        batch_x1 = []
+        batch_x2 = []
+        batch_y = []
+
+        # batch_x1 = np.empty([self.batch_size, self.dim])
+        # batch_x2 = np.empty([self.batch_size, self.dim])
+
         for i in range(self.batch_size):
             if i % 4 == 0 or i % 4 == 1:
                 sid = np.random.choice(self.unlabeled_id, 2, replace=False)
-                batch_x1[i] = self.X[sid[0]]
-                batch_x2[i] = self.X[sid[1]]
-                batch_y[i] = 0
-
+                batch_x1.append(self.X[sid[0]])
+                batch_x2.append(self.X[sid[1]])
+                batch_y.append(0)
             elif i % 4 == 2:
                 sid1 = np.random.choice(self.unlabeled_id, 1)
                 sid2 = np.random.choice(self.known_anom_id, 1)
-                batch_x1[i] = self.X[sid1[0]]
-                batch_x2[i] = self.X[sid2[0]]
-                batch_y[i] = 4
-
+                batch_x1.append(self.X[sid1[0]])
+                batch_x2.append(self.X[sid2[0]])
+                batch_y.append(4)
             else:
                 sid = np.random.choice(self.known_anom_id, 2, replace=False)
-                batch_x1[i] = self.X[sid[0]]
-                batch_x2[i] = self.X[sid[1]]
-                batch_y[i] = 8
+                batch_x1.append(self.X[sid[0]])
+                batch_x2.append(self.X[sid[1]])
+                batch_y.append(8)
+
+        batch_x1 = np.array(batch_x1)
+        batch_x2 = np.array(batch_x2)
+        batch_y = np.array(batch_y)
 
         return batch_x1, batch_x2, batch_y
