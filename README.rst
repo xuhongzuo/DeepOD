@@ -53,7 +53,7 @@ Supported Models
 **Detection models:**
 
 .. csv-table:: 
- :header: "Model", "Venue", "Year", "Type", "Title"  
+ :header: "Model", "Venue", "Year", "Type", "Title"
  :widths: 4, 4, 4, 8, 20 
 
  Deep SVDD, ICML, 2018, unsupervised, Deep One-Class Classification  
@@ -67,6 +67,7 @@ Supported Models
  DevNet, KDD, 2019, weakly-supervised, Deep Anomaly Detection with Deviation Networks
  PReNet, ArXiv, 2020, weakly-supervised, Deep Weakly-supervised Anomaly Detection
  Deep SAD, ICLR, 2020, weakly-supervised, Deep Semi-Supervised Anomaly Detection
+ FeaWAD, TNNLS, 2021, weakly-supervised, Feature Encoding with AutoEncoders for Weakly-supervised Anomaly Detection
 
 
 Usages
