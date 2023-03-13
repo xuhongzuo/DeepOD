@@ -26,6 +26,9 @@ class DevNet(BaseDeepAD):
     lr: float, optional (default=1e-3)
         Learning rate
 
+    rep_dim: int, optional (default=128)
+        it is for consistency, unused in this model
+
     hidden_dims: list, str or int, optional (default='100,50')
         Number of neural units in hidden layers
             - If list, each item is a layer
@@ -63,7 +66,7 @@ class DevNet(BaseDeepAD):
     """
     def __init__(self, data_type='tabular', epochs=100, batch_size=64, lr=1e-3,
                  network='MLP', seq_len=100, stride=1,
-                 hidden_dims='100,50', act='ReLU', bias=False,
+                 rep_dim=128, hidden_dims='100,50', act='ReLU', bias=False,
                  margin=5., l=5000,
                  epoch_steps=-1, prt_steps=10, device='cuda',
                  verbose=2, random_state=42):

@@ -120,7 +120,7 @@ class TcnAE(torch.nn.Module):
             out_channels = n_emb if i == num_layers else n_hidden[i]
             self.encoder_layers += [TcnResidualBlock(in_channels, out_channels, kernel_size,
                                                      stride=1, dilation=dilation_size,
-                                                     padding=padding_size, dropout=dropout,
+                                                     padding=padding_size, dropout=dropout, bias=bias,
                                                      activation=activation)]
 
         # decoder
@@ -341,7 +341,7 @@ class TCNnet(torch.nn.Module):
             self.layers += [TcnResidualBlock(in_channels, out_channels, kernel_size,
                                              stride=1, dilation=dilation_size,
                                              padding=padding_size, dropout=dropout,
-                                             activation=activation)]
+                                             bias=bias, activation=activation)]
         self.network = torch.nn.Sequential(*self.layers)
         self.l1 = torch.nn.Linear(n_hidden[-1], n_output, bias=bias)
 
@@ -357,18 +357,18 @@ class TCNnet(torch.nn.Module):
 
 class TcnResidualBlock(torch.nn.Module):
     def __init__(self, n_inputs, n_outputs, kernel_size, stride, dilation, padding,
-                 dropout=0.2, activation='ReLU'):
+                 dropout=0.2, activation='ReLU', bias=True):
         super(TcnResidualBlock, self).__init__()
 
         self.conv1 = weight_norm(torch.nn.Conv1d(n_inputs, n_outputs, kernel_size,
-                                                 stride=stride, padding=padding,
+                                                 stride=stride, padding=padding, bias=bias,
                                                  dilation=dilation))
         self.chomp1 = Chomp1d(padding)
         self.act1 = _instantiate_class("torch.nn.modules.activation", activation)
         self.dropout1 = torch.nn.Dropout(dropout)
 
         self.conv2 = weight_norm(torch.nn.Conv1d(n_outputs, n_outputs, kernel_size,
-                                                 stride=stride, padding=padding,
+                                                 stride=stride, padding=padding, bias=bias,
                                                  dilation=dilation))
         self.chomp2 = Chomp1d(padding)
         self.act2 = _instantiate_class("torch.nn.modules.activation", activation)
@@ -400,7 +400,7 @@ class TcnResidualBlockTranspose(torch.nn.Module):
         self.conv1 = weight_norm(torch.nn.ConvTranspose1d(n_inputs, n_outputs, kernel_size,
                                                           stride=stride, padding=padding,
                                                           dilation=dilation))
-        # 经过conv1，输出的size其实是(Batch, input_channel, seq_len + padding)
+        # [Batch, input_channel, seq_len + padding]
 
         self.pad1 = Pad1d(padding)
         self.act1 = _instantiate_class("torch.nn.modules.activation", activation)
