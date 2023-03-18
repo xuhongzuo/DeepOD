@@ -24,6 +24,8 @@ Python Deep Outlier/Anomaly Detection (DeepOD)
 DeepOD includes twelve deep outlier detection / anomaly detection algorithms (in unsupervised/weakly-supervised paradigm) for now. More baseline algorithms will be included later.
 
 
+We are working on a new feature -- by simply sett
+
 
 Installation
 ~~~~~~~~~~~~~~
