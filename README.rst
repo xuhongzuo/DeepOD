@@ -94,3 +94,18 @@ DeepOD can be used in a few lines of code. This API style is the same with sklea
     clf.fit(X_train, y=semi_y) # semi_y uses 1 for known anomalies, and 0 for unlabeled data
     scores = clf.decision_function(X_test)
 
+
+
+Citation
+~~~~~~~~~~~~~~~~~
+
+.. code-block:: bibtex
+
+
+    
+   @misc{deepod,
+      author = {{Xu, Hongzuo}},
+      title = {{DeepOD: Python Deep Outlier/Anomaly Detection}},
+      url = {https://github.com/xuhongzuo/DeepOD},
+      version = {0.2},
+   }
