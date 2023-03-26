@@ -17,7 +17,7 @@ class DeepSVDD(BaseDeepAD):
     Parameters
     ----------
     data_type: str, optional (default='tabular')
-        Data type
+        Data type, choice=['tabular', 'ts']
 
     epochs: int, optional (default=100)
         Number of training epochs

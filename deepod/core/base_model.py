@@ -26,7 +26,7 @@ class BaseDeepAD(metaclass=ABCMeta):
     ----------
 
     data_type: str, optional (default='tabular')
-        Data type
+        Data type, choice = ['tabular', 'ts']
 
     network: str, optional (default='MLP')
         network structure for different data structures

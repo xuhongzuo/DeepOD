@@ -1,12 +1,14 @@
 import importlib
 import warnings
-
+import math
 import torch
 import numpy as np
 from torch.nn.utils import weight_norm
+from deepod.core.base_transformer_network import TSTransformerEncoder
+from deepod.core.utils import _instantiate_class, _handle_n_hidden
 
 
-sequential_net_name = ['TCN', 'GRU', 'LSTM']
+sequential_net_name = ['TCN', 'GRU', 'LSTM', 'Transformer']
 
 
 def get_network(network_name):
@@ -16,7 +18,8 @@ def get_network(network_name):
         'MLP': MLPnet,
         'GRU': GRUNet,
         'LSTM': LSTMNet,
-        'TCN': TCNnet
+        'TCN': TCNnet,
+        'Transformer': TSTransformerEncoder
     }
 
     if network_name in maps.keys():
@@ -156,8 +159,6 @@ class TcnAE(torch.nn.Module):
         return dec.permute(0, 2, 1), enc.permute(0, 2, 1)
 
 
-
-
 class MLPnet(torch.nn.Module):
     def __init__(self, n_features, n_hidden='500,100', n_output=20, mid_channels=None,
                  activation='ReLU', bias=False, batch_norm=False,
@@ -282,7 +283,6 @@ class GRUNet(torch.nn.Module):
                                 bias=bias,
                                 dropout=dropout)
         self.fc = torch.nn.Linear(hidden_dim, n_output)
-        # self.relu = torch.nn.ReLU()
 
     def forward(self, x):
         out, h = self.gru(x)
@@ -452,29 +452,108 @@ class Chomp1d(torch.nn.Module):
         return x[:, :, :-self.chomp_size].contiguous()
 
 
-def _instantiate_class(module_name: str, class_name: str):
-    module = importlib.import_module(module_name)
-    class_ = getattr(module, class_name)
-    return class_()
+
+class Trans_encoder(torch.nn.Module):
+    def __init__(self, num_inputs, feature_size=512, num_channels=[64, 128, 256, 512], num_layers=1, dropout=0.1):
+        super(Trans_encoder, self).__init__()
+
+        self.src_mask = None
+        self.embedding = TokenEmbedding(c_in=num_inputs * 2, d_model=feature_size)
+        self.pos_encoder = PositionalEncoding(feature_size)
+        self.encoder_layer = torch.nn.TransformerEncoderLayer(d_model=feature_size, nhead=feature_size, dropout=dropout)
+        self.transformer_encoder = torch.nn.TransformerEncoder(self.encoder_layer, num_layers=num_layers)
+
+        self.layer1 = self._make_layer(inputs=num_inputs, feature_size=num_channels[0], num_layers=num_layers,
+                                       dropout=dropout)
+        self.layer2 = self._make_layer(inputs=num_channels[0], feature_size=num_channels[1], num_layers=num_layers,
+                                       dropout=dropout)
+        self.layer3 = self._make_layer(inputs=num_channels[1], feature_size=num_channels[2], num_layers=num_layers,
+                                       dropout=dropout)
+        # self.layer4 = self._make_layer(inputs=num_channels[2], feature_size=num_channels[3], num_layers=num_layers,
+        #                                dropout=dropout)
+
+    def _make_layer(self, inputs, feature_size, num_layers, dropout):
+        embedding = TokenEmbedding(n_inputs=inputs, n_outputs=feature_size)
+        pos_encoder = PositionalEncoding(feature_size)
+        encoder_layer = torch.nn.TransformerEncoderLayer(d_model=feature_size, nhead=16, dropout=dropout)
+        transformer_encoder = torch.nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
+        return torch.nn.Sequential(embedding, pos_encoder, transformer_encoder)
+
+    def forward_stage(self, x, stage):
+        assert(stage in ['layer1', 'layer2', 'layer3', 'layer4'])
+        layer = getattr(self, stage)
+        x = layer(x)
+        return x.permute(1, 2, 0)
+    def forward(self, src, c):
+        # c = c.permute(1, 0, 2)
+        # src = src.permute(1, 0, 2)
+        src = self.embedding(torch.cat((src, c), dim=2))
+        src = src.permute(1, 0, 2)
+        if self.src_mask is None or self.src_mask.size(0) != len(src):
+            device = src.device
+            mask = self._generate_square_subsequent_mask(len(src)).to(device)
+            self.src_mask = mask
+        src = self.pos_encoder(src)
+        output = self.transformer_encoder(src, self.src_mask)  # , self.src_mask)
+        # output = self.decoder(output)
+        # return output.permute(1, 0, 2)
+        # return out.permute(1, 0, 2)
+        return output.permute(1, 2, 0)
 
 
-def _handle_n_hidden(n_hidden):
-    if type(n_hidden) == int:
-        n_layers = 1
-        hidden_dim = n_hidden
-    elif type(n_hidden) == str:
-        n_hidden = n_hidden.split(',')
-        n_hidden = [int(a) for a in n_hidden]
-        n_layers = len(n_hidden)
-        hidden_dim = int(n_hidden[0])
 
-        if np.std(n_hidden) != 0:
-            warnings.warn('use the first hidden num, '
-                          'the rest hidden numbers are deprecated', UserWarning)
-    else:
-        raise TypeError('n_hidden should be a string or a int.')
+    # def _generate_square_subsequent_mask(self, sz):
+    #     mask = (torch.triu(torch.ones(sz, sz)) == 1).transpose(0, 1)
+    #     mask = mask.float().masked_fill(mask == 0, float('-inf')).masked_fill(mask == 1, float(0.0))
+    #     return mask
 
-    return hidden_dim, n_layers
+
+class TokenEmbedding(torch.nn.Module):
+    def __init__(self, n_inputs, n_outputs):
+        super(TokenEmbedding, self).__init__()
+        padding = 1 if torch.__version__>='1.5.0' else 2
+        self.conv = torch.nn.Conv1d(in_channels=n_inputs, out_channels=n_outputs,
+                                         kernel_size=3, padding=padding,
+                                         padding_mode='circular')
+        for m in self.modules():
+            if isinstance(m, torch.nn.Conv1d):
+                torch.nn.init.kaiming_normal_(m.weight,mode='fan_in', nonlinearity='leaky_relu')
+
+    def forward(self, x):
+        # x = self.tokenConv(x.permute(0, 2, 1)).transpose(1,2)
+        x = self.conv(x)
+        return x.permute(2, 0, 1)
+
+
+
+class PositionalEncoding(torch.nn.Module):
+    def __init__(self, d_model, max_len=5000):
+        super(PositionalEncoding, self).__init__()
+        self.src_mask = None
+        pe = torch.zeros(max_len, d_model)
+        position = torch.arange(0, max_len, dtype=torch.float).unsqueeze(1)
+        div_term = torch.exp(torch.arange(0, d_model, 2).float() * (-math.log(10000.0) / d_model))
+        # div_term2 = torch.exp(torch.arange(0, d_model if(d_model % 2) == 0 else d_model-1, 2).float() * (-math.log(10000.0) / d_model))
+        pe[:, 0::2] = torch.sin(position * div_term)
+        pe[:, 1::2] = torch.cos(position * div_term)
+        pe = pe.unsqueeze(0).transpose(0, 1)
+        # pe.requires_grad = False
+        self.register_buffer('pe', pe)
+
+    def _generate_square_subsequent_mask(self, sz):
+        mask = (torch.triu(torch.ones(sz, sz)) == 1).transpose(0, 1)
+        mask = mask.float().masked_fill(mask == 0, float('-inf')).masked_fill(mask == 1, float(0.0))
+        return mask
+
+    def forward(self, x):
+        if self.src_mask is None or self.src_mask.size(0) != len(x):
+            device = x.device
+            mask = self._generate_square_subsequent_mask(len(x)).to(device)
+            self.src_mask = mask
+        # return **{'src': x + self.pe[:x.size(0), :], 'mask': mask}
+        # return [x + self.pe[:x.size(0), :], mask]
+        return x + self.pe[:x.size(0), :]
+
 
 
 if __name__ == '__main__':

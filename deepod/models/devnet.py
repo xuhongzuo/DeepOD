@@ -67,6 +67,7 @@ class DevNet(BaseDeepAD):
     def __init__(self, data_type='tabular', epochs=100, batch_size=64, lr=1e-3,
                  network='MLP', seq_len=100, stride=1,
                  rep_dim=128, hidden_dims='100,50', act='ReLU', bias=False,
+                 n_heads=8, d_model=64, pos_encoding='fixed', norm='BatchNorm',
                  margin=5., l=5000,
                  epoch_steps=-1, prt_steps=10, device='cuda',
                  verbose=2, random_state=42):
@@ -83,6 +84,12 @@ class DevNet(BaseDeepAD):
         self.hidden_dims = hidden_dims
         self.act = act
         self.bias = bias
+
+        # parameters for Transformer
+        self.n_heads = n_heads
+        self.d_model = d_model
+        self.pos_encoding = pos_encoding
+        self.norm = norm
 
         return
 
@@ -105,6 +112,13 @@ class DevNet(BaseDeepAD):
             'activation': self.act,
             'bias': self.bias
         }
+        if self.network == 'Transformer':
+            network_params['n_heads'] = self.n_heads
+            network_params['d_model'] = self.d_model
+            network_params['pos_encoding'] = self.pos_encoding
+            network_params['norm'] = self.norm
+            network_params['seq_len'] = self.seq_len
+
         network_class = get_network(self.network)
         net = network_class(**network_params).to(self.device)
 
