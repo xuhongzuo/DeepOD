@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+"""
+Transformer structure
+adapted from https://github.com/gzerveas/mvts_transformer
+"""
+
+
 import math
 import torch
 from torch.nn.modules import TransformerEncoderLayer
@@ -45,7 +52,6 @@ class FixedPositionalEncoding(torch.nn.Module):
 
         x = x + self.pe[:x.size(0), :]
         return self.dropout(x)
-
 
 
 class LearnablePositionalEncoding(torch.nn.Module):
