@@ -9,7 +9,7 @@ import math
 import torch
 from torch.nn.modules import TransformerEncoderLayer
 from torch.nn import functional as F
-from deepod.core.utils import _handle_n_hidden, _instantiate_class
+from deepod.core.network_utility import _handle_n_hidden, _instantiate_class
 
 
 # From https://github.com/pytorch/examples/blob/master/word_language_model/model.py

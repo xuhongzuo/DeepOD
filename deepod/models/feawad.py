@@ -103,6 +103,7 @@ class FeaWAD(BaseDeepAD):
             'activation': self.act,
             'bias': self.bias
         }
+
         net = FeaWadNet(**network_params).to(self.device)
         criterion = FeaWADLoss(margin=self.margin)
         if self.verbose >= 2:

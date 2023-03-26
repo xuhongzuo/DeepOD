@@ -105,13 +105,13 @@ if __name__ == '__main__':
 
     # clf = FeaWAD(data_type='ts', stride=10, seq_len=100, epochs=20,
     #              device='cuda', network='TCN', verbose=2)
-    # clf = PReNet(data_type='ts', stride=10, seq_len=100, epochs=20,
-    #              device='cuda', network='TCN')
-    clf = DevNet(data_type='ts', stride=10, seq_len=100, epochs=20,
-                  device='cuda', network='Transformer')
-    print(clf.n_heads, clf.d_model)
-    # clf = DeepSAD(data_type='ts', stride=10, seq_len=100, epochs=20,
-    #               device='cuda', network='TCN')
+    # clf = PReNet(data_type='ts', stride=10, seq_len=100, epochs=20, act='GELU',
+    #              device='cuda', network='Transformer', verbose=2)
+    # clf = DevNet(data_type='ts', stride=10, seq_len=100, epochs=20,
+    #               device='cuda', network='Transformer')
+    # print(clf.n_heads, clf.d_model)
+    clf = DeepSAD(data_type='ts', stride=10, seq_len=100, epochs=20,
+                  device='cuda', network='Transformer', act='ReLU', verbose=2)
     clf.fit(x, y)
     scores = clf.decision_function(x)
     adj_eval_info = cal_metrics(y, scores, pa=True)

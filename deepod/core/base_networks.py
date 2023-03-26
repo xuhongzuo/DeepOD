@@ -5,7 +5,7 @@ import torch
 import numpy as np
 from torch.nn.utils import weight_norm
 from deepod.core.base_transformer_network import TSTransformerEncoder
-from deepod.core.utils import _instantiate_class, _handle_n_hidden
+from deepod.core.network_utility import _instantiate_class, _handle_n_hidden
 
 
 sequential_net_name = ['TCN', 'GRU', 'LSTM', 'Transformer']

@@ -42,6 +42,22 @@ class DevNet(BaseDeepAD):
     bias: bool, optional (default=False)
         Additive bias in linear layer
 
+    n_heads: int, optional(default=8):
+        number of head in multi-head attention
+        used when network='transformer', deprecated in other networks
+
+    d_model: int, optional (default=64)
+        number of dimensions in Transformer
+        used when network='transformer', deprecated in other networks
+
+    pos_encoding: str, optional (default='fixed')
+        manner of positional encoding, deprecated in other networks
+        choice = ['fixed', 'learnable']
+
+    norm: str, optional (default='BatchNorm')
+        manner of norm in Transformer, deprecated in other networks
+        choice = ['LayerNorm', 'BatchNorm']
+
     margin: float, optional (default=5.)
         margin value used in the deviation loss function
 

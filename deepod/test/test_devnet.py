@@ -59,7 +59,7 @@ class TestDevNet(unittest.TestCase):
 
         self.clf2 = DevNet(data_type='ts', seq_len=100, stride=5,
                            epochs=5, network='Transformer', hidden_dims='256,256',
-                           d_model=64, n_heads=8)
+                           d_model=64, n_heads=8, device=device)
         self.clf2.fit(self.Xts_train, self.yts_train)
 
     def test_parameters(self):

@@ -49,6 +49,22 @@ class DeepSAD(BaseDeepAD):
     bias: bool, optional (default=False)
         Additive bias in linear layer
 
+    n_heads: int, optional(default=8):
+        number of head in multi-head attention
+        used when network='transformer', deprecated in other networks
+
+    d_model: int, optional (default=64)
+        number of dimensions in Transformer
+        used when network='transformer', deprecated in other networks
+
+    pos_encoding: str, optional (default='fixed')
+        manner of positional encoding, deprecated in other networks
+        choice = ['fixed', 'learnable']
+
+    norm: str, optional (default='BatchNorm')
+        manner of norm in Transformer, deprecated in other networks
+        choice = ['LayerNorm', 'BatchNorm']
+
     epoch_steps: int, optional (default=-1)
         Maximum steps in an epoch
             - If -1, all the batches will be processed
@@ -70,6 +86,7 @@ class DeepSAD(BaseDeepAD):
     def __init__(self, data_type='tabular', epochs=100, batch_size=64, lr=1e-3,
                  network='MLP', seq_len=100, stride=1,
                  rep_dim=128, hidden_dims='100,50', act='ReLU', bias=False,
+                 n_heads=8, d_model=64, pos_encoding='fixed', norm='BatchNorm',
                  epoch_steps=-1, prt_steps=10, device='cuda',
                  verbose=2, random_state=42):
         super(DeepSAD, self).__init__(
@@ -83,6 +100,12 @@ class DeepSAD(BaseDeepAD):
         self.rep_dim = rep_dim
         self.act = act
         self.bias = bias
+
+        # parameters for Transformer
+        self.n_heads = n_heads
+        self.d_model = d_model
+        self.pos_encoding = pos_encoding
+        self.norm = norm
 
         self.c = None
 
@@ -107,6 +130,13 @@ class DeepSAD(BaseDeepAD):
             'activation': self.act,
             'bias': self.bias
         }
+        if self.network == 'Transformer':
+            network_params['n_heads'] = self.n_heads
+            network_params['d_model'] = self.d_model
+            network_params['pos_encoding'] = self.pos_encoding
+            network_params['norm'] = self.norm
+            network_params['seq_len'] = self.seq_len
+
         network_class = get_network(self.network)
         net = network_class(**network_params).to(self.device)
 
