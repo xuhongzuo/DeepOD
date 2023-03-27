@@ -41,6 +41,7 @@ class TestDevNet(unittest.TestCase):
         # x, y = data['X'], data['y']
         # y = np.array(y, dtype=int)
 
+        np.random.seed(42)
         self.Xts_train = np.random.randn(1000, 19)
         self.yts_train = np.zeros(1000, dtype=int)
         self.yts_train[200:250] = 1

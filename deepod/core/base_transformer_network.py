@@ -200,7 +200,7 @@ class TSTransformerEncoder(torch.nn.Module):
         # permute because pytorch convention for transformers is [seq_length, batch_size, feat_dim]. padding_masks [batch_size, feat_dim]
 
         if padding_masks is None:
-            padding_masks = torch.ones(X.shape[0], X.shape[1], dtype=int).to(X.device)
+            padding_masks = torch.ones(X.shape[0], X.shape[1], dtype=torch.uint8).to(X.device)
 
         inp = X.permute(1, 0, 2)
         inp = self.project_inp(inp) * math.sqrt(self.d_model)  # [seq_length, batch_size, d_model] project input vectors to d_model dimensional space
