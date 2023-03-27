@@ -199,18 +199,18 @@ class TSTransformerEncoder(torch.nn.Module):
 
         # permute because pytorch convention for transformers is [seq_length, batch_size, feat_dim]. padding_masks [batch_size, feat_dim]
 
-        if padding_masks is None:
-            padding_masks = torch.ones(X.shape[0], X.shape[1], dtype=torch.uint8).to(X.device)
-
         inp = X.permute(1, 0, 2)
         inp = self.project_inp(inp) * math.sqrt(self.d_model)  # [seq_length, batch_size, d_model] project input vectors to d_model dimensional space
         inp = self.pos_enc(inp)  # add positional encoding
 
         # NOTE: logic for padding masks is reversed to comply with definition in MultiHeadAttention, TransformerEncoderLayer
-        output = self.transformer_encoder(inp, src_key_padding_mask=~padding_masks)  # (seq_length, batch_size, d_model)
+        output = self.transformer_encoder(inp, src_key_padding_mask=~padding_masks if padding_masks is not None else None)  # (seq_length, batch_size, d_model)
         output = self.act(output)  # the output transformer encoder/decoder embeddings don't include non-linearity
         output = output.permute(1, 0, 2)  # (batch_size, seq_length, d_model)
         output = self.dropout1(output)
+
+        if padding_masks is None:
+            padding_masks = torch.ones(X.shape[0], X.shape[1], dtype=torch.uint8).to(X.device)
 
         # Output
         output = output * padding_masks.unsqueeze(-1)  # (batch_size, seq_len, 1) zero-out padding embeddings
