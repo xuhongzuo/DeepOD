@@ -452,66 +452,9 @@ class Chomp1d(torch.nn.Module):
         return x[:, :, :-self.chomp_size].contiguous()
 
 
-
-class Trans_encoder(torch.nn.Module):
-    def __init__(self, num_inputs, feature_size=512, num_channels=[64, 128, 256, 512], num_layers=1, dropout=0.1):
-        super(Trans_encoder, self).__init__()
-
-        self.src_mask = None
-        self.embedding = TokenEmbedding(c_in=num_inputs * 2, d_model=feature_size)
-        self.pos_encoder = PositionalEncoding(feature_size)
-        self.encoder_layer = torch.nn.TransformerEncoderLayer(d_model=feature_size, nhead=feature_size, dropout=dropout)
-        self.transformer_encoder = torch.nn.TransformerEncoder(self.encoder_layer, num_layers=num_layers)
-
-        self.layer1 = self._make_layer(inputs=num_inputs, feature_size=num_channels[0], num_layers=num_layers,
-                                       dropout=dropout)
-        self.layer2 = self._make_layer(inputs=num_channels[0], feature_size=num_channels[1], num_layers=num_layers,
-                                       dropout=dropout)
-        self.layer3 = self._make_layer(inputs=num_channels[1], feature_size=num_channels[2], num_layers=num_layers,
-                                       dropout=dropout)
-        # self.layer4 = self._make_layer(inputs=num_channels[2], feature_size=num_channels[3], num_layers=num_layers,
-        #                                dropout=dropout)
-
-    def _make_layer(self, inputs, feature_size, num_layers, dropout):
-        embedding = TokenEmbedding(n_inputs=inputs, n_outputs=feature_size)
-        pos_encoder = PositionalEncoding(feature_size)
-        encoder_layer = torch.nn.TransformerEncoderLayer(d_model=feature_size, nhead=16, dropout=dropout)
-        transformer_encoder = torch.nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
-        return torch.nn.Sequential(embedding, pos_encoder, transformer_encoder)
-
-    def forward_stage(self, x, stage):
-        assert(stage in ['layer1', 'layer2', 'layer3', 'layer4'])
-        layer = getattr(self, stage)
-        x = layer(x)
-        return x.permute(1, 2, 0)
-    def forward(self, src, c):
-        # c = c.permute(1, 0, 2)
-        # src = src.permute(1, 0, 2)
-        src = self.embedding(torch.cat((src, c), dim=2))
-        src = src.permute(1, 0, 2)
-        if self.src_mask is None or self.src_mask.size(0) != len(src):
-            device = src.device
-            mask = self._generate_square_subsequent_mask(len(src)).to(device)
-            self.src_mask = mask
-        src = self.pos_encoder(src)
-        output = self.transformer_encoder(src, self.src_mask)  # , self.src_mask)
-        # output = self.decoder(output)
-        # return output.permute(1, 0, 2)
-        # return out.permute(1, 0, 2)
-        return output.permute(1, 2, 0)
-
-
-
-    # def _generate_square_subsequent_mask(self, sz):
-    #     mask = (torch.triu(torch.ones(sz, sz)) == 1).transpose(0, 1)
-    #     mask = mask.float().masked_fill(mask == 0, float('-inf')).masked_fill(mask == 1, float(0.0))
-    #     return mask
-
-
-
-if __name__ == '__main__':
-    model = TcnAE(n_features=16, n_hidden='32', n_emb=8)
-    a = torch.randn(128, 100, 16)
-
-    b, _ =  model(a)
-    print(b.shape)
+# if __name__ == '__main__':
+#     model = TcnAE(n_features=16, n_hidden='32', n_emb=8)
+#     a = torch.randn(128, 100, 16)
+#
+#     b, _ =  model(a)
+#     print(b.shape)
