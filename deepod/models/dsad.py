@@ -8,8 +8,10 @@ this is partially adapted from https://github.com/lukasruff/Deep-SAD-PyTorch (MI
 from deepod.core.base_model import BaseDeepAD
 from deepod.core.base_networks import get_network
 from torch.utils.data import DataLoader, TensorDataset
+from torch.utils.data.sampler import WeightedRandomSampler
 import torch
 import numpy as np
+from collections import Counter
 
 
 class DeepSAD(BaseDeepAD):
@@ -86,7 +88,7 @@ class DeepSAD(BaseDeepAD):
     def __init__(self, data_type='tabular', epochs=100, batch_size=64, lr=1e-3,
                  network='MLP', seq_len=100, stride=1,
                  rep_dim=128, hidden_dims='100,50', act='ReLU', bias=False,
-                 n_heads=8, d_model=64, pos_encoding='fixed', norm='BatchNorm',
+                 n_heads=8, d_model=512, pos_encoding='fixed', norm='LayerNorm',
                  epoch_steps=-1, prt_steps=10, device='cuda',
                  verbose=2, random_state=42):
         super(DeepSAD, self).__init__(
@@ -118,10 +120,21 @@ class DeepSAD(BaseDeepAD):
         y = np.zeros_like(y)
         y[known_anom_id] = -1
 
+        counter = Counter(y)
+
+        if self.verbose >= 2:
+            print(f'training data counter: {counter}')
+
         dataset = TensorDataset(torch.from_numpy(X).float(),
                                 torch.from_numpy(y).long())
 
-        train_loader = DataLoader(dataset, batch_size=self.batch_size, shuffle=True)
+        weight_map = {0: 1. / counter[0], -1: 1. / counter[-1]}
+        sampler = WeightedRandomSampler(weights=[weight_map[label.item()] for data, label in dataset],
+                                        num_samples=len(dataset), replacement=True)
+        train_loader = DataLoader(dataset, batch_size=self.batch_size,
+                                  sampler=sampler,
+                                  shuffle=True if sampler is None else False)
+
 
         network_params = {
             'n_features': self.n_features,
@@ -156,6 +169,11 @@ class DeepSAD(BaseDeepAD):
 
     def training_forward(self, batch_x, net, criterion):
         batch_x, batch_y = batch_x
+
+        # from collections import Counter
+        # tmp = batch_y.data.cpu().numpy()
+        # print(Counter(tmp))
+
         batch_x = batch_x.float().to(self.device)
         batch_y = batch_y.long().to(self.device)
 

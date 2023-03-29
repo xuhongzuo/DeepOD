@@ -83,7 +83,7 @@ class DevNet(BaseDeepAD):
     def __init__(self, data_type='tabular', epochs=100, batch_size=64, lr=1e-3,
                  network='MLP', seq_len=100, stride=1,
                  rep_dim=128, hidden_dims='100,50', act='ReLU', bias=False,
-                 n_heads=8, d_model=64, pos_encoding='fixed', norm='BatchNorm',
+                 n_heads=8, d_model=512, pos_encoding='fixed', norm='BatchNorm',
                  margin=5., l=5000,
                  epoch_steps=-1, prt_steps=10, device='cuda',
                  verbose=2, random_state=42):
@@ -116,9 +116,8 @@ class DevNet(BaseDeepAD):
         weight_map = {0: 1. / n_norm, 1: 1. / n_anom}
 
         dataset = TensorDataset(torch.from_numpy(X).float(), torch.from_numpy(y).long())
-        # print([weight_map[label.item()] for data, label in dataset])
         sampler = WeightedRandomSampler(weights=[weight_map[label.item()] for data, label in dataset],
-                                        num_samples=self.batch_size, replacement=True)
+                                        num_samples=len(dataset), replacement=True)
         train_loader = DataLoader(dataset, batch_size=self.batch_size, sampler=sampler)
 
         network_params = {

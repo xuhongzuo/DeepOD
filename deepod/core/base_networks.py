@@ -508,53 +508,6 @@ class Trans_encoder(torch.nn.Module):
     #     return mask
 
 
-class TokenEmbedding(torch.nn.Module):
-    def __init__(self, n_inputs, n_outputs):
-        super(TokenEmbedding, self).__init__()
-        padding = 1 if torch.__version__>='1.5.0' else 2
-        self.conv = torch.nn.Conv1d(in_channels=n_inputs, out_channels=n_outputs,
-                                         kernel_size=3, padding=padding,
-                                         padding_mode='circular')
-        for m in self.modules():
-            if isinstance(m, torch.nn.Conv1d):
-                torch.nn.init.kaiming_normal_(m.weight,mode='fan_in', nonlinearity='leaky_relu')
-
-    def forward(self, x):
-        # x = self.tokenConv(x.permute(0, 2, 1)).transpose(1,2)
-        x = self.conv(x)
-        return x.permute(2, 0, 1)
-
-
-
-class PositionalEncoding(torch.nn.Module):
-    def __init__(self, d_model, max_len=5000):
-        super(PositionalEncoding, self).__init__()
-        self.src_mask = None
-        pe = torch.zeros(max_len, d_model)
-        position = torch.arange(0, max_len, dtype=torch.float).unsqueeze(1)
-        div_term = torch.exp(torch.arange(0, d_model, 2).float() * (-math.log(10000.0) / d_model))
-        # div_term2 = torch.exp(torch.arange(0, d_model if(d_model % 2) == 0 else d_model-1, 2).float() * (-math.log(10000.0) / d_model))
-        pe[:, 0::2] = torch.sin(position * div_term)
-        pe[:, 1::2] = torch.cos(position * div_term)
-        pe = pe.unsqueeze(0).transpose(0, 1)
-        # pe.requires_grad = False
-        self.register_buffer('pe', pe)
-
-    def _generate_square_subsequent_mask(self, sz):
-        mask = (torch.triu(torch.ones(sz, sz)) == 1).transpose(0, 1)
-        mask = mask.float().masked_fill(mask == 0, float('-inf')).masked_fill(mask == 1, float(0.0))
-        return mask
-
-    def forward(self, x):
-        if self.src_mask is None or self.src_mask.size(0) != len(x):
-            device = x.device
-            mask = self._generate_square_subsequent_mask(len(x)).to(device)
-            self.src_mask = mask
-        # return **{'src': x + self.pe[:x.size(0), :], 'mask': mask}
-        # return [x + self.pe[:x.size(0), :], mask]
-        return x + self.pe[:x.size(0), :]
-
-
 
 if __name__ == '__main__':
     model = TcnAE(n_features=16, n_hidden='32', n_emb=8)

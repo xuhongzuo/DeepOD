@@ -14,7 +14,7 @@ class PReNet(BaseDeepAD):
     def __init__(self, data_type='tabular', epochs=100, batch_size=64, lr=1e-3,
                  network='MLP', seq_len=100, stride=1,
                  rep_dim=128, hidden_dims='100,50', act='LeakyReLU', bias=False,
-                 n_heads=8, d_model=64, pos_encoding='fixed', norm='BatchNorm',
+                 n_heads=8, d_model=512, pos_encoding='fixed', norm='BatchNorm',
                  epoch_steps=-1, prt_steps=10, device='cuda',
                  verbose=2, random_state=42):
         super(PReNet, self).__init__(
