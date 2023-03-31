@@ -8,7 +8,7 @@ https://www.google.com/url?q=https%3A%2F%2Fgithub.com%2FGuansongPang%2Fdeep-outl
 """
 
 from deepod.core.base_model import BaseDeepAD
-from deepod.core.base_networks import MLPnet
+from deepod.core.base_networks import get_network
 from torch.utils.data import DataLoader
 import torch
 import torch.nn.functional as F
@@ -24,19 +24,22 @@ class REPEN(BaseDeepAD):
     See :cite:`pang2018repen` for details
 
     """
-    def __init__(self, epochs=100, batch_size=64, lr=1e-3,
+    def __init__(self, data_type='tabular', epochs=100, batch_size=64, lr=1e-3,
+                 network='MLP', seq_len=100, stride=1,
                  init_score_ensemble_size=50, init_score_subsample_size=8,
-                 hidden_dims='100,50', act='LeakyReLU', bias=False,
+                 rep_dim=128, hidden_dims='100,50', act='LeakyReLU', bias=False,
                  epoch_steps=-1, prt_steps=10, device='cuda',
                  verbose=2, random_state=42):
         super(REPEN, self).__init__(
-            model_name='DevNet', epochs=epochs, batch_size=batch_size, lr=lr,
+            model_name='REPEN', data_type=data_type, epochs=epochs, batch_size=batch_size, lr=lr,
+            network=network, seq_len=seq_len, stride=stride,
             epoch_steps=epoch_steps, prt_steps=prt_steps, device=device,
             verbose=verbose, random_state=random_state
         )
 
         self.init_score_ensemble_size = init_score_ensemble_size
         self.init_score_subsample_size = init_score_subsample_size
+        self.rep_dim = rep_dim
         self.hidden_dims = hidden_dims
         self.act = act
         self.bias = bias
@@ -44,13 +47,17 @@ class REPEN(BaseDeepAD):
         return
 
     def training_prepare(self, X, y):
-        net = MLPnet(
-            n_features=self.n_features,
-            n_hidden=self.hidden_dims,
-            n_output=1,
-            activation=self.act,
-            bias=self.bias,
-        ).to(self.device)
+
+        network_params = {
+            'n_features': self.n_features,
+            'n_hidden': self.hidden_dims,
+            'n_output': self.rep_dim,
+            'activation': self.act,
+            'bias': self.bias
+        }
+        network_class = get_network(self.network)
+        net = network_class(**network_params).to(self.device)
+
         init_scores = repen_init_score_calculator(x_train=X,
                                                   ensemble_size=self.init_score_ensemble_size,
                                                   subsample_size=self.init_score_subsample_size)
@@ -96,11 +103,11 @@ class REPENLoader:
     """
     def __init__(self, X, batch_size, init_scores, steps_per_epoch=None):
         self.X = X
-        self.batch_size = batch_size
+        self.batch_size = min(batch_size, len(X))
         self.init_scores = init_scores
         self.inlier_ids, self.outlier_ids = self.cutoff_unsorted(init_scores)
         self.steps_per_epoch = steps_per_epoch if steps_per_epoch is not None \
-            else int(len(X)/batch_size)
+            else int(len(X)/self.batch_size)
         self.counter = 0
         return
 
@@ -203,6 +210,10 @@ def repen_init_score_calculator(x_train, ensemble_size=50, subsample_size=8):
     "LeSiNN: Detecting anomalies by identifying least similar nearest neighbours."
     In ICDMW15. IEEE.
     """
+    # this is for sub-sequences derived from time-series data
+    if len(x_train.shape) == 3:
+        x_train = x_train[:, -1, :]
+
     scores = np.zeros([x_train.shape[0], 1])
 
     ensemble_seeds = np.random.randint(0, np.iinfo(np.int32).max, ensemble_size)
@@ -218,30 +229,3 @@ def repen_init_score_calculator(x_train, ensemble_size=50, subsample_size=8):
         scores += dists
     scores = scores / ensemble_size
     return scores
-
-
-
-if __name__ == '__main__':
-    import pandas as pd
-    import numpy as np
-
-    file = '../../data/38_thyroid.npz'
-    data = np.load(file, allow_pickle=True)
-    x, y = data['X'], data['y']
-    y = np.array(y, dtype=int)
-
-    anom_id = np.where(y==1)[0]
-    known_anom_id = np.random.choice(anom_id, 30)
-    y_semi = np.zeros_like(y)
-    y_semi[known_anom_id] = 1
-
-    clf = REPEN(device='cpu')
-    clf.fit(x, y_semi)
-
-    scores = clf.decision_function(x)
-
-    from sklearn.metrics import roc_auc_score
-
-    auc = roc_auc_score(y_score=scores, y_true=y)
-
-    print(auc)

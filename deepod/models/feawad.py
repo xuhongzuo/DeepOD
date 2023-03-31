@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Deep anomaly detection with deviation networks.
+Feature Encoding with AutoEncoders for Weakly-supervised Anomaly Detection
 PyTorch's implementation
 @Author: Hongzuo Xu <hongzuoxu@126.com, xuhongzuo13@nudt.edu.cn>
 """
@@ -13,7 +13,7 @@ import torch
 import numpy as np
 
 
-class DevNet(BaseDeepAD):
+class FeaWAD(BaseDeepAD):
     """
     Parameters
     ----------
@@ -27,7 +27,7 @@ class DevNet(BaseDeepAD):
         Learning rate
 
     rep_dim: int, optional (default=128)
-        it is for consistency, unused in this model
+        Dimensionality of the representation space
 
     hidden_dims: list, str or int, optional (default='100,50')
         Number of neural units in hidden layers
@@ -42,27 +42,8 @@ class DevNet(BaseDeepAD):
     bias: bool, optional (default=False)
         Additive bias in linear layer
 
-    n_heads: int, optional(default=8):
-        number of head in multi-head attention
-        used when network='transformer', deprecated in other networks
-
-    d_model: int, optional (default=64)
-        number of dimensions in Transformer
-        used when network='transformer', deprecated in other networks
-
-    pos_encoding: str, optional (default='fixed')
-        manner of positional encoding, deprecated in other networks
-        choice = ['fixed', 'learnable']
-
-    norm: str, optional (default='BatchNorm')
-        manner of norm in Transformer, deprecated in other networks
-        choice = ['LayerNorm', 'BatchNorm']
-
     margin: float, optional (default=5.)
         margin value used in the deviation loss function
-
-    l: int, optional (default=5000.)
-        the size of samples of the Gaussian distribution used in the deviation loss function
 
     epoch_steps: int, optional (default=-1)
         Maximum steps in an epoch
@@ -83,29 +64,22 @@ class DevNet(BaseDeepAD):
     def __init__(self, data_type='tabular', epochs=100, batch_size=64, lr=1e-3,
                  network='MLP', seq_len=100, stride=1,
                  rep_dim=128, hidden_dims='100,50', act='ReLU', bias=False,
-                 n_heads=8, d_model=512, pos_encoding='fixed', norm='BatchNorm',
-                 margin=5., l=5000,
+                 margin=5.,
                  epoch_steps=-1, prt_steps=10, device='cuda',
                  verbose=2, random_state=42):
-        super(DevNet, self).__init__(
-            data_type=data_type, model_name='DevNet', epochs=epochs, batch_size=batch_size, lr=lr,
+        super(FeaWAD, self).__init__(
+            data_type=data_type, model_name='FeaWAD', epochs=epochs, batch_size=batch_size, lr=lr,
             network=network, seq_len=seq_len, stride=stride,
             epoch_steps=epoch_steps, prt_steps=prt_steps, device=device,
             verbose=verbose, random_state=random_state
         )
 
         self.margin = margin
-        self.l = l
 
+        self.rep_dim = rep_dim
         self.hidden_dims = hidden_dims
         self.act = act
         self.bias = bias
-
-        # parameters for Transformer
-        self.n_heads = n_heads
-        self.d_model = d_model
-        self.pos_encoding = pos_encoding
-        self.norm = norm
 
         return
 
@@ -117,28 +91,21 @@ class DevNet(BaseDeepAD):
 
         dataset = TensorDataset(torch.from_numpy(X).float(), torch.from_numpy(y).long())
         sampler = WeightedRandomSampler(weights=[weight_map[label.item()] for data, label in dataset],
-                                        num_samples=len(dataset), replacement=True)
+                                        num_samples=self.batch_size, replacement=True)
         train_loader = DataLoader(dataset, batch_size=self.batch_size, sampler=sampler)
 
         network_params = {
             'n_features': self.n_features,
+            'network': self.network,
+            'n_emb': self.rep_dim,
             'n_hidden': self.hidden_dims,
-            'n_output': 1,
+            'n_hidden2': '256,32',
             'activation': self.act,
             'bias': self.bias
         }
-        if self.network == 'Transformer':
-            network_params['n_heads'] = self.n_heads
-            network_params['d_model'] = self.d_model
-            network_params['pos_encoding'] = self.pos_encoding
-            network_params['norm'] = self.norm
-            network_params['seq_len'] = self.seq_len
 
-        network_class = get_network(self.network)
-        net = network_class(**network_params).to(self.device)
-
-        criterion = DevLoss(margin=self.margin, l=self.l)
-
+        net = FeaWadNet(**network_params).to(self.device)
+        criterion = FeaWADLoss(margin=self.margin)
         if self.verbose >= 2:
             print(net)
 
@@ -154,19 +121,54 @@ class DevNet(BaseDeepAD):
         batch_x, batch_y = batch_x
         batch_x = batch_x.float().to(self.device)
         batch_y = batch_y.to(self.device)
-        pred = net(batch_x)
-        loss = criterion(batch_y, pred)
+        pred, sub_result = net(batch_x)
+        loss = criterion(batch_y, pred, sub_result)
         return loss
 
     def inference_forward(self, batch_x, net, criterion):
         batch_x = batch_x.float().to(self.device)
-        s = net(batch_x)
+        s, _ = net(batch_x)
         s = s.view(-1)
         batch_z = batch_x
         return batch_z, s
 
 
-class DevLoss(torch.nn.Module):
+class FeaWadNet(torch.nn.Module):
+    def __init__(self, n_features, network, n_hidden='500,100', n_hidden2='256,32', n_emb=20,
+                 activation='ReLU', bias=False):
+        super(FeaWadNet, self).__init__()
+
+        if network == 'MLP':
+            AEmodel_class = get_network('MlpAE')
+            FWmodel = get_network('MLP')
+        elif network == 'TCN':
+            AEmodel_class = get_network('TcnAE')
+            FWmodel = get_network('MLP')
+        else:
+            raise NotImplementedError('')
+
+        self.AEmodel = AEmodel_class(n_features, n_hidden=n_hidden, n_emb=n_emb,
+                               activation=activation, bias=bias)
+        self.LinearModel = FWmodel(n_features+n_emb, n_hidden=n_hidden2, n_output=1,
+                                   activation=activation, bias=bias)
+
+
+    def forward(self, x):
+        x2, enc = self.AEmodel(x)
+        sub = x2 - x
+        sub_norm = torch.norm(sub, p=2, dim=-1)
+        sub_norm = torch.unsqueeze(sub_norm, -1)
+        sub_result = sub / sub_norm
+
+        concat = torch.concat([sub_result, enc], dim=-1)
+        if len(concat.shape) == 3:
+            concat = concat[:, -1]
+        out = self.LinearModel(concat)
+
+        return out, sub_result
+
+
+class FeaWADLoss(torch.nn.Module):
     """
     Deviation Loss
 
@@ -186,19 +188,20 @@ class DevLoss(torch.nn.Module):
             - If ``'sum'``: the output will be summed
 
     """
-    def __init__(self, margin=5., l=5000, reduction='mean'):
-        super(DevLoss, self).__init__()
+    def __init__(self, margin=5., reduction='mean'):
+        super(FeaWADLoss, self).__init__()
         self.margin = margin
-        self.loss_l = l
         self.reduction = reduction
         return
 
-    def forward(self, y_true, y_pred):
-        ref = torch.randn(self.loss_l)  # from the normal dataset
-        dev = (y_pred - torch.mean(ref)) / torch.std(ref)
+    def forward(self, y_true, y_pred, sub_result):
+        dev = y_pred
         inlier_loss = torch.abs(dev)
-        outlier_loss = torch.abs(torch.max(self.margin - dev, torch.zeros_like(dev)))
-        loss = (1 - y_true) * inlier_loss + y_true * outlier_loss
+        outlier_loss = torch.abs(torch.maximum(self.margin - dev, torch.tensor(0.)))
+
+        sub_nor = torch.norm(sub_result, p=2, dim=1 if len(sub_result.shape)==2 else [1,2])
+        outlier_sub_loss = torch.abs(torch.maximum(self.margin-sub_nor, torch.tensor(0.)))
+        loss = (1 - y_true) * (inlier_loss + sub_nor) + y_true * (outlier_loss + outlier_sub_loss)
 
         if self.reduction == 'mean':
             return torch.mean(loss)
@@ -208,16 +211,3 @@ class DevLoss(torch.nn.Module):
             return loss
 
         return loss
-
-
-if __name__ == '__main__':
-    Xts_train = np.random.randn(1000, 19)
-    yts_train = np.zeros(1000, dtype=int)
-    yts_train[200:250] = 1
-    Xts_test = Xts_train.copy()
-    yts_test = yts_train.copy()
-
-    clf2 = DevNet(data_type='ts', seq_len=100, stride=5,
-                       epochs=5, network='Transformer', hidden_dims='256,256',
-                       d_model=64, n_heads=8, device='cuda')
-    clf2.fit(Xts_train, yts_train)

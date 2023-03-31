@@ -1,15 +1,17 @@
 # -*- coding: utf-8 -*-
 """
 One-class classification
-this is partially adapted from
+this is partially adapted from https://github.com/lukasruff/Deep-SAD-PyTorch (MIT license)
 @Author: Hongzuo Xu <hongzuoxu@126.com, xuhongzuo13@nudt.edu.cn>
 """
 
 from deepod.core.base_model import BaseDeepAD
-from deepod.core.base_networks import MLPnet
+from deepod.core.base_networks import get_network
 from torch.utils.data import DataLoader, TensorDataset
+from torch.utils.data.sampler import WeightedRandomSampler
 import torch
 import numpy as np
+from collections import Counter
 
 
 class DeepSAD(BaseDeepAD):
@@ -18,6 +20,9 @@ class DeepSAD(BaseDeepAD):
 
     Parameters
     ----------
+    data_type: str, optional (default='tabular')
+        Data type
+
     epochs: int, optional (default=100)
         Number of training epochs
 
@@ -26,6 +31,9 @@ class DeepSAD(BaseDeepAD):
 
     lr: float, optional (default=1e-3)
         Learning rate
+
+    network: str, optional (default='MLP')
+        network structure for different data structures
 
     rep_dim: int, optional (default=128)
         Dimensionality of the representation space
@@ -42,6 +50,22 @@ class DeepSAD(BaseDeepAD):
 
     bias: bool, optional (default=False)
         Additive bias in linear layer
+
+    n_heads: int, optional(default=8):
+        number of head in multi-head attention
+        used when network='transformer', deprecated in other networks
+
+    d_model: int, optional (default=64)
+        number of dimensions in Transformer
+        used when network='transformer', deprecated in other networks
+
+    pos_encoding: str, optional (default='fixed')
+        manner of positional encoding, deprecated in other networks
+        choice = ['fixed', 'learnable']
+
+    norm: str, optional (default='BatchNorm')
+        manner of norm in Transformer, deprecated in other networks
+        choice = ['LayerNorm', 'BatchNorm']
 
     epoch_steps: int, optional (default=-1)
         Maximum steps in an epoch
@@ -61,12 +85,15 @@ class DeepSAD(BaseDeepAD):
 
     """
 
-    def __init__(self, epochs=100, batch_size=64, lr=1e-3,
+    def __init__(self, data_type='tabular', epochs=100, batch_size=64, lr=1e-3,
+                 network='MLP', seq_len=100, stride=1,
                  rep_dim=128, hidden_dims='100,50', act='ReLU', bias=False,
+                 n_heads=8, d_model=512, pos_encoding='fixed', norm='LayerNorm',
                  epoch_steps=-1, prt_steps=10, device='cuda',
                  verbose=2, random_state=42):
         super(DeepSAD, self).__init__(
-            model_name='DeepSAD', epochs=epochs, batch_size=batch_size, lr=lr,
+            data_type=data_type, model_name='DeepSAD', epochs=epochs, batch_size=batch_size, lr=lr,
+            network=network, seq_len=seq_len, stride=stride,
             epoch_steps=epoch_steps, prt_steps=prt_steps, device=device,
             verbose=verbose, random_state=random_state
         )
@@ -76,28 +103,56 @@ class DeepSAD(BaseDeepAD):
         self.act = act
         self.bias = bias
 
+        # parameters for Transformer
+        self.n_heads = n_heads
+        self.d_model = d_model
+        self.pos_encoding = pos_encoding
+        self.norm = norm
+
         self.c = None
 
         return
 
     def training_prepare(self, X, y):
+        # By following the original paper,
+        #   use -1 to denote known anomalies, and 1 to denote known inliers
+        known_anom_id = np.where(y == 1)
+        y = np.zeros_like(y)
+        y[known_anom_id] = -1
 
-        semi_y2 = y.copy()
-        semi_y2[np.where(y == 1)[0]] = -1
+        counter = Counter(y)
+
+        if self.verbose >= 2:
+            print(f'training data counter: {counter}')
+
         dataset = TensorDataset(torch.from_numpy(X).float(),
-                                torch.from_numpy(semi_y2).long())
+                                torch.from_numpy(y).long())
 
-        train_loader = DataLoader(dataset, batch_size=self.batch_size, shuffle=True)
+        weight_map = {0: 1. / counter[0], -1: 1. / counter[-1]}
+        sampler = WeightedRandomSampler(weights=[weight_map[label.item()] for data, label in dataset],
+                                        num_samples=len(dataset), replacement=True)
+        train_loader = DataLoader(dataset, batch_size=self.batch_size,
+                                  sampler=sampler,
+                                  shuffle=True if sampler is None else False)
 
-        net = MLPnet(
-            n_features=self.n_features,
-            n_hidden=self.hidden_dims,
-            n_output=self.rep_dim,
-            activation=self.act,
-            bias=self.bias,
-        ).to(self.device)
 
-        # self.c = torch.randn(net.n_emb).to(self.device)
+        network_params = {
+            'n_features': self.n_features,
+            'n_hidden': self.hidden_dims,
+            'n_output': self.rep_dim,
+            'activation': self.act,
+            'bias': self.bias
+        }
+        if self.network == 'Transformer':
+            network_params['n_heads'] = self.n_heads
+            network_params['d_model'] = self.d_model
+            network_params['pos_encoding'] = self.pos_encoding
+            network_params['norm'] = self.norm
+            network_params['seq_len'] = self.seq_len
+
+        network_class = get_network(self.network)
+        net = network_class(**network_params).to(self.device)
+
         self.c = self._set_c(net, train_loader)
         criterion = DSADLoss(c=self.c)
 
@@ -114,8 +169,14 @@ class DeepSAD(BaseDeepAD):
 
     def training_forward(self, batch_x, net, criterion):
         batch_x, batch_y = batch_x
+
+        # from collections import Counter
+        # tmp = batch_y.data.cpu().numpy()
+        # print(Counter(tmp))
+
         batch_x = batch_x.float().to(self.device)
-        batch_y = batch_y.to(self.device)
+        batch_y = batch_y.long().to(self.device)
+
         z = net(batch_x)
         loss = criterion(z, batch_y)
         return loss
@@ -138,7 +199,7 @@ class DeepSAD(BaseDeepAD):
         z_ = torch.cat(z_)
         c = torch.mean(z_, dim=0)
 
-        # if c i s too close to zero, set to +- eps
+        # if c is too close to zero, set to +- eps
         # a zero unit can be trivially matched with zero weights
         c[(abs(c) < eps) & (c < 0)] = -eps
         c[(abs(c) < eps) & (c > 0)] = eps
@@ -187,28 +248,3 @@ class DSADLoss(torch.nn.Module):
             return torch.sum(loss)
         elif reduction == 'none':
             return loss
-
-
-if __name__ == '__main__':
-    import numpy as np
-
-    file = '../../data/38_thyroid.npz'
-    data = np.load(file, allow_pickle=True)
-    x, y = data['X'], data['y']
-    y = np.array(y, dtype=int)
-
-    anom_id = np.where(y == 1)[0]
-    known_anom_id = np.random.choice(anom_id, 30)
-    y_semi = np.zeros_like(y)
-    y_semi[known_anom_id] = 1
-
-    clf = DeepSAD(device='cpu')
-    clf.fit(x, y_semi)
-
-    scores = clf.decision_function(x)
-
-    from sklearn.metrics import roc_auc_score
-
-    auc = roc_auc_score(y_score=scores, y_true=y)
-
-    print(auc)

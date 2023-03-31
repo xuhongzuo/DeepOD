@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """
 !! this is in development now. !!
-One-class classification
 this script is partially adapted from https://github.com/jmjeon94/AnoGAN-pytorch
 @Author: Hongzuo Xu <hongzuoxu@126.com, xuhongzuo13@nudt.edu.cn>
 """
@@ -209,27 +208,3 @@ class AnoGAN(BaseDeepAD):
     def inference_forward(self, batch_x, net, criterion):
         # implement in _inference
         pass
-
-if __name__ == '__main__':
-    import numpy as np
-
-    file = '../../data/38_thyroid.npz'
-    data = np.load(file, allow_pickle=True)
-    x, y = data['X'], data['y']
-    y = np.array(y, dtype=int)
-
-    anom_id = np.where(y==1)[0]
-    known_anom_id = np.random.choice(anom_id, 30)
-    y_semi = np.zeros_like(y)
-    y_semi[known_anom_id] = 1
-
-    clf = AnoGAN(device='cuda', prt_steps=1, epochs=100)
-    clf.fit(x, y_semi)
-
-    scores = clf.decision_function(x)
-
-    from sklearn.metrics import roc_auc_score
-
-    auc = roc_auc_score(y_score=scores, y_true=y)
-
-    print(auc)

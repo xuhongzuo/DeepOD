@@ -23,6 +23,8 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from deepod.models.dsad import DeepSAD
 from deepod.utils.data import generate_data
 import numpy as np
+import pandas as pd
+from deepod.utils.utility import cal_metrics
 
 
 class TestDSAD(unittest.TestCase):
@@ -31,52 +33,87 @@ class TestDSAD(unittest.TestCase):
         self.n_test = 100
         self.contamination = 0.1
         self.roc_floor = 0.8
+        self.ts_f1_floor = 0.0
 
-        # self.X_train, self.X_test, self.y_train, self.y_test = generate_data(
-        #     n_train=self.n_train, n_test=self.n_test, n_features=10,
-        #     contamination=self.contamination, random_state=42)
+        self.X_train, self.X_test, self.y_train, self.y_test = generate_data(
+            n_train=self.n_train, n_test=self.n_test, n_features=10,
+            contamination=self.contamination, random_state=42)
 
-        file = '../../data/38_thyroid.npz'
-        data = np.load(file, allow_pickle=True)
-        x, y = data['X'], data['y']
-        y = np.array(y, dtype=int)
-        anom_id = np.where(y == 1)[0]
-        known_anom_id = np.random.choice(anom_id, 30)
-        y_semi = np.zeros_like(y)
+        # file = '../../data/38_thyroid.npz'
+        # data = np.load(file, allow_pickle=True)
+        # x, y = data['X'], data['y']
+        # y = np.array(y, dtype=int)
+
+        anom_id = np.where(self.y_train == 1)[0]
+        known_anom_id = np.random.choice(anom_id, 10, replace=False)
+        y_semi = np.zeros_like(self.y_train, dtype=int)
         y_semi[known_anom_id] = 1
 
-        self.X_train = x
-        self.y_train = y_semi
-        self.X_test = x
-        self.y_test = y
+        # # # ts data
+        # train_file = 'data/omi-1/omi-1_train.csv'
+        # test_file = 'data/omi-1/omi-1_test.csv'
+        # train_df = pd.read_csv(train_file, index_col=0)
+        # test_df = pd.read_csv(test_file, index_col=0)
+        # y_train, y_test = train_df['label'].values, test_df['label'].values
+        # train_df, test_df = train_df.drop('label', axis=1), test_df.drop('label', axis=1)
+        # x_train = train_df.values
+        # x_test = test_df.values
+
+        # n = len(x_test)
+        # self.Xts_train = np.vstack([x_train, x_test[:int(n * 0.5)]])
+        # self.yts_train = np.hstack([y_train, y_test[:int(n * 0.5)]])
+        # self.Xts_test = x_test[int(n * 0.5):]
+        # self.yts_test = y_test[int(n * 0.5):]
+
+        self.Xts_train = np.random.randn(1000, 19)
+        self.yts_train = np.zeros(1000, dtype=int)
+        self.yts_train[200:250] = 1
+        self.Xts_test = self.Xts_train.copy()
+        self.yts_test = self.yts_train.copy()
 
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        self.clf = DeepSAD(hidden_dims=100, device=device)
-        self.clf.fit(self.X_train, self.y_train)
+        self.clf = DeepSAD(epochs=1, hidden_dims=20,
+                           device=device,
+                           random_state=42)
+        self.clf.fit(self.X_train, y_semi)
+
+        self.clf2 = DeepSAD(data_type='ts', stride=50, seq_len=100, epochs=20,
+                            device=device, network='TCN')
+        self.clf2.fit(self.Xts_train, self.yts_train)
 
     def test_parameters(self):
-        assert (hasattr(self.clf, 'decision_scores_') and
-                self.clf.decision_scores_ is not None)
-        assert (hasattr(self.clf, 'labels_') and
-                self.clf.labels_ is not None)
-        assert (hasattr(self.clf, 'threshold_') and
-                self.clf.threshold_ is not None)
+        assert (hasattr(self.clf2, 'decision_scores_') and
+                self.clf2.decision_scores_ is not None)
+        assert (hasattr(self.clf2, 'labels_') and
+                self.clf2.labels_ is not None)
+        assert (hasattr(self.clf2, 'threshold_') and
+                self.clf2.threshold_ is not None)
 
-    # def test_train_scores(self):
-    #     assert_equal(len(self.clf.decision_scores_), self.X_train.shape[0])
+    def test_train_scores(self):
+        assert_equal(len(self.clf2.decision_scores_), self.Xts_train.shape[0])
+        assert_equal(len(self.clf.decision_scores_), self.X_train.shape[0])
 
     def test_prediction_scores(self):
         pred_scores = self.clf.decision_function(self.X_test)
+        pred_scores2 = self.clf2.decision_function(self.Xts_test)
 
         # check score shapes
         assert_equal(pred_scores.shape[0], self.X_test.shape[0])
+        assert_equal(pred_scores2.shape[0], self.Xts_test.shape[0])
 
         # check performance
-        assert (roc_auc_score(self.y_test, pred_scores) >= self.roc_floor)
+        auc = roc_auc_score(self.y_test, pred_scores)
+        assert (auc >= self.roc_floor), \
+            f'auc {auc} does not reach minimum auc standard {self.roc_floor}'
+        adj_eval_info = cal_metrics(self.yts_test, pred_scores2, pa=True)
+        assert (adj_eval_info[2] >= self.ts_f1_floor), \
+            f'pa_f1 {adj_eval_info[2]} does not reach minimum f1 standard {self.ts_f1_floor}'
 
     def test_prediction_labels(self):
         pred_labels = self.clf.predict(self.X_test)
+        pred_labels2 = self.clf2.predict(self.Xts_test)
         assert_equal(pred_labels.shape, self.y_test.shape)
+        assert_equal(pred_labels2.shape, self.yts_test.shape)
 
     # def test_prediction_proba(self):
     #     pred_proba = self.clf.predict_proba(self.X_test)
@@ -100,9 +137,15 @@ class TestDSAD(unittest.TestCase):
     def test_prediction_labels_confidence(self):
         pred_labels, confidence = self.clf.predict(self.X_test,
                                                    return_confidence=True)
-
         assert_equal(pred_labels.shape, self.y_test.shape)
         assert_equal(confidence.shape, self.y_test.shape)
+        assert (confidence.min() >= 0)
+        assert (confidence.max() <= 1)
+
+        pred_labels, confidence = self.clf2.predict(self.Xts_test,
+                                                    return_confidence=True)
+        assert_equal(pred_labels.shape, self.yts_test.shape)
+        assert_equal(confidence.shape, self.yts_test.shape)
         assert (confidence.min() >= 0)
         assert (confidence.max() <= 1)
 
