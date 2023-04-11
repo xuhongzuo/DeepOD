@@ -154,7 +154,7 @@ class DualInputNet(torch.nn.Module):
             network_params['pos_encoding'] = pos_encoding
             network_params['norm'] = norm
             network_params['seq_len'] = seq_len
-        elif self.network == 'ConvSeq':
+        elif network_name == 'ConvSeq':
             network_params['seq_len'] = self.seq_len
 
         network_class = get_network(network_name)
