@@ -34,6 +34,8 @@ jobs:
 
     - name: Test with pytest
       run: |
+        conda update -n base conda
+        conda update --all
         conda install pytest
         conda install coverage
         conda install coveralls
