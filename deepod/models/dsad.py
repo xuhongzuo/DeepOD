@@ -88,7 +88,7 @@ class DeepSAD(BaseDeepAD):
     def __init__(self, data_type='tabular', epochs=100, batch_size=64, lr=1e-3,
                  network='MLP', seq_len=100, stride=1,
                  rep_dim=128, hidden_dims='100,50', act='ReLU', bias=False,
-                 n_heads=8, d_model=512, pos_encoding='fixed', norm='LayerNorm',
+                 n_heads=8, d_model=512, attn='self_attn', pos_encoding='fixed', norm='LayerNorm',
                  epoch_steps=-1, prt_steps=10, device='cuda',
                  verbose=2, random_state=42):
         super(DeepSAD, self).__init__(
@@ -106,6 +106,7 @@ class DeepSAD(BaseDeepAD):
         # parameters for Transformer
         self.n_heads = n_heads
         self.d_model = d_model
+        self.attn = attn
         self.pos_encoding = pos_encoding
         self.norm = norm
 
@@ -148,6 +149,9 @@ class DeepSAD(BaseDeepAD):
             network_params['d_model'] = self.d_model
             network_params['pos_encoding'] = self.pos_encoding
             network_params['norm'] = self.norm
+            network_params['attn'] = self.attn
+            network_params['seq_len'] = self.seq_len
+        elif self.network == 'ConvSeq':
             network_params['seq_len'] = self.seq_len
 
         network_class = get_network(self.network)

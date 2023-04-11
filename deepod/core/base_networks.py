@@ -4,7 +4,8 @@ import math
 import torch
 import numpy as np
 from torch.nn.utils import weight_norm
-from deepod.core.base_transformer_network import TSTransformerEncoder
+# from deepod.core.base_transformer_network import TSTransformerEncoder
+from deepod.core.base_transformer_network_dev import TSTransformerEncoder
 from deepod.core.network_utility import _instantiate_class, _handle_n_hidden
 
 
@@ -458,7 +459,7 @@ class ConvSeqEncoder(torch.nn.Module):
     this network architecture is from NeurTraL-AD
     """
     def __init__(self, n_features, n_hidden='100', n_output=128, n_layers=3, seq_len=100,
-                 bias=True, batch_norm=False, activation='ReLU'):
+                 bias=True, batch_norm=True, activation='ReLU'):
         super(ConvSeqEncoder, self).__init__()
 
         n_hidden, _ = _handle_n_hidden(n_hidden)
@@ -559,11 +560,11 @@ class ConvResBlock(torch.nn.Module):
         return out
 
 
-# if __name__ == '__main__':
-#     model = ConvSeqEncoder(n_features=16, n_hidden='32,32', n_layers=3,
-#                            n_output=8, activation='LeakyReLU')
-#     print(model)
-#     a = torch.randn(128, 100, 16)
-#
-#     b =  model(a)
-#     print(b.shape)
+if __name__ == '__main__':
+    model = ConvSeqEncoder(n_features=19, n_hidden='512', n_layers=3, seq_len=30,
+                           n_output=1, activation='LeakyReLU')
+    print(model)
+    a = torch.randn(32, 30, 19)
+
+    b =  model(a)
+    print(b.shape)
