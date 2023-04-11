@@ -4,8 +4,8 @@ import math
 import torch
 import numpy as np
 from torch.nn.utils import weight_norm
-# from deepod.core.base_transformer_network import TSTransformerEncoder
-from deepod.core.base_transformer_network_dev import TSTransformerEncoder
+from deepod.core.base_transformer_network import TSTransformerEncoder
+# from deepod.core.base_transformer_network_dev import TSTransformerEncoder
 from deepod.core.network_utility import _instantiate_class, _handle_n_hidden
 
 
