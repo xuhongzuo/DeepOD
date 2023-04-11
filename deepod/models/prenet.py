@@ -14,7 +14,7 @@ class PReNet(BaseDeepAD):
     def __init__(self, data_type='tabular', epochs=100, batch_size=64, lr=1e-3,
                  network='MLP', seq_len=100, stride=1,
                  rep_dim=128, hidden_dims='100,50', act='LeakyReLU', bias=False,
-                 n_heads=8, d_model=512, pos_encoding='fixed', norm='BatchNorm',
+                 n_heads=8, d_model=512, attn='self_attn', pos_encoding='fixed', norm='BatchNorm',
                  epoch_steps=-1, prt_steps=10, device='cuda',
                  verbose=2, random_state=42):
         super(PReNet, self).__init__(
@@ -34,6 +34,7 @@ class PReNet(BaseDeepAD):
         self.d_model = d_model
         self.pos_encoding = pos_encoding
         self.norm = norm
+        self.attn = attn
 
         return
 
@@ -48,6 +49,7 @@ class PReNet(BaseDeepAD):
             activation=self.act,
             n_heads=self.n_heads,
             d_model=self.d_model,
+            attn=self.attn,
             pos_encoding=self.pos_encoding,
             norm=self.norm,
             seq_len=self.seq_len,
@@ -134,7 +136,7 @@ class PReNet(BaseDeepAD):
 
 class DualInputNet(torch.nn.Module):
     def __init__(self, network_name, n_features, hidden_dims='100,50', rep_dim=64,
-                 n_heads=8, d_model=64, pos_encoding='fixed', norm='BatchNorm', seq_len=100,
+                 n_heads=8, d_model=64, attn='self_attn', pos_encoding='fixed', norm='BatchNorm', seq_len=100,
                  activation='ReLU', bias=False):
         super(DualInputNet, self).__init__()
 
@@ -148,9 +150,12 @@ class DualInputNet(torch.nn.Module):
         if network_name == 'Transformer':
             network_params['n_heads'] = n_heads
             network_params['d_model'] = d_model
+            network_params['attn'] = attn
             network_params['pos_encoding'] = pos_encoding
             network_params['norm'] = norm
             network_params['seq_len'] = seq_len
+        elif self.network == 'ConvSeq':
+            network_params['seq_len'] = self.seq_len
 
         network_class = get_network(network_name)
         self.enc_net = network_class(**network_params)
