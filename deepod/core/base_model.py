@@ -194,7 +194,7 @@ class BaseDeepAD(metaclass=ABCMeta):
 
         return self
 
-    def decision_function(self, X):
+    def decision_function(self, X, return_rep=False):
         """Predict raw anomaly scores of X using the fitted detector.
 
         The anomaly score of an input sample is computed based on the fitted
@@ -207,6 +207,9 @@ class BaseDeepAD(metaclass=ABCMeta):
             The input samples. Sparse matrices are accepted only
             if they are supported by the base estimator.
 
+        return_rep: boolean, optional, default=False
+            whether return representations
+
         Returns
         -------
         anomaly_scores : numpy array of shape (n_samples,)
@@ -218,6 +221,7 @@ class BaseDeepAD(metaclass=ABCMeta):
         if self.data_type == 'ts':
             X = get_sub_seqs(X, seq_len=self.seq_len, stride=1)
 
+        representations = []
         s_final = np.zeros(testing_n_samples)
         for _ in range(self.n_ensemble):
             self.test_loader = self.inference_prepare(X)
@@ -228,9 +232,15 @@ class BaseDeepAD(metaclass=ABCMeta):
             if self.data_type == 'ts':
                 padding = np.zeros(self.seq_len-1)
                 scores = np.hstack((padding, scores))
-            s_final += scores
 
-        return s_final
+            s_final += scores
+            representations.extend(z)
+        representations = np.array(representations)
+
+        if return_rep:
+            return s_final, representations
+        else:
+            return s_final
 
     def predict(self, X, return_confidence=False):
         """Predict if a particular sample is an outlier or not.
