@@ -366,14 +366,14 @@ class TSTransformerEncoder(torch.nn.Module):
         return output
 
 
-if __name__ == '__main__':
-    model = TSTransformerEncoder(n_features=19, seq_len=100,
-                                 token_encoding='linear',
-                                 d_model=512, n_heads=8, n_hidden='256,256',
-                                 n_output=128)
-
-    print(model)
-    a = torch.randn(256, 100, 19)
-    padding_masks = torch.ones(256, 100, dtype=int)
-    b = model(a)
-    print(b.shape)
+# if __name__ == '__main__':
+#     model = TSTransformerEncoder(n_features=19, seq_len=100,
+#                                  token_encoding='linear',
+#                                  d_model=512, n_heads=8, n_hidden='256,256',
+#                                  n_output=128)
+#
+#     print(model)
+#     a = torch.randn(256, 100, 19)
+#     padding_masks = torch.ones(256, 100, dtype=int)
+#     b = model(a)
+#     print(b.shape)

@@ -152,7 +152,6 @@ class FeaWadNet(torch.nn.Module):
         self.LinearModel = FWmodel(n_features+n_emb, n_hidden=n_hidden2, n_output=1,
                                    activation=activation, bias=bias)
 
-
     def forward(self, x):
         x2, enc = self.AEmodel(x)
         sub = x2 - x

@@ -15,7 +15,7 @@ class SLAD(BaseDeepAD):
     def __init__(self, epochs=100, batch_size=128, lr=1e-3,
                  hidden_dims=100, act='LeakyReLU',
                  distribution_size=10, # the member size in a group, c in the paper
-                 n_ensemble=20,
+                 n_slad_ensemble=20,
                  subspace_pool_size=50,
                  magnify_factor=200,
                  n_unified_features=128, # dimensionality after transformation, h in the paper
@@ -31,7 +31,7 @@ class SLAD(BaseDeepAD):
         self.act = act
 
         self.distribution_size = distribution_size
-        self.n_ensemble = n_ensemble
+        self.n_slad_ensemble = n_slad_ensemble
 
         self.max_subspace_len = None # maximum length of subspace
         self.sampling_size = None # number of objects per ensemble member
@@ -54,7 +54,7 @@ class SLAD(BaseDeepAD):
         if self.verbose >= 1:
             print(f'unified size: {self.n_unified_features}, '
                   f'subspace pool size: {self.subspace_pool_size}, '
-                  f'ensemble size: {self.n_ensemble}')
+                  f'ensemble size: {self.n_slad_ensemble}')
 
         # randomly determines the pool of subspace sizes
         self.len_pool = np.sort(np.random.choice(np.arange(1, self.max_subspace_len+1),
@@ -103,7 +103,7 @@ class SLAD(BaseDeepAD):
     def decision_function(self, X, return_rep=False):
         criterion = SLADLoss(reduction='none')
         all_score_lst = []
-        for i in range(self.n_ensemble):
+        for i in range(self.n_slad_ensemble):
             subspace_indices = self.subspace_indices_lst[i]
             x_new, y_new = self._transform_data(X,
                                                subspace_indices=subspace_indices,
@@ -146,7 +146,7 @@ class SLAD(BaseDeepAD):
         x_new_lst = []
         y_new_lst = []
         rng = np.random.RandomState(seed=self.random_state)
-        for i in range(self.n_ensemble):
+        for i in range(self.n_slad_ensemble):
             replace = True if self.n_features <= 10 else False
             subspace_indices = [
                 rng.choice(np.arange(self.n_features), rng.choice(self.len_pool, 1), replace=replace)
@@ -221,7 +221,7 @@ class SLAD(BaseDeepAD):
             factor = 1
         else:
             factor = 2
-        self.sampling_size = max(int(n_samples / self.n_ensemble) * factor, 10)
+        self.sampling_size = max(int(n_samples / self.n_slad_ensemble) * factor, 10)
 
         return
 

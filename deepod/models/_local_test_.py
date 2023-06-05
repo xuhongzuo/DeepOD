@@ -36,7 +36,7 @@ if __name__ == '__main__':
     # train_df, test_df = train_df.drop('label', axis=1), test_df.drop('label', axis=1)
     # x_train = train_df.values
     # x_test = test_df.values
-
+    #
     # n = len(x_test)
     # xts_train = np.vstack([x_train, x_test[:int(n*0.5)]])
     # yts_train = np.hstack([y_train, y_test[:int(n*0.5)]])
@@ -49,9 +49,9 @@ if __name__ == '__main__':
 
 
     # # # random ts data
-    x = np.random.randn(1000, 19)
-    y = np.zeros(1000, dtype=int)
-    y[200:250] = 1
+    # x = np.random.randn(1000, 19)
+    # y = np.zeros(1000, dtype=int)
+    # y[200:250] = 1
 
 
     # ---------------------------------------- #
@@ -91,16 +91,16 @@ if __name__ == '__main__':
 
     # -------------------- ts data --------------------- #
 
-    # # clf = DeepSVDD(data_type='ts', stride=50, seq_len=100, epochs=20, hidden_dims='100,50',
-    # #                device='cpu', network='GRU')
+    # clf = DeepSVDD(data_type='ts', stride=50, seq_len=100, epochs=20, hidden_dims='100,50',
+    #                device='cpu', network='ConvSeq')
     # clf = DeepIsolationForest(data_type='ts', stride=50, seq_len=100, epochs=20, hidden_dims='50',
     #                           device=device, network='GRU')
     # clf = REPEN(data_type='ts', stride=50, seq_len=100, epochs=100, hidden_dims='100',
     #                device='cpu', network='TCN', lr=0.01)
-    # clf.fit(xts_train)
-    # scores = clf.decision_function(x_val)
-    # #
-    # adj_eval_info = cal_metrics(y_val, scores, pa=True)
+    # clf.fit(x)
+    # scores = clf.decision_function(x)
+    # # #
+    # adj_eval_info = cal_metrics(y, scores, pa=True)
     # print(adj_eval_info)
 
     # clf = FeaWAD(data_type='ts', stride=10, seq_len=100, epochs=20,
@@ -110,12 +110,12 @@ if __name__ == '__main__':
     # clf = DevNet(data_type='ts', stride=10, seq_len=100, epochs=20,
     #               device='cuda', network='Transformer')
     # print(clf.n_heads, clf.d_model)
-    clf = DeepSAD(data_type='ts', stride=10, seq_len=100, epochs=20,
-                  device='cuda', network='Transformer', act='ReLU', verbose=2)
-    clf.fit(x, y)
-    scores = clf.decision_function(x)
-    adj_eval_info = cal_metrics(y, scores, pa=True)
-    print(adj_eval_info)
+    # clf = DeepSAD(data_type='ts', stride=10, seq_len=100, epochs=20,
+    #               device='cuda', network='Transformer', act='ReLU', verbose=2)
+    # clf.fit(x, y)
+    # scores = clf.decision_function(x)
+    # adj_eval_info = cal_metrics(y, scores, pa=True)
+    # print(adj_eval_info)
     #
     # pred, conf = clf.predict(x_val, return_confidence=True)
     # print(conf.shape)

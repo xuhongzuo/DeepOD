@@ -11,17 +11,17 @@ import importlib as imp
 dataset_root = f'/home/{getpass.getuser()}/dataset/1-tabular/'
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--runs", type=int, default=5,
+parser.add_argument("--runs", type=int, default=1,
                     help="how many times we repeat the experiments to obtain the average performance")
 parser.add_argument("--input_dir", type=str,
                     default='ADBench-classical',
                     help="the path of the data sets")
 parser.add_argument("--output_dir", type=str, default='@record/',
                     help="the output file path")
-parser.add_argument("--dataset", type=str, default='FULL',
+parser.add_argument("--dataset", type=str, default='*thyroid*',
                     help="FULL represents all the csv file in the folder, "
                          "or a list of data set names splitted by comma")
-parser.add_argument("--model", type=str, default='DeepSVDD', help="",)
+parser.add_argument("--model", type=str, default='SLAD', help="",)
 parser.add_argument("--normalization", type=str, default='min-max', help="",)
 parser.add_argument('--silent_header', action='store_true')
 parser.add_argument("--flag", type=str, default='')

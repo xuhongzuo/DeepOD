@@ -23,6 +23,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from deepod.models.prenet import PReNet
 from deepod.utils.data import generate_data
 import numpy as np
+import pandas as pd
 
 
 class TestPReNet(unittest.TestCase):
@@ -36,23 +37,36 @@ class TestPReNet(unittest.TestCase):
             n_train=self.n_train, n_test=self.n_test, n_features=10,
             contamination=self.contamination, random_state=42)
 
-        # file = '../../data/38_thyroid.npz'
-        # data = np.load(file, allow_pickle=True)
-        # x, y = data['X'], data['y']
-        # y = np.array(y, dtype=int)
-
         anom_id = np.where(self.y_train == 1)[0]
         known_anom_id = np.random.choice(anom_id, 10, replace=False)
         y_semi = np.zeros_like(self.y_train, dtype=int)
         y_semi[known_anom_id] = 1
 
+        train_file = 'data/omi-1/omi-1_train.csv'
+        test_file = 'data/omi-1/omi-1_test.csv'
+        train_df = pd.read_csv(train_file, sep=',', index_col=0)
+        test_df = pd.read_csv(test_file, index_col=0)
+        y = test_df['label'].values
+        train_df, test_df = train_df.drop('label', axis=1), test_df.drop('label', axis=1)
+        self.Xts_train = train_df.values
+        self.Xts_test = test_df.values
+        self.yts_test = y
+        yts_semi = np.zeros(len(train_df), dtype=int)
+        yts_semi[1:50] = 1
+
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        self.clf = PReNet(epochs=50,
+        self.clf = PReNet(epochs=10,
                           epoch_steps=20,
                           device=device,
                           batch_size=256,
                           lr=1e-5)
         self.clf.fit(self.X_train, y_semi)
+
+        self.clf2 = PReNet(data_type='ts',
+                           seq_len=100, stride=100,
+                           epochs=10, epoch_steps=20, network='LSTM',
+                          device=device, batch_size=256, lr=1e-5)
+        self.clf2.fit(self.Xts_train, yts_semi)
 
     def test_parameters(self):
         assert (hasattr(self.clf, 'decision_scores_') and
@@ -67,9 +81,11 @@ class TestPReNet(unittest.TestCase):
 
     def test_prediction_scores(self):
         pred_scores = self.clf.decision_function(self.X_test)
+        pred_scores2 = self.clf2.decision_function(self.Xts_test)
 
         # check score shapes
         assert_equal(pred_scores.shape[0], self.X_test.shape[0])
+        assert_equal(pred_scores2.shape[0], self.Xts_test.shape[0])
 
         # # check performance
         # auc = roc_auc_score(self.y_test, pred_scores)
@@ -78,6 +94,9 @@ class TestPReNet(unittest.TestCase):
     def test_prediction_labels(self):
         pred_labels = self.clf.predict(self.X_test)
         assert_equal(pred_labels.shape, self.y_test.shape)
+
+        pred_labels2 = self.clf2.predict(self.Xts_test)
+        assert_equal(pred_labels2.shape, self.yts_test.shape)
 
     # def test_prediction_proba(self):
     #     pred_proba = self.clf.predict_proba(self.X_test)

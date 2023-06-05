@@ -35,7 +35,7 @@ class TestSLAD(unittest.TestCase):
             contamination=self.contamination, random_state=42)
 
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        self.clf = SLAD(device=device)
+        self.clf = SLAD(epochs=20, device=device)
         self.clf.fit(self.X_train)
 
     def test_parameters(self):

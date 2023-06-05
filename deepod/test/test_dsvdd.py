@@ -56,6 +56,10 @@ class TestDeepSVDD(unittest.TestCase):
                              device=device, network='TCN', random_state=42)
         self.clf2.fit(self.Xts_train)
 
+        self.clf3 = DeepSVDD(data_type='ts', seq_len=100, stride=5, epochs=20, hidden_dims='100,50',
+                             device=device, network='ConvSeq', random_state=42)
+        self.clf3.fit(self.Xts_train)
+
     def test_parameters(self):
         assert (hasattr(self.clf, 'decision_scores_') and
                 self.clf.decision_scores_ is not None)
@@ -67,14 +71,17 @@ class TestDeepSVDD(unittest.TestCase):
     def test_train_scores(self):
         assert_equal(len(self.clf.decision_scores_), self.X_train.shape[0])
         assert_equal(len(self.clf2.decision_scores_), self.Xts_train.shape[0])
+        assert_equal(len(self.clf3.decision_scores_), self.Xts_train.shape[0])
 
     def test_prediction_scores(self):
         pred_scores = self.clf.decision_function(self.X_test)
         pred_scores2 = self.clf2.decision_function(self.Xts_test)
+        pred_scores3 = self.clf3.decision_function(self.Xts_test)
 
         # check score shapes
         assert_equal(pred_scores.shape[0], self.X_test.shape[0])
         assert_equal(pred_scores2.shape[0], self.Xts_test.shape[0])
+        assert_equal(pred_scores3.shape[0], self.Xts_test.shape[0])
 
         # check performance
         assert (roc_auc_score(self.y_test, pred_scores) >= self.roc_floor)

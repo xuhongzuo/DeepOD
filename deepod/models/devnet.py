@@ -212,16 +212,3 @@ class DevLoss(torch.nn.Module):
             return loss
 
         return loss
-
-
-if __name__ == '__main__':
-    Xts_train = np.random.randn(1000, 19)
-    yts_train = np.zeros(1000, dtype=int)
-    yts_train[200:250] = 1
-    Xts_test = Xts_train.copy()
-    yts_test = yts_train.copy()
-
-    clf2 = DevNet(data_type='ts', seq_len=100, stride=5,
-                       epochs=5, network='Transformer', hidden_dims='256,256',
-                       d_model=64, n_heads=8, device='cuda')
-    clf2.fit(Xts_train, yts_train)
