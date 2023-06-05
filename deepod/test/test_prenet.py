@@ -42,17 +42,11 @@ class TestPReNet(unittest.TestCase):
         y_semi = np.zeros_like(self.y_train, dtype=int)
         y_semi[known_anom_id] = 1
 
-        train_file = 'data/omi-1/omi-1_train.csv'
-        test_file = 'data/omi-1/omi-1_test.csv'
-        train_df = pd.read_csv(train_file, sep=',', index_col=0)
-        test_df = pd.read_csv(test_file, index_col=0)
-        y = test_df['label'].values
-        train_df, test_df = train_df.drop('label', axis=1), test_df.drop('label', axis=1)
-        self.Xts_train = train_df.values
-        self.Xts_test = test_df.values
-        self.yts_test = y
-        yts_semi = np.zeros(len(train_df), dtype=int)
-        yts_semi[1:50] = 1
+        self.Xts_train = np.random.randn(1000, 19)
+        self.yts_train = np.zeros(1000, dtype=int)
+        self.yts_train[200:250] = 1
+        self.Xts_test = self.Xts_train.copy()
+        self.yts_test = self.yts_train.copy()
 
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
         self.clf = PReNet(epochs=1,
@@ -66,7 +60,7 @@ class TestPReNet(unittest.TestCase):
                            seq_len=100, stride=10,
                            epochs=1, epoch_steps=20, network='LSTM',
                           device=device, batch_size=256, lr=1e-5)
-        self.clf2.fit(self.Xts_train, yts_semi)
+        self.clf2.fit(self.Xts_train, self.yts_train)
 
     def test_parameters(self):
         assert (hasattr(self.clf, 'decision_scores_') and
@@ -78,6 +72,10 @@ class TestPReNet(unittest.TestCase):
 
     # def test_train_scores(self):
     #     assert_equal(len(self.clf.decision_scores_), self.X_train.shape[0])
+
+    def test_train_scores(self):
+        assert_equal(len(self.clf2.decision_scores_), self.Xts_train.shape[0])
+        assert_equal(len(self.clf.decision_scores_), self.X_train.shape[0])
 
     def test_prediction_scores(self):
         pred_scores = self.clf.decision_function(self.X_test)
