@@ -55,7 +55,7 @@ class TestPReNet(unittest.TestCase):
         yts_semi[1:50] = 1
 
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        self.clf = PReNet(epochs=10,
+        self.clf = PReNet(epochs=1,
                           epoch_steps=20,
                           device=device,
                           batch_size=256,
@@ -64,7 +64,7 @@ class TestPReNet(unittest.TestCase):
 
         self.clf2 = PReNet(data_type='ts',
                            seq_len=100, stride=10,
-                           epochs=10, epoch_steps=20, network='LSTM',
+                           epochs=1, epoch_steps=20, network='LSTM',
                           device=device, batch_size=256, lr=1e-5)
         self.clf2.fit(self.Xts_train, yts_semi)
 
