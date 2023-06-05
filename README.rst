@@ -109,6 +109,5 @@ If you use this library in your work, please use the BibTex entry below for cita
    @misc{deepod,
       author = {{Xu, Hongzuo}},
       title = {{DeepOD: Python Deep Outlier/Anomaly Detection}},
-      url = {https://github.com/xuhongzuo/DeepOD},
-      version = {0.2},
+      url = {https://github.com/xuhongzuo/DeepOD}
    }
