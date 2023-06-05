@@ -54,7 +54,7 @@ class TestFeaWAD(unittest.TestCase):
         y_semi[known_anom_id] = 1
 
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        self.clf = FeaWAD(epochs=20)
+        self.clf = FeaWAD(epochs=20, device=device)
         self.clf.fit(self.X_train, y_semi)
 
         self.clf2 = FeaWAD(data_type='ts', stride=50, seq_len=100, epochs=20,
