@@ -57,8 +57,8 @@ class TestPReNet(unittest.TestCase):
         self.clf.fit(self.X_train, y_semi)
 
         self.clf2 = PReNet(data_type='ts',
-                           seq_len=100, stride=10,
-                           epochs=1, epoch_steps=20, network='LSTM',
+                           seq_len=30, stride=10,
+                           epochs=1, epoch_steps=20, network='GRU', hidden_dims=20,
                           device=device, batch_size=256, lr=1e-5)
         self.clf2.fit(self.Xts_train, self.yts_train)
 
