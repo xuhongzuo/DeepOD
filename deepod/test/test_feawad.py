@@ -7,20 +7,14 @@ import sys
 import unittest
 
 # noinspection PyProtectedMember
-from numpy.testing import assert_allclose
-from numpy.testing import assert_array_less
 from numpy.testing import assert_equal
-from numpy.testing import assert_raises
-from scipy.stats import rankdata
-from sklearn.base import clone
-from sklearn.metrics import roc_auc_score
 import torch
 
 # temporary solution for relative imports in case pyod is not installed
 # if deepod is installed, no need to use the following line
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from deepod.models.feawad import FeaWAD
+from deepod.models.tabular.feawad import FeaWAD
 from deepod.utils.data import generate_data
 import numpy as np
 
@@ -57,10 +51,6 @@ class TestFeaWAD(unittest.TestCase):
         self.clf = FeaWAD(epochs=20, device=device)
         self.clf.fit(self.X_train, y_semi)
 
-        self.clf2 = FeaWAD(data_type='ts', stride=50, seq_len=100, epochs=20,
-                            device=device, network='TCN')
-        self.clf2.fit(self.Xts_train, self.yts_train)
-
     def test_parameters(self):
         assert (hasattr(self.clf, 'decision_scores_') and
                 self.clf.decision_scores_ is not None)
@@ -73,16 +63,13 @@ class TestFeaWAD(unittest.TestCase):
     #     assert_equal(len(self.clf.decision_scores_), self.X_train.shape[0])
 
     def test_train_scores(self):
-        assert_equal(len(self.clf2.decision_scores_), self.Xts_train.shape[0])
         assert_equal(len(self.clf.decision_scores_), self.X_train.shape[0])
 
     def test_prediction_scores(self):
         pred_scores = self.clf.decision_function(self.X_test)
-        pred_scores2 = self.clf2.decision_function(self.Xts_test)
 
         # check score shapes
         assert_equal(pred_scores.shape[0], self.X_test.shape[0])
-        assert_equal(pred_scores2.shape[0], self.Xts_test.shape[0])
 
         # # check performance
         # auc = roc_auc_score(self.y_test, pred_scores)
@@ -90,9 +77,7 @@ class TestFeaWAD(unittest.TestCase):
 
     def test_prediction_labels(self):
         pred_labels = self.clf.predict(self.X_test)
-        pred_labels2 = self.clf2.predict(self.Xts_test)
         assert_equal(pred_labels.shape, self.y_test.shape)
-        assert_equal(pred_labels2.shape, self.yts_test.shape)
 
     # def test_prediction_proba(self):
     #     pred_proba = self.clf.predict_proba(self.X_test)
@@ -122,8 +107,6 @@ class TestFeaWAD(unittest.TestCase):
         assert (confidence.min() >= 0)
         assert (confidence.max() <= 1)
 
-        pred_labels, confidence = self.clf2.predict(self.Xts_test,
-                                                    return_confidence=True)
         assert_equal(pred_labels.shape, self.yts_test.shape)
         assert_equal(confidence.shape, self.yts_test.shape)
         assert (confidence.min() >= 0)

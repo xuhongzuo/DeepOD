@@ -7,12 +7,7 @@ import sys
 import unittest
 
 # noinspection PyProtectedMember
-from numpy.testing import assert_allclose
-from numpy.testing import assert_array_less
 from numpy.testing import assert_equal
-from numpy.testing import assert_raises
-from scipy.stats import rankdata
-from sklearn.base import clone
 from sklearn.metrics import roc_auc_score
 import torch
 import pandas as pd
@@ -21,9 +16,9 @@ import pandas as pd
 # if deepod is installed, no need to use the following line
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from deepod.models.dif import DeepIsolationForest
+from deepod.models.tabular.dif import DeepIsolationForest
+from deepod.models.time_series.dif import DeepIsolationForestTS
 from deepod.utils.data import generate_data
-from deepod.utils.utility import cal_metrics
 
 
 class TestDIF(unittest.TestCase):
@@ -51,10 +46,10 @@ class TestDIF(unittest.TestCase):
         self.clf = DeepIsolationForest(device=device, n_ensemble=50, n_estimators=6)
         self.clf.fit(self.X_train)
 
-        self.clf2 = DeepIsolationForest(data_type='ts', seq_len=100, stride=5,
-                                        epochs=20, hidden_dims='50',
-                                        device=device, network='TCN',
-                                        random_state=42)
+        self.clf2 = DeepIsolationForestTS(seq_len=100, stride=5,
+                                          epochs=20, hidden_dims='50',
+                                          device=device,
+                                          random_state=42)
         self.clf2.fit(self.Xts_train)
 
     def test_parameters(self):

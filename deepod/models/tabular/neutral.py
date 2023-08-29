@@ -6,7 +6,7 @@ this script is partially adapted from https://github.com/boschresearch/NeuTraL-A
 """
 
 from deepod.core.base_model import BaseDeepAD
-from deepod.core.base_networks import MLPnet
+from deepod.core.networks.base_networks import MLPnet
 from torch.utils.data import DataLoader
 import torch.nn.functional as F
 import torch

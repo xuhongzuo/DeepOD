@@ -6,14 +6,15 @@ PyTorch's implementation
 """
 
 from deepod.core.base_model import BaseDeepAD
-from deepod.core.base_networks import get_network
+from deepod.core.networks.base_networks import get_network
+from deepod.models.tabular.devnet import DevLoss
 from torch.utils.data import DataLoader, TensorDataset
 from torch.utils.data.sampler import WeightedRandomSampler
 import torch
 import numpy as np
 
 
-class DevNet(BaseDeepAD):
+class DevNetTS(BaseDeepAD):
     """
     Parameters
     ----------
@@ -80,15 +81,15 @@ class DevNet(BaseDeepAD):
     random_state： int, optional (default=42)
         the seed used by the random
     """
-    def __init__(self, data_type='tabular', epochs=100, batch_size=64, lr=1e-3,
-                 network='MLP', seq_len=100, stride=1,
+    def __init__(self, epochs=100, batch_size=64, lr=1e-3,
+                 network='Transformer', seq_len=100, stride=1,
                  rep_dim=128, hidden_dims='100,50', act='ReLU', bias=False,
                  n_heads=8, d_model=512, attn='self_attn', pos_encoding='fixed', norm='LayerNorm',
                  margin=5., l=5000,
                  epoch_steps=-1, prt_steps=10, device='cuda',
                  verbose=2, random_state=42):
-        super(DevNet, self).__init__(
-            data_type=data_type, model_name='DevNet', epochs=epochs, batch_size=batch_size, lr=lr,
+        super(DevNetTS, self).__init__(
+            data_type='ts', model_name='DevNet', epochs=epochs, batch_size=batch_size, lr=lr,
             network=network, seq_len=seq_len, stride=stride,
             epoch_steps=epoch_steps, prt_steps=prt_steps, device=device,
             verbose=verbose, random_state=random_state
@@ -168,47 +169,3 @@ class DevNet(BaseDeepAD):
         s = s.view(-1)
         batch_z = batch_x
         return batch_z, s
-
-
-class DevLoss(torch.nn.Module):
-    """
-    Deviation Loss
-
-    Parameters
-    ----------
-    margin: float, optional (default=5.)
-        Center of the pre-defined hyper-sphere in the representation space
-
-    l: int, optional (default=5000.)
-        the size of samples of the Gaussian distribution used in the deviation loss function
-
-    reduction: str, optional (default='mean')
-        choice = [``'none'`` | ``'mean'`` | ``'sum'``]
-            - If ``'none'``: no reduction will be applied;
-            - If ``'mean'``: the sum of the output will be divided by the number of
-            elements in the output;
-            - If ``'sum'``: the output will be summed
-
-    """
-    def __init__(self, margin=5., l=5000, reduction='mean'):
-        super(DevLoss, self).__init__()
-        self.margin = margin
-        self.loss_l = l
-        self.reduction = reduction
-        return
-
-    def forward(self, y_true, y_pred):
-        ref = torch.randn(self.loss_l)  # from the normal dataset
-        dev = (y_pred - torch.mean(ref)) / torch.std(ref)
-        inlier_loss = torch.abs(dev)
-        outlier_loss = torch.abs(torch.max(self.margin - dev, torch.zeros_like(dev)))
-        loss = (1 - y_true) * inlier_loss + y_true * outlier_loss
-
-        if self.reduction == 'mean':
-            return torch.mean(loss)
-        elif self.reduction == 'sum':
-            return torch.sum(loss)
-        elif self.reduction == 'none':
-            return loss
-
-        return loss

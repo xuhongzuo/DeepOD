@@ -6,7 +6,7 @@ PyTorch's implementation
 """
 
 from deepod.core.base_model import BaseDeepAD
-from deepod.core.base_networks import get_network
+from deepod.core.networks.base_networks import get_network
 from torch.utils.data import DataLoader, TensorDataset
 from torch.utils.data.sampler import WeightedRandomSampler
 import torch
@@ -61,15 +61,14 @@ class FeaWAD(BaseDeepAD):
     random_state： int, optional (default=42)
         the seed used by the random
     """
-    def __init__(self, data_type='tabular', epochs=100, batch_size=64, lr=1e-3,
-                 network='MLP', seq_len=100, stride=1,
+    def __init__(self, epochs=100, batch_size=64, lr=1e-3,
                  rep_dim=128, hidden_dims='100,50', act='ReLU', bias=False,
                  margin=5.,
                  epoch_steps=-1, prt_steps=10, device='cuda',
                  verbose=2, random_state=42):
         super(FeaWAD, self).__init__(
-            data_type=data_type, model_name='FeaWAD', epochs=epochs, batch_size=batch_size, lr=lr,
-            network=network, seq_len=seq_len, stride=stride,
+            data_type='tabular', model_name='FeaWAD', epochs=epochs, batch_size=batch_size, lr=lr,
+            network='MLP',
             epoch_steps=epoch_steps, prt_steps=prt_steps, device=device,
             verbose=verbose, random_state=random_state
         )
@@ -103,7 +102,6 @@ class FeaWAD(BaseDeepAD):
             'activation': self.act,
             'bias': self.bias
         }
-
         net = FeaWadNet(**network_params).to(self.device)
         criterion = FeaWADLoss(margin=self.margin)
         if self.verbose >= 2:
@@ -138,17 +136,10 @@ class FeaWadNet(torch.nn.Module):
                  activation='ReLU', bias=False):
         super(FeaWadNet, self).__init__()
 
-        if network == 'MLP':
-            AEmodel_class = get_network('MlpAE')
-            FWmodel = get_network('MLP')
-        elif network == 'TCN':
-            AEmodel_class = get_network('TcnAE')
-            FWmodel = get_network('MLP')
-        else:
-            raise NotImplementedError('')
-
+        AEmodel_class = get_network('MlpAE')
+        FWmodel = get_network('MLP')
         self.AEmodel = AEmodel_class(n_features, n_hidden=n_hidden, n_emb=n_emb,
-                               activation=activation, bias=bias)
+                                     activation=activation, bias=bias)
         self.LinearModel = FWmodel(n_features+n_emb, n_hidden=n_hidden2, n_output=1,
                                    activation=activation, bias=bias)
 

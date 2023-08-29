@@ -5,7 +5,7 @@ this script is partially adapted from https://hub.nuaa.cf/illidanlab/RCA
 """
 
 from deepod.core.base_model import BaseDeepAD
-from deepod.core.base_networks import MLPnet
+from deepod.core.networks.base_networks import MLPnet
 from tqdm import trange
 from torch.utils.data import DataLoader
 import torch

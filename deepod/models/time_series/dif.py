@@ -5,10 +5,9 @@ Deep isolation forest for anomaly detection
 """
 
 from sklearn.utils import check_array
-from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import IsolationForest
 from deepod.core.base_model import BaseDeepAD
-from deepod.core.base_networks import get_network
+from deepod.core.networks.ts_network_dilated_conv import DilatedConvEncoder
 from deepod.utils.utility import get_sub_seqs
 from tqdm import tqdm
 import torch
@@ -16,26 +15,25 @@ from torch.utils.data import DataLoader
 import numpy as np
 
 
-class DeepIsolationForest(BaseDeepAD):
-    def __init__(self, data_type='tabular',
+class DeepIsolationForestTS(BaseDeepAD):
+    def __init__(self,
                  epochs=100, batch_size=1000, lr=1e-3,
-                 network='MLP', seq_len=100, stride=1,
-                 rep_dim=128, hidden_dims='100,50', act='ReLU', bias=False,
+                 seq_len=100, stride=1,
+                 rep_dim=128, hidden_dims='100,50', bias=False,
                  n_ensemble=50, n_estimators=6,
                  max_samples=256, n_jobs=1,
                  epoch_steps=-1, prt_steps=10, device='cuda',
                  verbose=2, random_state=42):
-        super(DeepIsolationForest, self).__init__(
-            model_name='DIF', data_type=data_type,
+        super(DeepIsolationForestTS, self).__init__(
+            model_name='DIF', data_type='ts', network='DilatedConv',
             epochs=epochs, batch_size=batch_size, lr=lr,
-            network=network, seq_len=seq_len, stride=stride,
+            seq_len=seq_len, stride=stride,
             epoch_steps=epoch_steps, prt_steps=prt_steps, device=device,
             verbose=verbose, random_state=random_state
         )
 
         self.hidden_dims = hidden_dims
         self.rep_dim = rep_dim
-        self.act = act
         self.bias = bias
 
         self.n_ensemble = n_ensemble
@@ -68,16 +66,11 @@ class DeepIsolationForest(BaseDeepAD):
             Fitted estimator.
         """
 
-        if self.data_type == 'ts':
-            X_seqs = get_sub_seqs(X, seq_len=self.seq_len, stride=self.stride)
-            y_seqs = get_sub_seqs(y, seq_len=self.seq_len, stride=self.stride) if y is not None else None
-            self.train_data = X_seqs
-            self.train_label = y_seqs
-            self.n_samples, self.n_features = X_seqs.shape[0], X_seqs.shape[2]
-        else:
-            self.train_data = X
-            self.train_label = y
-            self.n_samples, self.n_features = X.shape
+        X_seqs = get_sub_seqs(X, seq_len=self.seq_len, stride=self.stride)
+        y_seqs = get_sub_seqs(y, seq_len=self.seq_len, stride=self.stride) if y is not None else None
+        self.train_data = X_seqs
+        self.train_label = y_seqs
+        self.n_samples, self.n_features = X_seqs.shape[0], X_seqs.shape[2]
 
         if self.verbose >= 1:
             print('Start Training...')
@@ -86,10 +79,8 @@ class DeepIsolationForest(BaseDeepAD):
             'n_features': self.n_features,
             'n_hidden': self.hidden_dims,
             'n_output': self.rep_dim,
-            'activation': self.act,
             'bias': self.bias
         }
-        network_class = get_network(self.network)
 
         if self.verbose >= 2:
             iteration = tqdm(range(self.n_ensemble))
@@ -98,33 +89,13 @@ class DeepIsolationForest(BaseDeepAD):
 
         ensemble_seeds = np.random.randint(0, 100000, self.n_ensemble)
         for i in iteration:
-            # -------------------------------- for tabular data -------------------------- #
-            if self.data_type == 'tabular':
-                net = network_class(**network_params)
-                torch.manual_seed(ensemble_seeds[i])
-                for m in net.modules():
-                    if isinstance(m, torch.nn.Linear):
-                        torch.nn.init.normal_(m.weight, mean=0., std=1.)
+            net = DilatedConvEncoder(**network_params)
+            net = net.to(self.device)
 
-                x_tensor = torch.from_numpy(self.train_data).float()
-                x_reduced = net(x_tensor).data.numpy()
-
-                ss = StandardScaler()
-                x_reduced = ss.fit_transform(x_reduced)
-                x_reduced = np.tanh(x_reduced)
-
-            # -------------------------------- for ts data -------------------------- #
-            elif self.data_type == 'ts':
-                net = network_class(**network_params)
-                net = net.to(self.device)
-
-                torch.manual_seed(ensemble_seeds[i])
-                for name, param in net.named_parameters():
-                    torch.nn.init.normal_(param, mean=0., std=1.)
-                x_reduced = self._deep_transfer(self.train_data, net, self.batch_size, self.device)
-
-            else:
-                raise NotImplementedError('')
+            torch.manual_seed(ensemble_seeds[i])
+            for name, param in net.named_parameters():
+                torch.nn.init.normal_(param, mean=0., std=1.)
+            x_reduced = self._deep_transfer(self.train_data, net, self.batch_size, self.device)
 
             self.x_reduced_lst.append(x_reduced)
             self.net_lst.append(net)
@@ -165,8 +136,7 @@ class DeepIsolationForest(BaseDeepAD):
             print('Start Inference...')
 
         testing_n_samples = X.shape[0]
-        if self.data_type == 'ts':
-            X = get_sub_seqs(X, seq_len=self.seq_len, stride=1)
+        X = get_sub_seqs(X, seq_len=self.seq_len, stride=1)
 
         self.score_lst = np.zeros([self.n_ensemble, testing_n_samples])
 
@@ -176,23 +146,11 @@ class DeepIsolationForest(BaseDeepAD):
             iteration = range(self.n_ensemble)
 
         for i in iteration:
-            if self.data_type == 'tabular':
-                x_reduced = self.net_lst[i](torch.from_numpy(X).float()).data.numpy()
-                ss = StandardScaler()
-                x_reduced = ss.fit_transform(x_reduced)
-                x_reduced = np.tanh(x_reduced)
-
-            elif self.data_type == 'ts':
-                x_reduced = self._deep_transfer(X, self.net_lst[i], self.batch_size, self.device)
-
-            else:
-                raise NotImplementedError('')
-
+            x_reduced = self._deep_transfer(X, self.net_lst[i], self.batch_size, self.device)
             scores = _cal_score(x_reduced, self.iForest_lst[i])
 
-            if self.data_type == 'ts':
-                padding = np.zeros(self.seq_len-1)
-                scores = np.hstack((padding, scores))
+            padding = np.zeros(self.seq_len-1)
+            scores = np.hstack((padding, scores))
 
             self.score_lst[i] = scores
 
@@ -336,23 +294,3 @@ def _average_path_length(n_samples_leaf):
 
     return average_path_length.reshape(n_samples_leaf_shape)
 
-# def get_depth(x_reduced, clf):
-#     n_samples = x_reduced.shape[0]
-#
-#     depths = np.zeros((n_samples, len(clf.estimators_)))
-#     depth_sum = np.zeros(n_samples)
-#     for ii, (tree, features) in enumerate(zip(clf.estimators_, clf.estimators_features_)):
-#         leaves_index = tree.apply(x_reduced)
-#         node_indicator = tree.decision_path(x_reduced)
-#         n_samples_leaf = tree.tree_.n_node_samples[leaves_index]
-#
-#         # node_indicator is a sparse matrix, indicating the path of input data samples
-#         # with shape (n_samples, n_nodes)
-#         # each layer would result in a non-zero element in this matrix,
-#         # and then the row-wise summation is the depth of data sample
-#         d = (np.ravel(node_indicator.sum(axis=1)) + _average_path_length(n_samples_leaf) - 1.0)
-#         depths[:, ii] = d
-#         depth_sum += d
-#
-#     scores = 2 ** (-depth_sum / (len(clf.estimators_) * _average_path_length([clf.max_samples_])))
-#     return depths, scores

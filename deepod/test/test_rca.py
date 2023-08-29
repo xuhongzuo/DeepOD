@@ -7,20 +7,14 @@ import sys
 import unittest
 
 # noinspection PyProtectedMember
-from numpy.testing import assert_allclose
-from numpy.testing import assert_array_less
 from numpy.testing import assert_equal
-from numpy.testing import assert_raises
-from scipy.stats import rankdata
-from sklearn.base import clone
-from sklearn.metrics import roc_auc_score
 import torch
 
 # temporary solution for relative imports in case pyod is not installed
 # if deepod is installed, no need to use the following line
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from deepod.models.rca import RCA
+from deepod.models.tabular.rca import RCA
 from deepod.utils.data import generate_data
 
 

@@ -4,7 +4,7 @@ scale learning-based deep anomaly detection
 """
 
 from deepod.core.base_model import BaseDeepAD
-from deepod.core.base_networks import MLPnet, LinearBlock
+from deepod.core.networks.base_networks import MLPnet, LinearBlock
 from torch.utils.data import DataLoader, TensorDataset
 import numpy as np
 import torch.nn.functional as F

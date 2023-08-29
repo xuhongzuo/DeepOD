@@ -12,9 +12,7 @@ import time
 from abc import ABCMeta, abstractmethod
 from scipy.stats import binom
 from deepod.utils.utility import get_sub_seqs, get_sub_seqs_label
-from deepod.core.base_networks import sequential_net_name
-from sklearn.utils import check_array
-from sklearn.utils.validation import check_is_fitted
+from deepod.core.networks.base_networks import sequential_net_name
 from tqdm import tqdm
 
 
@@ -102,9 +100,9 @@ class BaseDeepAD(metaclass=ABCMeta):
         self.data_type = data_type
         self.network = network
 
-        if data_type == 'ts':
-            assert self.network in sequential_net_name, \
-                'Assigned network cannot handle time-series data'
+        # if data_type == 'ts':
+        #     assert self.network in sequential_net_name, \
+        #         'Assigned network cannot handle time-series data'
 
         self.seq_len = seq_len
         self.stride = stride

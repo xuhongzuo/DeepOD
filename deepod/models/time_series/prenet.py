@@ -5,20 +5,21 @@ Weakly-supervised anomaly detection by pairwise relation prediction task
 """
 
 from deepod.core.base_model import BaseDeepAD
-from deepod.core.base_networks import LinearBlock, get_network
+from deepod.core.networks.base_networks import LinearBlock, get_network
+from deepod.models.tabular.prenet import PReNetLoader
 import torch
 import numpy as np
 
 
-class PReNet(BaseDeepAD):
-    def __init__(self, data_type='tabular', epochs=100, batch_size=64, lr=1e-3,
-                 network='MLP', seq_len=100, stride=1,
-                 rep_dim=128, hidden_dims='100,50', act='LeakyReLU', bias=False,
+class PReNetTS(BaseDeepAD):
+    def __init__(self, epochs=100, batch_size=64, lr=1e-3,
+                 network='Transformer', seq_len=30, stride=1,
+                 rep_dim=128, hidden_dims='512', act='GELU', bias=False,
                  n_heads=8, d_model=512, attn='self_attn', pos_encoding='fixed', norm='BatchNorm',
                  epoch_steps=-1, prt_steps=10, device='cuda',
                  verbose=2, random_state=42):
-        super(PReNet, self).__init__(
-            model_name='PReNet', data_type=data_type, epochs=epochs, batch_size=batch_size, lr=lr,
+        super(PReNetTS, self).__init__(
+            model_name='PReNet', data_type='ts', epochs=epochs, batch_size=batch_size, lr=lr,
             network=network, seq_len=seq_len, stride=stride,
             epoch_steps=epoch_steps, prt_steps=prt_steps, device=device,
             verbose=verbose, random_state=random_state
@@ -175,69 +176,3 @@ class DualInputNet(torch.nn.Module):
         pred = self.out_layer(torch.cat([x1, x2], dim=1))
         return pred
 
-
-class PReNetLoader:
-    def __init__(self, X, y, batch_size, steps_per_epoch=None):
-        assert len(X) == len(y)
-
-        self.X = X
-        self.y = y
-        self.batch_size = min(batch_size, len(X))
-
-        self.unlabeled_id = np.where(y == 0)[0]
-        self.known_anom_id = np.where(y == 1)[0]
-
-        self.dim = self.X.shape[1]
-
-        self.counter = 0
-
-        self.steps_per_epoch = steps_per_epoch if steps_per_epoch is not None \
-            else int(len(X) / self.batch_size)
-
-        return
-
-    def __iter__(self):
-        self.counter = 0
-        return self
-
-    def __next__(self):
-        self.counter += 1
-        x1, x2, y = self.batch_generation()
-        x1, x2, y = torch.from_numpy(x1), torch.from_numpy(x2), torch.from_numpy(y)
-
-        if self.counter > self.steps_per_epoch:
-            raise StopIteration
-
-        return x1, x2, y
-
-    def batch_generation(self):
-        batch_x1 = []
-        batch_x2 = []
-        batch_y = []
-
-        # batch_x1 = np.empty([self.batch_size, self.dim])
-        # batch_x2 = np.empty([self.batch_size, self.dim])
-
-        for i in range(self.batch_size):
-            if i % 4 == 0 or i % 4 == 1:
-                sid = np.random.choice(self.unlabeled_id, 2, replace=False)
-                batch_x1.append(self.X[sid[0]])
-                batch_x2.append(self.X[sid[1]])
-                batch_y.append(0)
-            elif i % 4 == 2:
-                sid1 = np.random.choice(self.unlabeled_id, 1)
-                sid2 = np.random.choice(self.known_anom_id, 1)
-                batch_x1.append(self.X[sid1[0]])
-                batch_x2.append(self.X[sid2[0]])
-                batch_y.append(4)
-            else:
-                sid = np.random.choice(self.known_anom_id, 2, replace=False)
-                batch_x1.append(self.X[sid[0]])
-                batch_x2.append(self.X[sid[1]])
-                batch_y.append(8)
-
-        batch_x1 = np.array(batch_x1)
-        batch_x2 = np.array(batch_x2)
-        batch_y = np.array(batch_y)
-
-        return batch_x1, batch_x2, batch_y

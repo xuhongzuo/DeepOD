@@ -8,7 +8,7 @@ https://www.google.com/url?q=https%3A%2F%2Fgithub.com%2FGuansongPang%2Fdeep-outl
 """
 
 from deepod.core.base_model import BaseDeepAD
-from deepod.core.base_networks import get_network
+from deepod.core.networks.base_networks import MLPnet
 from torch.utils.data import DataLoader
 import torch
 import torch.nn.functional as F
@@ -24,15 +24,14 @@ class REPEN(BaseDeepAD):
     See :cite:`pang2018repen` for details
 
     """
-    def __init__(self, data_type='tabular', epochs=100, batch_size=64, lr=1e-3,
-                 network='MLP', seq_len=100, stride=1,
+    def __init__(self, epochs=100, batch_size=64, lr=1e-3,
                  init_score_ensemble_size=50, init_score_subsample_size=8,
                  rep_dim=128, hidden_dims='100,50', act='LeakyReLU', bias=False,
                  epoch_steps=-1, prt_steps=10, device='cuda',
                  verbose=2, random_state=42):
         super(REPEN, self).__init__(
-            model_name='REPEN', data_type=data_type, epochs=epochs, batch_size=batch_size, lr=lr,
-            network=network, seq_len=seq_len, stride=stride,
+            model_name='REPEN', data_type='tabular', epochs=epochs, batch_size=batch_size, lr=lr,
+            network='MLP',
             epoch_steps=epoch_steps, prt_steps=prt_steps, device=device,
             verbose=verbose, random_state=random_state
         )
@@ -55,8 +54,7 @@ class REPEN(BaseDeepAD):
             'activation': self.act,
             'bias': self.bias
         }
-        network_class = get_network(self.network)
-        net = network_class(**network_params).to(self.device)
+        net = MLPnet(**network_params).to(self.device)
 
         init_scores = repen_init_score_calculator(x_train=X,
                                                   ensemble_size=self.init_score_ensemble_size,

@@ -7,11 +7,11 @@ adapted from https://github.com/gzerveas/mvts_transformer
 
 import math
 import torch
-from typing import Optional, Any, Union, Callable
+from typing import Optional
 from torch.nn.modules import TransformerEncoderLayer
 from torch.nn import functional as F
 from torch import Tensor
-from deepod.core.network_utility import _handle_n_hidden, _instantiate_class
+from deepod.core.networks.network_utility import _handle_n_hidden, _instantiate_class
 
 
 

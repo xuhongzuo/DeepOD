@@ -7,7 +7,7 @@ License: https://github.com/lironber/GOAD/blob/master/LICENSE
 """
 
 from deepod.core.base_model import BaseDeepAD
-from deepod.core.base_networks import ConvNet
+from deepod.core.networks.base_networks import ConvNet
 from torch.utils.data import DataLoader, TensorDataset
 import torch.nn.functional as F
 import torch

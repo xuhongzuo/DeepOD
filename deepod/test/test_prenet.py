@@ -7,23 +7,17 @@ import sys
 import unittest
 
 # noinspection PyProtectedMember
-from numpy.testing import assert_allclose
-from numpy.testing import assert_array_less
 from numpy.testing import assert_equal
-from numpy.testing import assert_raises
-from scipy.stats import rankdata
-from sklearn.base import clone
-from sklearn.metrics import roc_auc_score
 import torch
 
 # temporary solution for relative imports in case pyod is not installed
 # if deepod is installed, no need to use the following line
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from deepod.models.prenet import PReNet
+from deepod.models.tabular.prenet import PReNet
+from deepod.models.time_series.prenet import PReNetTS
 from deepod.utils.data import generate_data
 import numpy as np
-import pandas as pd
 
 
 class TestPReNet(unittest.TestCase):
@@ -56,10 +50,9 @@ class TestPReNet(unittest.TestCase):
                           lr=1e-5)
         self.clf.fit(self.X_train, y_semi)
 
-        self.clf2 = PReNet(data_type='ts',
-                           seq_len=30, stride=10,
-                           epochs=1, epoch_steps=20, network='GRU', hidden_dims=20,
-                          device=device, batch_size=256, lr=1e-5)
+        self.clf2 = PReNetTS(seq_len=30, stride=10,
+                             epochs=1, epoch_steps=20, network='GRU', hidden_dims=20,
+                             device=device, batch_size=256, lr=1e-5)
         self.clf2.fit(self.Xts_train, self.yts_train)
 
     def test_parameters(self):

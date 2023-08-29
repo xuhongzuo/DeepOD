@@ -1,3 +1,9 @@
+# -*- coding: utf-8 -*-
+"""
+testbed of unsupervised tabular anomaly detection
+@Author: Hongzuo Xu <hongzuoxu@126.com, xuhongzuo13@nudt.edu.cn>
+"""
+
 import os
 import pickle
 import argparse
@@ -33,7 +39,7 @@ data_lst = utils.get_data_lst(os.path.join(dataset_root, args.input_dir), args.d
 print(os.path.join(dataset_root, args.input_dir))
 print(data_lst)
 
-module = imp.import_module('deepod.models')
+module = imp.import_module('deepod.models.tabular')
 model_class = getattr(module, args.model)
 
 cur_time = time.strftime("%m-%d %H.%M.%S", time.localtime())

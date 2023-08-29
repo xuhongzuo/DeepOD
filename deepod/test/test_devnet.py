@@ -7,20 +7,15 @@ import sys
 import unittest
 
 # noinspection PyProtectedMember
-from numpy.testing import assert_allclose
-from numpy.testing import assert_array_less
 from numpy.testing import assert_equal
-from numpy.testing import assert_raises
-from scipy.stats import rankdata
-from sklearn.base import clone
-from sklearn.metrics import roc_auc_score
 import torch
 
 # temporary solution for relative imports in case pyod is not installed
 # if deepod is installed, no need to use the following line
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from deepod.models.devnet import DevNet
+from deepod.models.tabular.devnet import DevNet
+from deepod.models.time_series.devnet import DevNetTS
 from deepod.utils.data import generate_data
 import numpy as np
 
@@ -58,9 +53,9 @@ class TestDevNet(unittest.TestCase):
                           random_state=42)
         self.clf.fit(self.X_train, y_semi)
 
-        self.clf2 = DevNet(data_type='ts', seq_len=100, stride=5,
-                           epochs=5, network='Transformer', hidden_dims='256,256',
-                           d_model=64, n_heads=8, device=device)
+        self.clf2 = DevNetTS(seq_len=100, stride=5,
+                             epochs=5, network='Transformer', hidden_dims='256,256',
+                             d_model=64, n_heads=8, device=device)
         self.clf2.fit(self.Xts_train, self.yts_train)
 
     def test_parameters(self):

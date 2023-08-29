@@ -1,23 +1,27 @@
 # -*- coding: utf-8 -*-
 """
 One-class classification
+this is partially adapted from https://github.com/lukasruff/Deep-SAD-PyTorch (MIT license)
 @Author: Hongzuo Xu <hongzuoxu@126.com, xuhongzuo13@nudt.edu.cn>
 """
 
 from deepod.core.base_model import BaseDeepAD
-from deepod.core.base_networks import get_network
-from torch.utils.data import DataLoader
+from deepod.core.networks.base_networks import MLPnet
+from torch.utils.data import DataLoader, TensorDataset
+from torch.utils.data.sampler import WeightedRandomSampler
 import torch
+import numpy as np
+from collections import Counter
 
 
-class DeepSVDD(BaseDeepAD):
-    """ Deep One-class Classification (Deep SVDD) for anomaly detection
-    See :cite:`ruff2018deepsvdd` for details
+class DeepSAD(BaseDeepAD):
+    """ Deep Semi-supervised Anomaly Detection (Deep SAD)
+    See :cite:`ruff2020dsad` for details
 
     Parameters
     ----------
     data_type: str, optional (default='tabular')
-        Data type, choice=['tabular', 'ts']
+        Data type
 
     epochs: int, optional (default=100)
         Number of training epochs
@@ -30,14 +34,6 @@ class DeepSVDD(BaseDeepAD):
 
     network: str, optional (default='MLP')
         network structure for different data structures
-
-    seq_len: int, optional (default=100)
-        Size of window used to create subsequences from the data
-        deprecated when handling tabular data (network=='MLP')
-
-    stride: int, optional (default=1)
-        number of time points the window will move between two subsequences
-        deprecated when handling tabular data (network=='MLP')
 
     rep_dim: int, optional (default=128)
         Dimensionality of the representation space
@@ -54,6 +50,22 @@ class DeepSVDD(BaseDeepAD):
 
     bias: bool, optional (default=False)
         Additive bias in linear layer
+
+    n_heads: int, optional(default=8):
+        number of head in multi-head attention
+        used when network='transformer', deprecated in other networks
+
+    d_model: int, optional (default=64)
+        number of dimensions in Transformer
+        used when network='transformer', deprecated in other networks
+
+    pos_encoding: str, optional (default='fixed')
+        manner of positional encoding, deprecated in other networks
+        choice = ['fixed', 'learnable']
+
+    norm: str, optional (default='BatchNorm')
+        manner of norm in Transformer, deprecated in other networks
+        choice = ['LayerNorm', 'BatchNorm']
 
     epoch_steps: int, optional (default=-1)
         Maximum steps in an epoch
@@ -72,15 +84,15 @@ class DeepSVDD(BaseDeepAD):
         the seed used by the random
 
     """
-    def __init__(self, data_type='tabular', epochs=100, batch_size=64, lr=1e-3,
-                 network='MLP', seq_len=100, stride=1,
+
+    def __init__(self, epochs=100, batch_size=64, lr=1e-3,
                  rep_dim=128, hidden_dims='100,50', act='ReLU', bias=False,
-                 n_heads=8, d_model=512, attn='self_attn', pos_encoding='fixed', norm='LayerNorm',
                  epoch_steps=-1, prt_steps=10, device='cuda',
                  verbose=2, random_state=42):
-        super(DeepSVDD, self).__init__(
-            model_name='DeepSVDD', data_type=data_type, epochs=epochs, batch_size=batch_size, lr=lr,
-            network=network, seq_len=seq_len, stride=stride,
+        super(DeepSAD, self).__init__(
+            data_type='tabular', model_name='DeepSAD',
+            epochs=epochs, batch_size=batch_size, lr=lr,
+            network='MLP',
             epoch_steps=epoch_steps, prt_steps=prt_steps, device=device,
             verbose=verbose, random_state=random_state
         )
@@ -90,18 +102,31 @@ class DeepSVDD(BaseDeepAD):
         self.act = act
         self.bias = bias
 
-        # parameters for Transformer
-        self.n_heads = n_heads
-        self.d_model = d_model
-        self.attn = attn
-        self.pos_encoding = pos_encoding
-        self.norm = norm
-        
         self.c = None
+
         return
 
     def training_prepare(self, X, y):
-        train_loader = DataLoader(X, batch_size=self.batch_size, shuffle=True)
+        # By following the original paper,
+        #   use -1 to denote known anomalies, and 1 to denote known inliers
+        known_anom_id = np.where(y == 1)
+        y = np.zeros_like(y)
+        y[known_anom_id] = -1
+
+        counter = Counter(y)
+
+        if self.verbose >= 2:
+            print(f'training data counter: {counter}')
+
+        dataset = TensorDataset(torch.from_numpy(X).float(),
+                                torch.from_numpy(y).long())
+
+        weight_map = {0: 1. / counter[0], -1: 1. / counter[-1]}
+        sampler = WeightedRandomSampler(weights=[weight_map[label.item()] for data, label in dataset],
+                                        num_samples=len(dataset), replacement=True)
+        train_loader = DataLoader(dataset, batch_size=self.batch_size,
+                                  sampler=sampler,
+                                  shuffle=True if sampler is None else False)
 
         network_params = {
             'n_features': self.n_features,
@@ -110,22 +135,10 @@ class DeepSVDD(BaseDeepAD):
             'activation': self.act,
             'bias': self.bias
         }
-        if self.network == 'Transformer':
-            network_params['n_heads'] = self.n_heads
-            network_params['d_model'] = self.d_model
-            network_params['pos_encoding'] = self.pos_encoding
-            network_params['norm'] = self.norm
-            network_params['attn'] = self.attn
-            network_params['seq_len'] = self.seq_len
-        elif self.network == 'ConvSeq':
-            network_params['seq_len'] = self.seq_len
-        
-        network_class = get_network(self.network)
-        net = network_class(**network_params).to(self.device)
+        net = MLPnet(**network_params).to(self.device)
 
-        # self.c = torch.randn(net.n_emb).to(self.device)
         self.c = self._set_c(net, train_loader)
-        criterion = DSVDDLoss(c=self.c)
+        criterion = DSADLoss(c=self.c)
 
         if self.verbose >= 2:
             print(net)
@@ -139,9 +152,17 @@ class DeepSVDD(BaseDeepAD):
         return test_loader
 
     def training_forward(self, batch_x, net, criterion):
+        batch_x, batch_y = batch_x
+
+        # from collections import Counter
+        # tmp = batch_y.data.cpu().numpy()
+        # print(Counter(tmp))
+
         batch_x = batch_x.float().to(self.device)
+        batch_y = batch_y.long().to(self.device)
+
         z = net(batch_x)
-        loss = criterion(z)
+        loss = criterion(z, batch_y)
         return loss
 
     def inference_forward(self, batch_x, net, criterion):
@@ -155,18 +176,21 @@ class DeepSVDD(BaseDeepAD):
         net.eval()
         z_ = []
         with torch.no_grad():
-            for x in dataloader:
+            for x, _ in dataloader:
                 x = x.float().to(self.device)
                 z = net(x)
                 z_.append(z.detach())
         z_ = torch.cat(z_)
         c = torch.mean(z_, dim=0)
+
+        # if c is too close to zero, set to +- eps
+        # a zero unit can be trivially matched with zero weights
         c[(abs(c) < eps) & (c < 0)] = -eps
         c[(abs(c) < eps) & (c > 0)] = eps
         return c
 
 
-class DSVDDLoss(torch.nn.Module):
+class DSADLoss(torch.nn.Module):
     """
 
     Parameters
@@ -182,13 +206,22 @@ class DSVDDLoss(torch.nn.Module):
             - If ``'sum'``: the output will be summed
 
     """
-    def __init__(self, c, reduction='mean'):
-        super(DSVDDLoss, self).__init__()
+
+    def __init__(self, c, eta=1.0, eps=1e-6, reduction='mean'):
+        super(DSADLoss, self).__init__()
         self.c = c
         self.reduction = reduction
+        self.eta = eta
+        self.eps = eps
 
-    def forward(self, rep, reduction=None):
-        loss = torch.sum((rep - self.c) ** 2, dim=1)
+    def forward(self, rep, semi_targets=None, reduction=None):
+        dist = torch.sum((rep - self.c) ** 2, dim=1)
+
+        if semi_targets is not None:
+            loss = torch.where(semi_targets == 0, dist,
+                               self.eta * ((dist+self.eps) ** semi_targets.float()))
+        else:
+            loss = dist
 
         if reduction is None:
             reduction = self.reduction

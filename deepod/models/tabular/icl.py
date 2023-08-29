@@ -7,7 +7,7 @@ https://openreview.net/forum?id=_hszZbt46bT
 """
 
 from deepod.core.base_model import BaseDeepAD
-from deepod.core.base_networks import MLPnet
+from deepod.core.networks.base_networks import MLPnet
 from torch.utils.data import DataLoader
 import torch
 import torch.nn.functional as F

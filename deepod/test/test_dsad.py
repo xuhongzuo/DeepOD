@@ -7,12 +7,7 @@ import sys
 import unittest
 
 # noinspection PyProtectedMember
-from numpy.testing import assert_allclose
-from numpy.testing import assert_array_less
 from numpy.testing import assert_equal
-from numpy.testing import assert_raises
-from scipy.stats import rankdata
-from sklearn.base import clone
 from sklearn.metrics import roc_auc_score
 import torch
 
@@ -20,10 +15,10 @@ import torch
 # if deepod is installed, no need to use the following line
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from deepod.models.dsad import DeepSAD
+from deepod.models.tabular.dsad import DeepSAD
+from deepod.models.time_series.dsad import DeepSADTS
 from deepod.utils.data import generate_data
 import numpy as np
-import pandas as pd
 from deepod.utils.utility import cal_metrics
 
 
@@ -77,8 +72,8 @@ class TestDSAD(unittest.TestCase):
                            random_state=42)
         self.clf.fit(self.X_train, y_semi)
 
-        self.clf2 = DeepSAD(data_type='ts', stride=50, seq_len=100, epochs=20,
-                            device=device, network='Transformer')
+        self.clf2 = DeepSADTS(stride=50, seq_len=100, epochs=20,
+                              device=device, network='Transformer')
         self.clf2.fit(self.Xts_train, self.yts_train)
 
     def test_parameters(self):
