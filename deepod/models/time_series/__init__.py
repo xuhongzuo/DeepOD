@@ -4,6 +4,7 @@ from .dsvdd import DeepSVDDTS
 from .tranad import TranAD
 from .usad import USAD
 from .couta import COUTA
+from .tcned import TcnED
 
 # weakly-supervised
 from .dsad import DeepSADTS

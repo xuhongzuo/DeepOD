@@ -4,13 +4,13 @@ from deepod.core.networks.network_utility import _instantiate_class, _handle_n_h
 
 
 class TcnAE(torch.nn.Module):
-    def __init__(self, n_features, n_hidden='500,100', n_emb=20, activation='ReLU', bias=None,
+    def __init__(self, n_features, n_hidden='500,100', n_emb=20, activation='ReLU', bias=False,
                  kernel_size=2, dropout=0.2):
         super(TcnAE, self).__init__()
 
-        if type(n_hidden)==int:
+        if type(n_hidden) == int:
             n_hidden = [n_hidden]
-        if type(n_hidden)==str:
+        if type(n_hidden) == str:
             n_hidden = n_hidden.split(',')
             n_hidden = [int(a) for a in n_hidden]
         num_layers = len(n_hidden)
@@ -40,7 +40,6 @@ class TcnAE(torch.nn.Module):
                                                               stride=1, dilation=dilation_size,
                                                               padding=padding_size, dropout=dropout,
                                                               activation=activation)]
-
 
         # to register parameters in list of layers, each layer must be an object
         self.enc_layer_names = ["enc_" + str(num) for num in range(len(self.encoder_layers))]
@@ -123,7 +122,7 @@ class TcnResidualBlock(torch.nn.Module):
         self.net = torch.nn.Sequential(self.conv1, self.chomp1, self.act1, self.dropout1,
                                        self.conv2, self.chomp2, self.act2, self.dropout2)
         self.downsample = torch.nn.Conv1d(n_inputs, n_outputs, 1) if n_inputs != n_outputs else None
-        self.out_act = _instantiate_class("torch.nn.modules.activation", activation)
+        self.act = _instantiate_class("torch.nn.modules.activation", activation)
         self.init_weights()
 
     def init_weights(self):
@@ -136,7 +135,7 @@ class TcnResidualBlock(torch.nn.Module):
         # x shape:(bs, embed, seq_len)
         out = self.net(x)
         res = x if self.downsample is None else self.downsample(x)
-        return out+res
+        return self.act(out+res)
 
 
 class TcnResidualBlockTranspose(torch.nn.Module):
@@ -146,7 +145,6 @@ class TcnResidualBlockTranspose(torch.nn.Module):
         self.conv1 = weight_norm(torch.nn.ConvTranspose1d(n_inputs, n_outputs, kernel_size,
                                                           stride=stride, padding=padding,
                                                           dilation=dilation))
-        # [Batch, input_channel, seq_len + padding]
 
         self.pad1 = Pad1d(padding)
         self.act1 = _instantiate_class("torch.nn.modules.activation", activation)
@@ -162,7 +160,7 @@ class TcnResidualBlockTranspose(torch.nn.Module):
         self.net = torch.nn.Sequential(self.dropout1, self.act1, self.pad1, self.conv1,
                                        self.dropout2, self.act2, self.pad2, self.conv2)
         self.downsample = torch.nn.ConvTranspose1d(n_inputs, n_outputs, 1) if n_inputs != n_outputs else None
-        self.relu = torch.nn.ReLU()
+        self.act = _instantiate_class("torch.nn.modules.activation", activation)
         self.init_weights()
 
     def init_weights(self):
@@ -174,7 +172,7 @@ class TcnResidualBlockTranspose(torch.nn.Module):
     def forward(self, x):
         out = self.net(x)
         res = x if self.downsample is None else self.downsample(x)
-        return out + res
+        return self.act(out + res)
 
 
 class Pad1d(torch.nn.Module):

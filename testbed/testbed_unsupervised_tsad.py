@@ -28,7 +28,7 @@ parser.add_argument("--entities", type=str,
                     help='FULL represents all the csv file in the folder, or a list of entity names split by comma'
                     )
 parser.add_argument("--entity_combined", type=int, default=1)
-parser.add_argument("--model", type=str, default='seqregad', help="")
+parser.add_argument("--model", type=str, default='tranad', help="")
 
 parser.add_argument('--silent_header', action='store_true')
 parser.add_argument("--flag", type=str, default='')

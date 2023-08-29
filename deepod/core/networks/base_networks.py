@@ -364,12 +364,12 @@ class ConvResBlock(torch.nn.Module):
 
         return out
 
-
-if __name__ == '__main__':
-    model = ConvSeqEncoder(n_features=19, n_hidden='512', n_layers=4, seq_len=30, batch_norm=False,
-                           n_output=1, activation='LeakyReLU')
-    print(model)
-    a = torch.randn(32, 30, 19)
-
-    b =  model(a)
-    print(b.shape)
+#
+# if __name__ == '__main__':
+#     model = ConvSeqEncoder(n_features=19, n_hidden='512', n_layers=4, seq_len=30, batch_norm=False,
+#                            n_output=1, activation='LeakyReLU')
+#     print(model)
+#     a = torch.randn(32, 30, 19)
+#
+#     b =  model(a)
+#     print(b.shape)
