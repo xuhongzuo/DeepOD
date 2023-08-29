@@ -1,5 +1,5 @@
 from deepod.models.time_series import *
-from deepod.models.time_series.seq_reg_ad import SeqRegAD
+# from deepod.models.time_series.seq_reg_ad import SeqRegAD
 
 
 def get_model_class(name):
@@ -13,19 +13,19 @@ def get_model_class(name):
         return USAD
     elif name == 'couta':
         return COUTA
-    elif name == 'seqregad':
-        return SeqRegAD
+    # elif name == 'seqregad':
+    #     return SeqRegAD
 
 
 def get_additional_configs(name):
     config_dict = {
-        'seqregad': {
-            'seq_len_lst': [10, 30, 50],
-            'epochs': 10,
-            'batch_size': 64,
-            'lr': 1e-4,
-            'rep_dim': 128,
-        },
+        # 'seqregad': {
+        #     'seq_len_lst': [10, 30, 50],
+        #     'epochs': 10,
+        #     'batch_size': 64,
+        #     'lr': 1e-4,
+        #     'rep_dim': 128,
+        # },
 
         'dif': {
             'rep_dim': 20,
