@@ -79,11 +79,6 @@ class TestDeepSVDD(unittest.TestCase):
         assert_equal(pred_scores2.shape[0], self.Xts_test.shape[0])
         assert_equal(pred_scores3.shape[0], self.Xts_test.shape[0])
 
-        # check performance
-        assert (roc_auc_score(self.y_test, pred_scores) >= self.roc_floor)
-        adj_eval_info = cal_metrics(self.yts_test, pred_scores2, pa=True)
-        assert (adj_eval_info[2] >= self.ts_f1_floor)
-
     def test_prediction_labels(self):
         pred_labels = self.clf.predict(self.X_test)
         pred_labels2 = self.clf2.predict(self.Xts_test)

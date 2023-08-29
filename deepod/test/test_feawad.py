@@ -36,12 +36,6 @@ class TestFeaWAD(unittest.TestCase):
         self.Xts_test = self.Xts_train.copy()
         self.yts_test = self.yts_train.copy()
 
-
-        # file = '../../data/38_thyroid.npz'
-        # data = np.load(file, allow_pickle=True)
-        # x, y = data['X'], data['y']
-        # y = np.array(y, dtype=int)
-
         anom_id = np.where(self.y_train == 1)[0]
         known_anom_id = np.random.choice(anom_id, 10, replace=False)
         y_semi = np.zeros_like(self.y_train, dtype=int)
@@ -104,11 +98,6 @@ class TestFeaWAD(unittest.TestCase):
 
         assert_equal(pred_labels.shape, self.y_test.shape)
         assert_equal(confidence.shape, self.y_test.shape)
-        assert (confidence.min() >= 0)
-        assert (confidence.max() <= 1)
-
-        assert_equal(pred_labels.shape, self.yts_test.shape)
-        assert_equal(confidence.shape, self.yts_test.shape)
         assert (confidence.min() >= 0)
         assert (confidence.max() <= 1)
 
