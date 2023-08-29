@@ -1,9 +1,9 @@
 name: deepod
 dependencies:
-  - numpy
-  - pandas
-  - scikit-learn
-  - scipy
-  - pytorch
-  - tqdm
+  - numpy>=1.19
+  - pandas>=1.0.0
+  - scikit-learn>=0.20.0
+  - scipy>=1.5.1
+  - pytorch>=1.10.0,<1.13.1
+  - tqdm>=4.62.3
 
