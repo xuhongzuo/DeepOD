@@ -4,6 +4,6 @@ dependencies:
   - pandas
   - scikit-learn
   - scipy
-  - pytorch==2.0.0
+  - pytorch
   - tqdm
 
