@@ -9,8 +9,7 @@ from .couta import COUTA
 from .dsad import DeepSADTS
 from .devnet import DevNetTS
 from .prenet import PReNetTS
-from .repen import REPENTS
 
 
 __all__ = ['DeepIsolationForestTS', 'DeepSVDDTS', 'TranAD', 'USAD', 'COUTA',
-           'DeepSADTS', 'DevNetTS', 'REPENTS', 'PReNetTS']
+           'DeepSADTS', 'DevNetTS', 'PReNetTS']

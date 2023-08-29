@@ -16,9 +16,7 @@ import torch
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from deepod.models.tabular.repen import REPEN
-from deepod.models.time_series.repen import REPENTS
 from deepod.utils.data import generate_data
-from deepod.utils.utility import cal_metrics
 
 
 class TestREPEN(unittest.TestCase):
@@ -46,9 +44,6 @@ class TestREPEN(unittest.TestCase):
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
         self.clf = REPEN(epochs=5, device=device)
         self.clf.fit(self.X_train)
-        self.clf2 = REPENTS(seq_len=100, stride=5, epochs=5, hidden_dims='100,50',
-                            device=device, network='TCN', random_state=42)
-        self.clf2.fit(self.Xts_train)
 
     def test_parameters(self):
         assert (hasattr(self.clf, 'decision_scores_') and
@@ -60,21 +55,14 @@ class TestREPEN(unittest.TestCase):
 
     def test_train_scores(self):
         assert_equal(len(self.clf.decision_scores_), self.X_train.shape[0])
-        assert_equal(len(self.clf2.decision_scores_), self.Xts_train.shape[0])
 
     def test_prediction_scores(self):
         pred_scores = self.clf.decision_function(self.X_test)
-        pred_scores2 = self.clf2.decision_function(self.Xts_test)
-
-        # check score shapes
         assert_equal(pred_scores.shape[0], self.X_test.shape[0])
-        assert_equal(pred_scores2.shape[0], self.Xts_test.shape[0])
 
     def test_prediction_labels(self):
         pred_labels = self.clf.predict(self.X_test)
-        pred_labels2 = self.clf2.predict(self.Xts_test)
         assert_equal(pred_labels.shape, self.y_test.shape)
-        assert_equal(pred_labels2.shape, self.yts_test.shape)
 
     # def test_prediction_proba(self):
     #     pred_proba = self.clf.predict_proba(self.X_test)

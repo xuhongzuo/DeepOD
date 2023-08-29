@@ -13,7 +13,6 @@ from deepod.models.tabular.goad import GOAD
 from deepod.models.tabular.icl import ICL
 
 from deepod.models.time_series.prenet import PReNetTS
-from deepod.models.time_series.repen import REPENTS
 from deepod.models.time_series.dsad import DeepSADTS
 from deepod.models.time_series.devnet import DevNetTS
 
@@ -29,5 +28,5 @@ __all__ = [
     'RCA', 'DeepSVDD', 'GOAD', 'NeuTraL', 'RDP', 'ICL', 'SLAD', 'DeepIsolationForest',
     'DeepSAD', 'DevNet', 'PReNet', 'FeaWAD', 'REPEN',
     'TranAD', 'COUTA', 'USAD', 'DeepIsolationForestTS', 'DeepSVDDTS',
-    'PReNetTS', 'REPENTS', 'DeepSADTS', 'DevNetTS'
+    'PReNetTS', 'DeepSADTS', 'DevNetTS'
 ]
