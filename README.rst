@@ -102,12 +102,18 @@ DeepOD can be used in a few lines of code. This API style is the same with sklea
 
 Citation
 ~~~~~~~~~~~~~~~~~
-If you use this library in your work, please use the BibTex entry below for citation.
+If you use this library in your work, please use the following BibTex entries for citation.
 
 .. code-block:: bibtex
 
-   @misc{deepod,
-      author = {{Xu, Hongzuo}},
-      title = {{DeepOD: Python Deep Outlier/Anomaly Detection}},
-      url = {https://github.com/xuhongzuo/DeepOD}
+   @ARTICLE{xu2023deep,
+     author={Xu, Hongzuo and Pang, Guansong and Wang, Yijie and Wang, Yongjun},
+     journal={IEEE Transactions on Knowledge and Data Engineering}, 
+     title={Deep Isolation Forest for Anomaly Detection}, 
+     year={2023},
+     volume={},
+     number={},
+     pages={1-14},
+     doi={10.1109/TKDE.2023.3270293}
    }
+
