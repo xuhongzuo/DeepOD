@@ -28,11 +28,11 @@ DeepOD includes **22** deep outlier detection / anomaly detection algorithms (in
 
 **DeepOD is featured for**:
 
-* :art: **Unified APIs** across various algorithms.
-* :fire: **SOTA models** includes reconstruction-, representation-learning-, and self-superivsed-based latest deep learning methods.
-* :building_construction: **Comprehensive Testbed** that can be used to directly test different models on benchmark datasets (highly recommend for academic research).
-* :hammer: **Versatile** in different data types including tabular and time-series data (DeepOD will support other data types like images, graph, log, trace, etc in the future, PR is highly welcomed :telescope:).
-* :card_file_box: **Diverse Network Structures** can be plugged into detection models, we now support LSTM, GRU, TCN, Conv, Transformer for time-series data.  (PR is also highly welcomed :telescope:)
+* **Unified APIs** across various algorithms.
+* **SOTA models** includes reconstruction-, representation-learning-, and self-superivsed-based latest deep learning methods.
+* **Comprehensive Testbed** that can be used to directly test different models on benchmark datasets (highly recommend for academic research).
+* **Versatile** in different data types including tabular and time-series data (DeepOD will support other data types like images, graph, log, trace, etc in the future, PR is highly welcomed :telescope:).
+* **Diverse Network Structures** can be plugged into detection models, we now support LSTM, GRU, TCN, Conv, Transformer for time-series data.  (PR is also highly welcomed :telescope:)
 
 
 If you are intersted in our project, we are pleased to have your stars and forks :thumbsup: . 
