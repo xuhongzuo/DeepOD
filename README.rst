@@ -18,16 +18,24 @@ Python Deep Outlier/Anomaly Detection (DeepOD)
    :alt: downloads
    
 
-**DeepOD** is an open-source python framework for deep learning-based anomaly detection on multivariate/time-series data.
+``DeepOD`` is an open-source python library for Deep Learning-based `Outlier Detection <https://en.wikipedia.org/wiki/Anomaly_detection>`_
+and `Anomaly Detection <https://en.wikipedia.org/wiki/Anomaly_detection>`_. ``DeepOD`` supports tabular anomaly detection and time-series anomaly detection.
 
 
-DeepOD includes 13 deep outlier detection / anomaly detection algorithms (in unsupervised/weakly-supervised paradigm) for now. More baseline algorithms will be included later.
+DeepOD includes **22** deep outlier detection / anomaly detection algorithms (in unsupervised/weakly-supervised paradigm) for now. More baseline algorithms will be included later.
 
 
-🔭 *We are working on a new feature -- by simply setting a few parameters, different deep anomaly detection models can not only handle different data types.*   
 
-- We have finished some attempts on partial models like Deep SVDD, DevNet, Deep SAD, PReNet and DIF. These models can use temporal networks like LSTM, GRU, TCN, Conv, Transformer to handle time series data. 
-- *Future work*: we also want to implement several network structure, so as to processing more data types like graphs and images by simply plugging in corresponding network architecture. 
+**DeepOD is featured for**:
+
+* :art: **Unified APIs** across various algorithms.
+* :fire: **SOTA models** includes reconstruction-, representation-learning-, and self-superivsed-based latest deep learning methods.
+* :building_construction: **Comprehensive Testbed** that can be used to directly test different models on benchmark datasets (highly recommend for academic research).
+* :hammer: **Versatile** in different data types including tabular and time-series data (DeepOD will support other data types like images, graph, log, trace, etc in the future, PR is highly welcomed :telescope:).
+* :card_file_box: **Diverse Network Structures** can be plugged into detection models, we now support LSTM, GRU, TCN, Conv, Transformer for time-series data.  (PR is also highly welcomed :telescope:)
+
+
+If you are intersted in our project, we are pleased to have your stars and forks :thumbsup: . 
 
 
 Installation
@@ -52,33 +60,11 @@ install a developing version (strongly recommend)
     pip install .
 
 
-Supported Models
-~~~~~~~~~~~~~~~~~
-
-**Detection models:**
-
-.. csv-table:: 
- :header: "Model", "Venue", "Year", "Type", "Title"
- :widths: 4, 4, 4, 8, 20 
-
- Deep SVDD, ICML, 2018, unsupervised, Deep One-Class Classification  
- REPEN, KDD, 2018, unsupervised, Learning Representations of Ultrahigh-dimensional Data for Random Distance-based Outlier Detection
- RDP, IJCAI, 2020, unsupervised, Unsupervised Representation Learning by Predicting Random Distances  
- RCA, IJCAI, 2021, unsupervised, RCA: A Deep Collaborative Autoencoder Approach for Anomaly Detection
- GOAD, ICLR, 2020, unsupervised, Classification-Based Anomaly Detection for General Data
- NeuTraL, ICML, 2021, unsupervised, Neural Transformation Learning for Deep Anomaly Detection Beyond Images
- ICL, ICLR, 2022, unsupervised, Anomaly Detection for Tabular Data with Internal Contrastive Learning
- DIF, TKDE, 2023, unsupervised, Deep Isolation Forest for Anomaly Detection
- SLAD, ICML, 2023, unsupervised, Fascinating Supervisory Signals and Where to Find Them: Deep Anomaly Detection with Scale Learning
- DevNet, KDD, 2019, weakly-supervised, Deep Anomaly Detection with Deviation Networks
- PReNet, KDD, 2023, weakly-supervised, Deep Weakly-supervised Anomaly Detection
- Deep SAD, ICLR, 2020, weakly-supervised, Deep Semi-Supervised Anomaly Detection
- FeaWAD, TNNLS, 2021, weakly-supervised, Feature Encoding with AutoEncoders for Weakly-supervised Anomaly Detection
-
-
 Usages
 ~~~~~~~~~~~~~~~~~
 
+
+**Directly use detection models in DeepOD:**
 
 DeepOD can be used in a few lines of code. This API style is the same with sklearn and PyOD.
 
@@ -99,6 +85,91 @@ DeepOD can be used in a few lines of code. This API style is the same with sklea
     scores = clf.decision_function(X_test)
 
 
+**Testbed usage:**
+
+Testbed contains the whole process of testing an anomaly detection model, including data loading, preprocessing, anomaly detection, and evaluation. 
+
+Please refer to ``testbed/``
+
+* ``testbed/testbed_unsupervised_ad.py`` is for testing unsupervised tabular anomaly detection models.
+ 
+* ``testbed/testbed_unsupervised_tsad.py`` is for testing unsupervised time-series anomaly detection models.
+
+
+Key arguments:
+
+* ``--input_dir``: name of the folder that contains datasets (.csv, .npy)
+
+* ``--dataset``: "FULL" represents test all the files within the folder, or a list of dataset names using comma to split them (e.g., "10_cover*,20_letter*")
+
+* ``--model``: anomaly detection model name
+
+* ``--runs``: how many times running the detection model, finally report an average performance with standard deviation values
+
+
+Example: 
+
+1. Download `ADBench <https://github.com/Minqi824/ADBench/tree/main/adbench/datasets/>`_ datasets.
+2. modify the ``dataset_root`` variable as the directory of the dataset.
+3. ``input_dir`` is the sub-folder name of the ``dataset_root``, e.g., ``Classical`` or ``NLP_by_BERT``.  
+4. use the following commend in the bash
+
+.. code-block:: bash
+
+   python testbed_unsupervised_ad.py --model DIF --runs 5 --input_dir ADBench
+   
+
+
+
+
+
+
+Implemented Models
+~~~~~~~~~~~~~~~~~~~
+
+**Tabular Anomaly Detection models:**
+
+.. csv-table:: 
+ :header: "Model", "Venue", "Year", "Type", "Title"
+ :widths: 4, 4, 4, 8, 20 
+
+ Deep SVDD, ICML, 2018, unsupervised, Deep One-Class Classification  [#Ruff2018Deep]_
+ REPEN, KDD, 2018, unsupervised, Learning Representations of Ultrahigh-dimensional Data for Random Distance-based Outlier Detection [#Pang2019Repen]_
+ RDP, IJCAI, 2020, unsupervised, Unsupervised Representation Learning by Predicting Random Distances  
+ RCA, IJCAI, 2021, unsupervised, RCA: A Deep Collaborative Autoencoder Approach for Anomaly Detection
+ GOAD, ICLR, 2020, unsupervised, Classification-Based Anomaly Detection for General Data
+ NeuTraL, ICML, 2021, unsupervised, Neural Transformation Learning for Deep Anomaly Detection Beyond Images
+ ICL, ICLR, 2022, unsupervised, Anomaly Detection for Tabular Data with Internal Contrastive Learning
+ DIF, TKDE, 2023, unsupervised, Deep Isolation Forest for Anomaly Detection
+ SLAD, ICML, 2023, unsupervised, Fascinating Supervisory Signals and Where to Find Them: Deep Anomaly Detection with Scale Learning
+ DevNet, KDD, 2019, weakly-supervised, Deep Anomaly Detection with Deviation Networks
+ PReNet, KDD, 2023, weakly-supervised, Deep Weakly-supervised Anomaly Detection
+ Deep SAD, ICLR, 2020, weakly-supervised, Deep Semi-Supervised Anomaly Detection
+ FeaWAD, TNNLS, 2021, weakly-supervised, Feature Encoding with AutoEncoders for Weakly-supervised Anomaly Detection
+
+
+**Time-series Anomaly Detection models:**
+
+.. csv-table:: 
+ :header: "Model", "Venue", "Year", "Type", "Title"
+ :widths: 4, 4, 4, 8, 20 
+
+ TranAD, VLDB, 2022, unsupervised, TranAD: Deep Transformer Networks for Anomaly Detection in Multivariate Time Series Data  
+ COUTA, arXiv, 2022, unsupervised, Calibrated One-class Classification for Unsupervised Time Series Anomaly Detection
+ USAD, KDD, 2020, unsupervised, USAD: UnSupervised Anomaly Detection on Multivariate Time Series  
+ DIF, TKDE, 2023, unsupervised, Deep Isolation Forest for Anomaly Detection
+ TcnED, TNNLS, 2021, unsupervised, An Evaluation of Anomaly Detection and Diagnosis in Multivariate Time Series
+ Deep SVDD (TS), ICML, 2018, unsupervised, Deep One-Class Classification  
+ DevNet (TS), KDD, 2019, weakly-supervised, Deep Anomaly Detection with Deviation Networks
+ PReNet (TS), KDD, 2023, weakly-supervised, Deep Weakly-supervised Anomaly Detection
+ Deep SAD (TS), ICLR, 2020, weakly-supervised, Deep Semi-Supervised Anomaly Detection
+
+NOTE:
+
+- For Deep SVDD, DevNet, PReNet, and DeepSAD, we employ network structures that can handle time-series data. These models' classes have a parameter named  ``network`` in these models, by changing it, you can use different networks.   
+
+- We currently support 'TCN', 'GRU', 'LSTM', 'Transformer', 'ConvSeq', and 'DilatedConv'.   
+
 
 Citation
 ~~~~~~~~~~~~~~~~~
@@ -106,8 +177,22 @@ If you use this library in your work, please use the BibTex entry below for cita
 
 .. code-block:: bibtex
 
-   @misc{deepod,
-      author = {{Xu, Hongzuo}},
-      title = {{DeepOD: Python Deep Outlier/Anomaly Detection}},
-      url = {https://github.com/xuhongzuo/DeepOD}
+   @ARTICLE{xu2023deep,
+      author={Xu, Hongzuo and Pang, Guansong and Wang, Yijie and Wang, Yongjun},
+      journal={IEEE Transactions on Knowledge and Data Engineering}, 
+      title={Deep Isolation Forest for Anomaly Detection}, 
+      year={2023},
+      volume={},
+      number={},
+      pages={1-14},
+      doi={10.1109/TKDE.2023.3270293}
    }
+
+
+
+Reference
+~~~~~~~~~~~~~~~~~
+
+.. [#Ruff2018Deep] Ruff, L., Vandermeulen, R., Goernitz, N., Deecke, L., Siddiqui, S.A., Binder, A., Müller, E. and Kloft, M., 2018, July. Deep one-class classification. In International conference on machine learning (pp. 4393-4402). PMLR.
+
+.. [#Pang2019Repen] Pang, G., Cao, L., Chen, L., & Liu, H. (2018, July). Learning representations of ultrahigh-dimensional data for random distance-based outlier detection. In Proceedings of the 24th ACM SIGKDD international conference on knowledge discovery & data mining (pp. 2041-2050).
