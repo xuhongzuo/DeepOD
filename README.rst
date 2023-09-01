@@ -34,8 +34,9 @@ DeepOD includes **22** deep outlier detection / anomaly detection algorithms (in
 * **Versatile** in different data types including tabular and time-series data (DeepOD will support other data types like images, graph, log, trace, etc in the future, PR is highly welcomed :telescope:).
 * **Diverse Network Structures** can be plugged into detection models, we now support LSTM, GRU, TCN, Conv, Transformer for time-series data.  (PR is also highly welcomed :sparkles:)
 
+:bulb:
 
-:bulb: If you are intersted in our project, we are pleased to have your stars and forks :thumbsup: :beers: .
+If you are intersted in our project, we are pleased to have your stars and forks :thumbsup: :beers: .
 
 
 Installation
