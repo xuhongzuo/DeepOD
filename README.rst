@@ -32,10 +32,10 @@ DeepOD includes **22** deep outlier detection / anomaly detection algorithms (in
 * **SOTA models** includes reconstruction-, representation-learning-, and self-superivsed-based latest deep learning methods.
 * **Comprehensive Testbed** that can be used to directly test different models on benchmark datasets (highly recommend for academic research).
 * **Versatile** in different data types including tabular and time-series data (DeepOD will support other data types like images, graph, log, trace, etc in the future, PR is highly welcomed :telescope:).
-* **Diverse Network Structures** can be plugged into detection models, we now support LSTM, GRU, TCN, Conv, Transformer for time-series data.  (PR is also highly welcomed :telescope:)
+* **Diverse Network Structures** can be plugged into detection models, we now support LSTM, GRU, TCN, Conv, Transformer for time-series data.  (PR is also highly welcomed :sparkles:)
 
 
-If you are intersted in our project, we are pleased to have your stars and forks :thumbsup: . 
+:bulb: If you are intersted in our project, we are pleased to have your stars and forks :thumbsup: :beers: .
 
 
 Installation
@@ -193,6 +193,6 @@ If you use this library in your work, please use the BibTex entry below for cita
 Reference
 ~~~~~~~~~~~~~~~~~
 
-.. [#Ruff2018Deep] Ruff, L., Vandermeulen, R., Goernitz, N., Deecke, L., Siddiqui, S.A., Binder, A., Müller, E. and Kloft, M., 2018, July. Deep one-class classification. In International conference on machine learning (pp. 4393-4402). PMLR.
+.. [#Ruff2018Deep] Ruff, Lukas, et al. "Deep one-class classification." International conference on machine learning. PMLR, 2018.
 
-.. [#Pang2019Repen] Pang, G., Cao, L., Chen, L., & Liu, H. (2018, July). Learning representations of ultrahigh-dimensional data for random distance-based outlier detection. In Proceedings of the 24th ACM SIGKDD international conference on knowledge discovery & data mining (pp. 2041-2050).
+.. [#Pang2019Repen] Pang, Guansong, et al. "Learning representations of ultrahigh-dimensional data for random distance-based outlier detection". Proceedings of the 24th ACM SIGKDD international conference on knowledge discovery & data mining (pp. 2041-2050).
