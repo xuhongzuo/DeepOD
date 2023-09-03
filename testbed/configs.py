@@ -13,11 +13,14 @@ def get_model_class(name):
         return USAD
     elif name == 'couta':
         return COUTA
+    elif name == 'anomalytransformer':
+        return AnomalyTransformer
     # elif name == 'seqregad':
     #     return SeqRegAD
 
 
-def get_additional_configs(name):
+def get_additional_configs(model_name, ds_name):
+    n_dims = {"SMAP": 25, "SMD": 38, "ASD": 19}
     config_dict = {
         # 'seqregad': {
         #     'seq_len_lst': [10, 30, 50],
@@ -67,10 +70,20 @@ def get_additional_configs(name):
             'lr': 1e-4,
             'epochs': 20,
             'batch_size': 64,
+        },
+
+        'anomalytransformer': {
+            'lr': 1e-4,
+            'epochs': 10,
+            'batch_size': 32,
+            'k': 3,
+            'input_c': n_dims[ds_name],
+            'output_c': n_dims[ds_name],
+            'anomaly_ratio': 1
         }
     }
 
     try:
-        return config_dict[name]
+        return config_dict[model_name]
     except KeyError:
         return {}
