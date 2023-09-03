@@ -15,20 +15,23 @@ import configs
 
 dataset_root = f'/home/{getpass.getuser()}/dataset/5-TSdata/_processed_data/'
 
+
 parser = argparse.ArgumentParser()
 parser.add_argument("--runs", type=int, default=5,
                     help="how many times we repeat the experiments to obtain the average performance")
 parser.add_argument("--output_dir", type=str, default='@records/',
                     help="the output file path")
+
 parser.add_argument("--dataset", type=str,
                     default='ASD,SMAP,MSL',
                     )
+
 parser.add_argument("--entities", type=str,
                     default='FULL',
                     help='FULL represents all the csv file in the folder, or a list of entity names split by comma'
                     )
 parser.add_argument("--entity_combined", type=int, default=1)
-parser.add_argument("--model", type=str, default='tranad', help="")
+parser.add_argument("--model", type=str, default='anomalytransformer', help="")  # anomalytransformer
 
 parser.add_argument('--silent_header', action='store_true')
 parser.add_argument("--flag", type=str, default='')
@@ -40,7 +43,7 @@ parser.add_argument('--stride', type=int, default=10)
 args = parser.parse_args()
 
 model_class = configs.get_model_class(args.model)
-model_configs = configs.get_additional_configs(args.model)
+model_configs = configs.get_additional_configs(args.model, args.dataset)
 model_configs['seq_len'] = args.seq_len
 model_configs['stride'] = args.stride
 
@@ -88,8 +91,8 @@ for dataset in dataset_name_lst:
 
             t1 = time.time()
             clf = model_class(**model_configs, random_state=42+i)
-            clf.fit(train_data)
-            scores = clf.decision_function(test_data)
+            clf.fit(train_data)  # 主要改这里
+            scores = clf.decision_function(test_data)  # scores(n,) test_data(n,d)
             t = time.time() - t1
 
             eval_metrics = utils.get_metrics(labels, scores)

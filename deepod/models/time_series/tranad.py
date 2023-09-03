@@ -57,12 +57,12 @@ class TranAD(BaseDeepAD):
                                 shuffle=False, drop_last=False)
 
         self.model.eval()
-        loss, _ = self.inference(dataloader)
-        loss_final = np.mean(loss, axis=1)
+        loss, _ = self.inference(dataloader)  # (8611,d)
+        loss_final = np.mean(loss, axis=1)  # (n,)
 
         padding_list = np.zeros([X.shape[0]-loss.shape[0], loss.shape[1]])
         loss_pad = np.concatenate([padding_list, loss], axis=0)
-        loss_final_pad = np.hstack([0 * np.ones(X.shape[0] - loss_final.shape[0]), loss_final])
+        loss_final_pad = np.hstack([0 * np.ones(X.shape[0] - loss_final.shape[0]), loss_final])  # (8640,)
 
         return loss_final_pad
 
@@ -73,15 +73,15 @@ class TranAD(BaseDeepAD):
         l1s, l2s = [], []
 
         for ii, batch_x in enumerate(dataloader):
-            local_bs = batch_x.shape[0]
-            window = batch_x.permute(1, 0, 2)
-            elem = window[-1, :, :].view(1, local_bs, self.n_features)
+            local_bs = batch_x.shape[0]  #(128，30，19)
+            window = batch_x.permute(1, 0, 2)  # (30, 128, 19)
+            elem = window[-1, :, :].view(1, local_bs, self.n_features)  #(1, 128, 19)
 
             window = window.float().to(self.device)
             elem = elem.float().to(self.device)
 
             z = self.model(window, elem)
-            l1 = (1/n) * criterion(z[0], elem) + (1-1/n) * criterion(z[1], elem)
+            l1 = (1/n) * criterion(z[0], elem) + (1-1/n) * criterion(z[1], elem)  #(1, 128, 19)
 
             l1s.append(torch.mean(l1).item())
             loss = torch.mean(l1)
