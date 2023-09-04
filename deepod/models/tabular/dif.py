@@ -154,7 +154,7 @@ class DeepIsolationForest(BaseDeepAD):
             ss = StandardScaler()
             x_reduced = ss.fit_transform(x_reduced)
             x_reduced = np.tanh(x_reduced)
-            scores = _cal_score(x_reduced, self.iForest_lst[i])
+            scores = cal_score(x_reduced, self.iForest_lst[i])
             self.score_lst[i] = scores
 
         final_scores = np.average(self.score_lst, axis=0)
@@ -184,7 +184,7 @@ class DeepIsolationForest(BaseDeepAD):
         pass
 
 
-def _cal_score(xx, clf):
+def cal_score(xx, clf):
     depths = np.zeros((xx.shape[0], len(clf.estimators_)))
     depth_sum = np.zeros(xx.shape[0])
     deviations = np.zeros((xx.shape[0], len(clf.estimators_)))
