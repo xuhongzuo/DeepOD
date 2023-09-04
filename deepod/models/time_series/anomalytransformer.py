@@ -4,8 +4,10 @@ import torch.nn.functional as F
 import numpy as np
 from torch.utils.data import DataLoader
 import math
+import time
 from deepod.utils.utility import get_sub_seqs
 from deepod.core.base_model import BaseDeepAD
+
 
 def my_kl_loss(p, q):
     res = p * (torch.log(p + 0.0001) - torch.log(q + 0.0001))
@@ -15,7 +17,7 @@ def my_kl_loss(p, q):
 class AnomalyTransformer(BaseDeepAD):
     def __init__(self, seq_len=100, stride=1, lr=0.0001, epochs=10, batch_size=32,
                  epoch_steps=20, prt_steps=1, device='cuda',
-                 k=3, input_c=25, output_c=25, anomaly_ratio=1,
+                 k=3, anomaly_ratio=1,
                  verbose=2, random_state=42):
         super(AnomalyTransformer, self).__init__(
             model_name='AnomalyTransformer', data_type='ts', epochs=epochs, batch_size=batch_size, lr=lr,
@@ -24,31 +26,35 @@ class AnomalyTransformer(BaseDeepAD):
             verbose=verbose, random_state=random_state
         )
         self.k = k
-        self.input_c = input_c
-        self.output_c = output_c
         self.anomaly_ratio = anomaly_ratio
 
     def fit(self, X, y=None):
         self.n_features = X.shape[1]
 
         train_seqs = get_sub_seqs(X, seq_len=self.seq_len, stride=self.stride)
-        self.model = AnomalyTransformerModel(
+        self.net = AnomalyTransformerModel(
             win_size=self.seq_len,
-            enc_in=self.input_c,
-            c_out=self.output_c,
-            e_layers=3).to(self.device)
+            enc_in=self.n_features,
+            c_out=self.n_features,
+            e_layers=3,
+            device=self.device
+        ).to(self.device)
 
         dataloader = DataLoader(train_seqs, batch_size=self.batch_size,
                                 shuffle=True, pin_memory=True)
 
-        self.optimizer = torch.optim.AdamW(self.model.parameters(), lr=self.lr, weight_decay=1e-5)
+        self.optimizer = torch.optim.AdamW(self.net.parameters(), lr=self.lr, weight_decay=1e-5)
         self.scheduler = torch.optim.lr_scheduler.StepLR(self.optimizer, step_size=5, gamma=0.5)
 
-        self.model.train()
+        self.net.train()
         for e in range(self.epochs):
+            t1 = time.time()
             loss = self.training(dataloader)
-            print(f'Epoch {e + 1},\t L1 = {loss}')
 
+            if self.verbose >= 1 and (e == 0 or (e + 1) % self.prt_steps == 0):
+                print(f'epoch{e + 1:3d}, '
+                      f'training loss: {loss:.6f}, '
+                      f'time: {time.time() - t1:.1f}s')
         self.decision_scores_ = self.decision_function(X)
         self.labels_ = self._process_decision_scores()  # in base model
         return
@@ -58,7 +64,7 @@ class AnomalyTransformer(BaseDeepAD):
         dataloader = DataLoader(seqs, batch_size=self.batch_size,
                                 shuffle=False, drop_last=False)
 
-        self.model.eval()
+        self.net.eval()
         loss, _ = self.inference(dataloader)  # (n,d)
         loss_final = np.mean(loss, axis=1)  # (n,)
 
@@ -76,7 +82,7 @@ class AnomalyTransformer(BaseDeepAD):
             self.optimizer.zero_grad()
 
             input = batch_x.float().to(self.device)
-            output, series, prior, _ = self.model(input)
+            output, series, prior, _ = self.net(input)
 
             # calculate Association discrepancy
             series_loss = 0.0
@@ -118,14 +124,14 @@ class AnomalyTransformer(BaseDeepAD):
         return np.average(loss_list)
 
     def inference(self, dataloader):
-        criterion = nn.MSELoss(reduce=False)
+        criterion = nn.MSELoss(reduction='none')
         temperature = 50
         attens_energy = []
         preds = []
 
         for input_data in dataloader:  # test_set
             input = input_data.float().to(self.device)
-            output, series, prior, _ = self.model(input)
+            output, series, prior, _ = self.net(input)
 
             loss = torch.mean(criterion(input, output), dim=-1)
 
@@ -175,10 +181,9 @@ class AnomalyTransformer(BaseDeepAD):
         return
 
 
-# Proposed Model
 class AnomalyTransformerModel(nn.Module):
     def __init__(self, win_size, enc_in, c_out, d_model=512, n_heads=8, e_layers=3, d_ff=512,
-                 dropout=0.0, activation='gelu', output_attention=True):
+                 dropout=0.0, activation='gelu', output_attention=True, device='cuda'):
         super(AnomalyTransformerModel, self).__init__()
         self.output_attention = output_attention
 
@@ -190,7 +195,10 @@ class AnomalyTransformerModel(nn.Module):
             [
                 EncoderLayer(
                     AttentionLayer(
-                        AnomalyAttention(win_size, False, attention_dropout=dropout, output_attention=output_attention),
+                        AnomalyAttention(win_size, False,
+                                         attention_dropout=dropout, output_attention=output_attention,
+                                         device=device
+                                         ),
                         d_model, n_heads),
                     d_model,
                     d_ff,
@@ -323,16 +331,17 @@ class TriangularCausalMask():
 
 
 class AnomalyAttention(nn.Module):
-    def __init__(self, win_size, mask_flag=True, scale=None, attention_dropout=0.0, output_attention=False):
+    def __init__(self, win_size, mask_flag=True, scale=None,
+                 attention_dropout=0.0, output_attention=False, device='cuda'):
         super(AnomalyAttention, self).__init__()
         self.scale = scale
         self.mask_flag = mask_flag
         self.output_attention = output_attention
         self.dropout = nn.Dropout(attention_dropout)
-        window_size = win_size
-        self.distances = torch.zeros((window_size, window_size)).cuda()
-        for i in range(window_size):
-            for j in range(window_size):
+        self.device = device
+        self.distances = torch.zeros((win_size, win_size)).to(device)
+        for i in range(win_size):
+            for j in range(win_size):
                 self.distances[i][j] = abs(i - j)
 
     def forward(self, queries, keys, values, sigma, attn_mask):
@@ -352,9 +361,8 @@ class AnomalyAttention(nn.Module):
         sigma = torch.sigmoid(sigma * 5) + 1e-5
         sigma = torch.pow(3, sigma) - 1
         sigma = sigma.unsqueeze(-1).repeat(1, 1, 1, window_size)  # B H L L
-        prior = self.distances.unsqueeze(0).unsqueeze(0).repeat(sigma.shape[0], sigma.shape[1], 1, 1).cuda()
+        prior = self.distances.unsqueeze(0).unsqueeze(0).repeat(sigma.shape[0], sigma.shape[1], 1, 1)
         prior = 1.0 / (math.sqrt(2 * math.pi) * sigma) * torch.exp(-prior ** 2 / 2 / (sigma ** 2))
-
         series = self.dropout(torch.softmax(attn, dim=-1))
         V = torch.einsum("bhls,bshd->blhd", series, values)
 

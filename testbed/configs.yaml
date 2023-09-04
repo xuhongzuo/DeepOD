@@ -1,0 +1,43 @@
+DIF:
+  rep_dim: 20
+  hidden_dims: 32
+  n_ensemble: 50
+  n_estimators: 6
+
+DeepSVDDTS:
+  network: Transformer
+  rep_dim: 64
+  hidden_dims: 512
+  act: GELU
+  lr: 0.00001
+  epochs: 20
+  batch_size: 128
+  epoch_steps: -1
+
+TranAD:
+  lr: 0.001
+  epochs: 10
+  batch_size: 128
+  epoch_steps: -1
+
+USAD:
+  hidden_dims: 100
+  lr: 1e-3
+  epochs: 10
+  batch_size: 128
+
+COUTA:
+  neg_batch_ratio: 0.2
+  alpha: 0.1
+  rep_dim: 16
+  hidden_dims: 16
+  lr: 0.0001
+  epochs: 20
+  batch_size: 64
+
+AnomalyTransformer:
+  lr: 0.0001
+  epochs: 10
+  batch_size: 32
+  k: 3
+  anomaly_ratio: 1
