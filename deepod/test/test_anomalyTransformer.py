@@ -32,8 +32,8 @@ class TestAnomalyTransformer(unittest.TestCase):
         self.yts_test = y
 
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        self.clf = AnomalyTransformer(seq_len=100, stride=1, epochs=10,
-                                      batch_size=32, k=3, input_c=19, output_c=19, anomaly_ratio=1, lr=1e-4,
+        self.clf = AnomalyTransformer(seq_len=100, stride=1, epochs=2,
+                                      batch_size=32, k=3, anomaly_ratio=1, lr=1e-4,
                                       device=device, random_state=42)
         self.clf.fit(self.Xts_train)
 

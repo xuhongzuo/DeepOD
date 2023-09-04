@@ -13,7 +13,7 @@ jobs:
     - name: Set up Python 3.8
       uses: actions/setup-python@v3
       with:
-        python-version: 3.8
+        python-version: '3.8'
 
     - name: Add conda to system path
       run: |
