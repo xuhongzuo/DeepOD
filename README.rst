@@ -18,7 +18,7 @@ Python Deep Outlier/Anomaly Detection (DeepOD)
 and `Anomaly Detection <https://en.wikipedia.org/wiki/Anomaly_detection>`_. ``DeepOD`` supports tabular anomaly detection and time-series anomaly detection.
 
 
-DeepOD includes **23** deep outlier detection / anomaly detection algorithms (in unsupervised/weakly-supervised paradigm) for now. More baseline algorithms will be included later.
+DeepOD includes **23** deep outlier detection / anomaly detection algorithms (in unsupervised/weakly-supervised paradigm). More baseline algorithms will be included later.
 
 
 
@@ -27,11 +27,11 @@ DeepOD includes **23** deep outlier detection / anomaly detection algorithms (in
 * **Unified APIs** across various algorithms.
 * **SOTA models** includes reconstruction-, representation-learning-, and self-superivsed-based latest deep learning methods.
 * **Comprehensive Testbed** that can be used to directly test different models on benchmark datasets (highly recommend for academic research).
-* **Versatile** in different data types including tabular and time-series data (DeepOD will support other data types like images, graph, log, trace, etc in the future, PR is highly welcomed :telescope:).
-* **Diverse Network Structures** can be plugged into detection models, we now support LSTM, GRU, TCN, Conv, Transformer for time-series data.  (PR is also highly welcomed :sparkles:)
+* **Versatile** in different data types including tabular and time-series data (DeepOD will support other data types like images, graph, log, trace, etc. in the future, welcome PR :telescope:).
+* **Diverse Network Structures** can be plugged into detection models, we now support LSTM, GRU, TCN, Conv, and Transformer for time-series data.  (welcome PR as well :sparkles:)
 
 
-If you are intersted in our project, we are pleased to have your stars and forks :thumbsup: :beers: .
+If you are interested in our project, we are pleased to have your stars and forks :thumbsup: :beers: .
 
 
 Installation
@@ -96,7 +96,7 @@ Key arguments:
 
 * ``--input_dir``: name of the folder that contains datasets (.csv, .npy)
 
-* ``--dataset``: "FULL" represents test all the files within the folder, or a list of dataset names using comma to split them (e.g., "10_cover*,20_letter*")
+* ``--dataset``: "FULL" represents testing all the files within the folder, or a list of dataset names using commas to split them (e.g., "10_cover*,20_letter*")
 
 * ``--model``: anomaly detection model name
 
@@ -108,7 +108,7 @@ Example:
 1. Download `ADBench <https://github.com/Minqi824/ADBench/tree/main/adbench/datasets/>`_ datasets.
 2. modify the ``dataset_root`` variable as the directory of the dataset.
 3. ``input_dir`` is the sub-folder name of the ``dataset_root``, e.g., ``Classical`` or ``NLP_by_BERT``.  
-4. use the following commend in the bash
+4. use the following command in the bash
 
 .. code-block:: bash
 
@@ -172,7 +172,7 @@ Citation
 ~~~~~~~~~~~~~~~~~
 If you use this library in your work, please cite this paper:
 
-H. Xu, G. Pang, Y. Wang and Y. Wang, "Deep Isolation Forest for Anomaly Detection," in IEEE Transactions on Knowledge and Data Engineering, doi: 10.1109/TKDE.2023.3270293.
+Hongzuo Xu, Guansong Pang, Yijie Wang and Yongjun Wang, "Deep Isolation Forest for Anomaly Detection," in IEEE Transactions on Knowledge and Data Engineering, doi: 10.1109/TKDE.2023.3270293.
 
 
 You can also use the BibTex entry below for citation.
