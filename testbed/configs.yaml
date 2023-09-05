@@ -40,4 +40,17 @@ AnomalyTransformer:
   epochs: 10
   batch_size: 32
   k: 3
-  anomaly_ratio: 1
+
+TimesNet:
+  lr: 0.0001
+  batch_size: 128
+  epochs: 10
+  pred_len: 0
+  e_layers: 2
+  d_model: 64
+  d_ff: 64
+  dropout: 0.1
+  top_k: 5
+  num_kernels: 6
+
+

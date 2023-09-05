@@ -6,6 +6,7 @@ from .usad import USAD
 from .couta import COUTA
 from .tcned import TcnED
 from .anomalytransformer import AnomalyTransformer
+from .timesnet import TimesNet
 
 # weakly-supervised
 from .dsad import DeepSADTS
@@ -14,4 +15,4 @@ from .prenet import PReNetTS
 
 
 __all__ = ['DeepIsolationForestTS', 'DeepSVDDTS', 'TranAD', 'USAD', 'COUTA',
-           'DeepSADTS', 'DevNetTS', 'PReNetTS', 'AnomalyTransformer']
+           'DeepSADTS', 'DevNetTS', 'PReNetTS', 'AnomalyTransformer', 'TimesNet']

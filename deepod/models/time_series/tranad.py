@@ -57,7 +57,7 @@ class TranAD(BaseDeepAD):
                                 shuffle=False, drop_last=False)
 
         self.model.eval()
-        loss, _ = self.inference(dataloader)  # (8611,d)
+        loss, _ = self.inference(dataloader)  # (n,d)
         loss_final = np.mean(loss, axis=1)  # (n,)
 
         padding_list = np.zeros([X.shape[0]-loss.shape[0], loss.shape[1]])
