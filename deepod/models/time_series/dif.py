@@ -9,6 +9,7 @@ from sklearn.ensemble import IsolationForest
 from deepod.core.base_model import BaseDeepAD
 from deepod.core.networks.ts_network_dilated_conv import DilatedConvEncoder
 from deepod.utils.utility import get_sub_seqs
+from deepod.models.tabular.dif import cal_score
 from tqdm import tqdm
 import torch
 from torch.utils.data import DataLoader
@@ -147,7 +148,7 @@ class DeepIsolationForestTS(BaseDeepAD):
 
         for i in iteration:
             x_reduced = self._deep_transfer(X, self.net_lst[i], self.batch_size, self.device)
-            scores = _cal_score(x_reduced, self.iForest_lst[i])
+            scores = cal_score(x_reduced, self.iForest_lst[i])
 
             padding = np.zeros(self.seq_len-1)
             scores = np.hstack((padding, scores))
@@ -179,118 +180,3 @@ class DeepIsolationForestTS(BaseDeepAD):
 
     def inference_forward(self, batch_x, net, criterion):
         pass
-
-
-def _cal_score(xx, clf):
-    depths = np.zeros((xx.shape[0], len(clf.estimators_)))
-    depth_sum = np.zeros(xx.shape[0])
-    deviations = np.zeros((xx.shape[0], len(clf.estimators_)))
-    leaf_samples = np.zeros((xx.shape[0], len(clf.estimators_)))
-
-    for ii, estimator_tree in enumerate(clf.estimators_):
-        # estimator_population_ind = sample_without_replacement(n_population=xx.shape[0], n_samples=256,
-        #                                                       random_state=estimator_tree.random_state)
-        # estimator_population = xx[estimator_population_ind]
-
-        tree = estimator_tree.tree_
-        n_node = tree.node_count
-
-        if n_node == 1:
-            continue
-
-        # get feature and threshold of each node in the iTree
-        # in feature_lst, -2 indicates the leaf node
-        feature_lst, threshold_lst = tree.feature.copy(), tree.threshold.copy()
-
-        #     feature_lst = np.zeros(n_node, dtype=int)
-        #     threshold_lst = np.zeros(n_node)
-        #     for j in range(n_node):
-        #         feature, threshold = tree.feature[j], tree.threshold[j]
-        #         feature_lst[j] = feature
-        #         threshold_lst[j] = threshold
-        #         # print(j, feature, threshold)
-        #         if tree.children_left[j] == -1:
-        #             leaf_node_list.append(j)
-
-        # compute depth and score
-        leaves_index = estimator_tree.apply(xx)
-        node_indicator = estimator_tree.decision_path(xx)
-
-        # The number of training samples in each test sample leaf
-        n_node_samples = estimator_tree.tree_.n_node_samples
-
-        # node_indicator is a sparse matrix with shape (n_samples, n_nodes), indicating the path of input data samples
-        # each layer would result in a non-zero element in this matrix,
-        # and then the row-wise summation is the depth of data sample
-        n_samples_leaf = estimator_tree.tree_.n_node_samples[leaves_index]
-        d = (np.ravel(node_indicator.sum(axis=1)) + _average_path_length(n_samples_leaf) - 1.0)
-        depths[:, ii] = d
-        depth_sum += d
-
-        # decision path of data matrix XX
-        node_indicator = np.array(node_indicator.todense())
-
-        # set a matrix with shape [n_sample, n_node], representing the feature value of each sample on each node
-        # set the leaf node as -2
-        value_mat = np.array([xx[i][feature_lst] for i in range(xx.shape[0])])
-        value_mat[:, np.where(feature_lst == -2)[0]] = -2
-        th_mat = np.array([threshold_lst for _ in range(xx.shape[0])])
-
-        mat = np.abs(value_mat - th_mat) * node_indicator
-
-        # dev_mat = np.abs(value_mat - th_mat)
-        # m = np.mean(dev_mat, axis=0)
-        # s = np.std(dev_mat, axis=0)
-        # dev_mat_mean = np.array([m for _ in range(xx.shape[0])])
-        # dev_mat_std = np.array([s for _ in range(xx.shape[0])])
-        # dev_mat_zscore = np.maximum((dev_mat - dev_mat_mean) / (dev_mat_std+1e-6), 0)
-        # mat = dev_mat_zscore * node_indicator
-
-        exist = (mat != 0)
-        dev = mat.sum(axis=1)/(exist.sum(axis=1)+1e-6)
-        deviations[:, ii] = dev
-
-    scores = 2 ** (-depth_sum / (len(clf.estimators_) * _average_path_length([clf.max_samples_])))
-    deviation = np.mean(deviations, axis=1)
-    leaf_sample = (clf.max_samples_ - np.mean(leaf_samples, axis=1)) / clf.max_samples_
-
-    scores = scores * deviation
-    # scores = scores * deviation * leaf_sample
-    return scores
-
-
-def _average_path_length(n_samples_leaf):
-    """
-    The average path length in a n_samples iTree, which is equal to
-    the average path length of an unsuccessful BST search since the
-    latter has the same structure as an isolation tree.
-    Parameters
-    ----------
-    n_samples_leaf : array-like of shape (n_samples,)
-        The number of training samples in each test sample leaf, for
-        each estimators.
-
-    Returns
-    -------
-    average_path_length : ndarray of shape (n_samples,)
-    """
-
-    n_samples_leaf = check_array(n_samples_leaf, ensure_2d=False)
-
-    n_samples_leaf_shape = n_samples_leaf.shape
-    n_samples_leaf = n_samples_leaf.reshape((1, -1))
-    average_path_length = np.zeros(n_samples_leaf.shape)
-
-    mask_1 = n_samples_leaf <= 1
-    mask_2 = n_samples_leaf == 2
-    not_mask = ~np.logical_or(mask_1, mask_2)
-
-    average_path_length[mask_1] = 0.
-    average_path_length[mask_2] = 1.
-    average_path_length[not_mask] = (
-        2.0 * (np.log(n_samples_leaf[not_mask] - 1.0) + np.euler_gamma)
-        - 2.0 * (n_samples_leaf[not_mask] - 1.0) / n_samples_leaf[not_mask]
-    )
-
-    return average_path_length.reshape(n_samples_leaf_shape)
-
