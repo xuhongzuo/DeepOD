@@ -17,8 +17,7 @@ def my_kl_loss(p, q):
 class AnomalyTransformer(BaseDeepAD):
     def __init__(self, seq_len=100, stride=1, lr=0.0001, epochs=10, batch_size=32,
                  epoch_steps=20, prt_steps=1, device='cuda',
-                 k=3, anomaly_ratio=1,
-                 verbose=2, random_state=42):
+                 k=3, verbose=2, random_state=42):
         super(AnomalyTransformer, self).__init__(
             model_name='AnomalyTransformer', data_type='ts', epochs=epochs, batch_size=batch_size, lr=lr,
             seq_len=seq_len, stride=stride,
@@ -26,7 +25,6 @@ class AnomalyTransformer(BaseDeepAD):
             verbose=verbose, random_state=random_state
         )
         self.k = k
-        self.anomaly_ratio = anomaly_ratio
 
     def fit(self, X, y=None):
         self.n_features = X.shape[1]

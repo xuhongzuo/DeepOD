@@ -16,13 +16,14 @@ import pandas as pd
 # if deepod is installed, no need to use the following line
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from deepod.models.time_series.anomalytransformer import AnomalyTransformer
+from deepod.models.time_series.timesnet import TimesNet
 
 
-class TestAnomalyTransformer(unittest.TestCase):
+class TestTimesNet(unittest.TestCase):
     def setUp(self):
-        train_file = 'data/omi-1/omi-1_train.csv'
-        test_file = 'data/omi-1/omi-1_test.csv'
+        train_file = 'E:/NUDTCoding/PDL/DeepOD/data/omi-1/omi-1_train.csv'
+        test_file = 'E:/NUDTCoding/PDL/DeepOD/data/omi-1/omi-1_test.csv'
+        # test_file = 'data/omi-1/omi-1_test.csv'
         train_df = pd.read_csv(train_file, sep=',', index_col=0)
         test_df = pd.read_csv(test_file, index_col=0)
         y = test_df['label'].values
@@ -32,9 +33,12 @@ class TestAnomalyTransformer(unittest.TestCase):
         self.yts_test = y
 
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        self.clf = AnomalyTransformer(seq_len=100, stride=1, epochs=2,
-                                      batch_size=32, k=3, lr=1e-4,
-                                      device=device, random_state=42)
+        self.clf = TimesNet(
+            seq_len=100, stride=1, epochs=2,
+            batch_size=32, lr=1e-4,
+            device=device, random_state=42
+        )
+
         self.clf.fit(self.Xts_train)
 
     def test_parameters(self):
