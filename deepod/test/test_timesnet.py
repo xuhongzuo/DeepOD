@@ -21,8 +21,8 @@ from deepod.models.time_series.timesnet import TimesNet
 
 class TestTimesNet(unittest.TestCase):
     def setUp(self):
-        train_file = 'E:/NUDTCoding/PDL/DeepOD/data/omi-1/omi-1_train.csv'
-        test_file = 'E:/NUDTCoding/PDL/DeepOD/data/omi-1/omi-1_test.csv'
+        train_file = 'data/omi-1/omi-1_train.csv'
+        test_file = 'data/omi-1/omi-1_test.csv'
         # test_file = 'data/omi-1/omi-1_test.csv'
         train_df = pd.read_csv(train_file, sep=',', index_col=0)
         test_df = pd.read_csv(test_file, index_col=0)
