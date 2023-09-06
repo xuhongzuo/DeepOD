@@ -175,7 +175,7 @@ Implemented Models
  PReNet, KDD, 2023, weakly-supervised, Deep Weakly-supervised Anomaly Detection
  Deep SAD, ICLR, 2020, weakly-supervised, Deep Semi-Supervised Anomaly Detection
  FeaWAD, TNNLS, 2021, weakly-supervised, Feature Encoding with AutoEncoders for Weakly-supervised Anomaly Detection
-
+ RoSAS, IP&M, 2023, weakly-supervised, RoSAS: Deep semi-supervised anomaly detection with contamination-resilient continuous supervision
 
 **Time-series Anomaly Detection models:**
 
