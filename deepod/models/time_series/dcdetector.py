@@ -28,7 +28,7 @@ class DCdetector(BaseDeepAD):
             verbose=verbose, random_state=random_state
         )
         if patch_size is None:
-            self.patch_size = [5]
+            self.patch_size = [5]  # patch_size must be divisible by seq_len
         self.patch_size = patch_size
         self.n_heads = n_heads
         self.d_model = d_model
@@ -41,9 +41,9 @@ class DCdetector(BaseDeepAD):
         self.n_features = X.shape[1]
 
         train_seqs = get_sub_seqs(X, seq_len=self.seq_len, stride=self.stride)
-        self.model = DCdetector(win_size=self.seq_len, enc_in=self.n_features, c_out=self.n_features, n_heads=self.n_heads,
+        self.model = DCdetectorModel(win_size=self.seq_len, enc_in=self.n_features, c_out=self.n_features, n_heads=self.n_heads,
                                 d_model=self.d_model, e_layers=self.e_layers, patch_size=self.patch_size,
-                                channel=self.n_features)
+                                channel=self.n_features).to(self.device)
 
         dataloader = DataLoader(train_seqs, batch_size=self.batch_size,
                                 shuffle=True, pin_memory=True)
@@ -100,7 +100,7 @@ class DCdetector(BaseDeepAD):
                     series[u].detach())) + torch.mean(
                     my_kl_loss(series[u].detach(), (
                             prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1,
-                                                                                                   self.win_size)))))
+                                                                                                   self.seq_len)))))
 
             series_loss = series_loss / len(prior)
             prior_loss = prior_loss / len(prior)
@@ -133,18 +133,18 @@ class DCdetector(BaseDeepAD):
                 if u == 0:
                     series_loss = my_kl_loss(series[u], (
                             prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1,
-                                                                                                   self.win_size)).detach()) * temperature
+                                                                                                   self.seq_len)).detach()) * temperature
                     prior_loss = my_kl_loss(
                         (prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1,
-                                                                                                self.win_size)),
+                                                                                                self.seq_len)),
                         series[u].detach()) * temperature
                 else:
                     series_loss += my_kl_loss(series[u], (
                             prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1,
-                                                                                                   self.win_size)).detach()) * temperature
+                                                                                                   self.seq_len)).detach()) * temperature
                     prior_loss += my_kl_loss(
                         (prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1,
-                                                                                                self.win_size)),
+                                                                                                self.seq_len)),
                         series[u].detach()) * temperature
 
             metric = torch.softmax((-series_loss - prior_loss), dim=-1)
@@ -154,6 +154,22 @@ class DCdetector(BaseDeepAD):
         test_energy = np.array(attens_energy)  # anomaly scores
 
         return test_energy, preds  # (n,d)
+
+    def training_forward(self, batch_x, net, criterion):
+        """define forward step in training"""
+        return
+
+    def inference_forward(self, batch_x, net, criterion):
+        """define forward step in inference"""
+        return
+
+    def training_prepare(self, X, y):
+        """define train_loader, net, and criterion"""
+        return
+
+    def inference_prepare(self, X):
+        """define test_loader"""
+        return
 
 
 # Proposed Model
@@ -174,10 +190,10 @@ class Encoder(nn.Module):
         return series_list, prior_list
 
 
-class DCdetector(nn.Module):
+class DCdetectorModel(nn.Module):
     def __init__(self, win_size, enc_in, c_out, n_heads=1, d_model=256, e_layers=3, patch_size=[3, 5, 7], channel=55,
                  d_ff=512, dropout=0.0, activation='gelu', output_attention=True):
-        super(DCdetector, self).__init__()
+        super(DCdetectorModel, self).__init__()
         self.output_attention = output_attention
         self.patch_size = patch_size
         self.channel = channel

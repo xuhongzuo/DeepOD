@@ -20,6 +20,7 @@ from deepod.models.time_series.devnet import DevNetTS
 from deepod.models.time_series.dif import DeepIsolationForestTS
 from deepod.models.time_series.dsvdd import DeepSVDDTS
 
+from deepod.models.time_series.dcdetector import DCdetector
 from deepod.models.time_series.timesnet import TimesNet
 from deepod.models.time_series.anomalytransformer import AnomalyTransformer
 from deepod.models.time_series.tranad import TranAD
@@ -31,7 +32,7 @@ from deepod.models.time_series.tcned import TcnED
 __all__ = [
     'RCA', 'DeepSVDD', 'GOAD', 'NeuTraL', 'RDP', 'ICL', 'SLAD', 'DeepIsolationForest',
     'DeepSAD', 'DevNet', 'PReNet', 'FeaWAD', 'REPEN', 'RoSAS',
-    'TimesNet', 'AnomalyTransformer', 'TranAD', 'COUTA', 'USAD', 'TcnED',
+    'DCdetector', 'TimesNet', 'AnomalyTransformer', 'TranAD', 'COUTA', 'USAD', 'TcnED',
     'DeepIsolationForestTS', 'DeepSVDDTS',
     'PReNetTS', 'DeepSADTS', 'DevNetTS'
 ]

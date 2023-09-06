@@ -62,3 +62,15 @@ RoSAS:
   alpha: 0.5
   margin: 1
   beta: 1
+
+DCdetector:
+  patch_size: [1,3,5]
+  batch_size: 128
+  epochs: 10
+  lr: 0.0001
+  n_heads: 1
+  d_model: 256
+  e_layers: 3
+
+
+
