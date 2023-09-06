@@ -19,7 +19,6 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from deepod.models.tabular.dsvdd import DeepSVDD
 from deepod.models.time_series.dsvdd import DeepSVDDTS
 from deepod.utils.data import generate_data
-from deepod.utils.utility import cal_metrics
 
 
 class TestDeepSVDD(unittest.TestCase):

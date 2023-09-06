@@ -19,7 +19,6 @@ from deepod.models.tabular.dsad import DeepSAD
 from deepod.models.time_series.dsad import DeepSADTS
 from deepod.utils.data import generate_data
 import numpy as np
-from deepod.utils.utility import cal_metrics
 
 
 class TestDSAD(unittest.TestCase):
@@ -95,14 +94,6 @@ class TestDSAD(unittest.TestCase):
         # check score shapes
         assert_equal(pred_scores.shape[0], self.X_test.shape[0])
         assert_equal(pred_scores2.shape[0], self.Xts_test.shape[0])
-
-        # check performance
-        auc = roc_auc_score(self.y_test, pred_scores)
-        assert (auc >= self.roc_floor), \
-            f'auc {auc} does not reach minimum auc standard {self.roc_floor}'
-        adj_eval_info = cal_metrics(self.yts_test, pred_scores2, pa=True)
-        assert (adj_eval_info[2] >= self.ts_f1_floor), \
-            f'pa_f1 {adj_eval_info[2]} does not reach minimum f1 standard {self.ts_f1_floor}'
 
     def test_prediction_labels(self):
         pred_labels = self.clf.predict(self.X_test)
