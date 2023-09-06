@@ -4,71 +4,7 @@ import pandas as pd
 import numpy as np
 from scipy.io import arff
 from sklearn.model_selection import train_test_split
-from sklearn import metrics
-from sklearn.preprocessing import StandardScaler
-from sklearn.preprocessing import MinMaxScaler
-
-
-intermediate_dir = './z-intermediate_model_files/'
-
-# --------------------------- evaluation --------------------------- #
-
-
-def get_best_f1(label, score):
-    precision, recall, ths = metrics.precision_recall_curve(y_true=label, probas_pred=score)
-    f1 = 2 * precision * recall / (precision + recall + 1e-5)
-    best_f1 = f1[np.argmax(f1)]
-    best_p = precision[np.argmax(f1)]
-    best_r = recall[np.argmax(f1)]
-    best_th = ths[np.argmax(f1)]
-    return best_f1, best_p, best_r, best_th
-
-
-def get_metrics(label, score):
-    auroc = metrics.roc_auc_score(label, score)
-    ap = metrics.average_precision_score(y_true=label, y_score=score, average=None)
-    best_f1, best_p, best_r, _ = get_best_f1(label, score)
-
-    return auroc, ap, best_f1, best_p, best_r
-
-
-def adjust_scores(label, score):
-    """
-    adjust the score for segment detection. i.e., for each ground-truth anomaly segment,
-    use the maximum score as the score of all points in that segment. This corresponds to point-adjust f1-score.
-    ** This function is copied/modified from the source code in [Zhihan Li et al. KDD21]
-    :param score - anomaly score, higher score indicates higher likelihoods to be anomaly
-    :param label - ground-truth label
-    """
-    score = score.copy()
-    assert len(score) == len(label)
-    splits = np.where(label[1:] != label[:-1])[0] + 1
-    is_anomaly = label[0] == 1
-    pos = 0
-    for sp in splits:
-        if is_anomaly:
-            score[pos:sp] = np.max(score[pos:sp])
-        is_anomaly = not is_anomaly
-        pos = sp
-    sp = len(label)
-    if is_anomaly:
-        score[pos:sp] = np.max(score[pos:sp])
-    return score
-
-
-def evaluate(y_true, scores):
-    """calculate evaluation metrics"""
-    roc_auc = metrics.roc_auc_score(y_true, scores)
-    ap = metrics.average_precision_score(y_true, scores)
-
-    # F1@k, using real percentage to calculate F1-score
-    ratio = 100.0 * len(np.where(y_true==0)[0]) / len(y_true)
-    thresh = np.percentile(scores, ratio)
-    y_pred = (scores >= thresh).astype(int)
-    y_true = y_true.astype(int)
-    precision, recall, f_score, support = metrics.precision_recall_fscore_support(y_true, y_pred, average='binary')
-
-    return roc_auc, ap, f_score
+from sklearn.preprocessing import StandardScaler, MinMaxScaler
 
 
 # --------------------------- data preprocessing --------------------------- #
@@ -117,6 +53,46 @@ def data_normalization(x_train, x_test):
 
 # --------------------------- data loading --------------------------- #
 
+def get_data_lst(dataset_dir, dataset):
+    if dataset == 'FULL':
+        print(os.path.join(dataset_dir, '*.*'))
+        data_lst = glob.glob(os.path.join(dataset_dir, '*.*'))
+    else:
+        name_lst = dataset.split(',')
+        data_lst = []
+        for d in name_lst:
+            data_lst.extend(glob.glob(os.path.join(dataset_dir, d + '.*')))
+    data_lst = sorted(data_lst)
+    return data_lst
+
+
+def import_data(file):
+    if file.endswith('.npz'):
+        data = np.load(file, allow_pickle=True)
+        x, y = data['X'], data['y']
+        y = np.array(y, dtype=int)
+    else:
+        if file.endswith('pkl'):
+            func = pd.read_pickle
+        elif file.endswith('csv'):
+            func = pd.read_csv
+        elif file.endswith('arff'):
+            def func(f):
+                df_ = pd.DataFrame(arff.loadarff(f)[0])
+                df_ = df_.replace({b'no': 0, b'yes': 1})
+                df_ = df_.drop('id', axis=1)
+                return df_
+        else:
+            raise NotImplementedError('')
+
+        df = func(file)
+        df.replace([np.inf, -np.inf], np.nan, inplace=True)
+        df.fillna(method='ffill', inplace=True)
+        x = df.values[:, :-1]
+        y = np.array(df.values[:, -1], dtype=int)
+    return x, y
+
+
 
 def read_data(file, split='50%-normal', normalization='z-score', seed=42):
     """
@@ -143,29 +119,7 @@ def read_data(file, split='50%-normal', normalization='z-score', seed=42):
         random seed
     """
 
-    if file.endswith('.npz'):
-        data = np.load(file, allow_pickle=True)
-        x, y = data['X'], data['y']
-        y = np.array(y, dtype=int)
-    else:
-        if file.endswith('pkl'):
-            func = pd.read_pickle
-        elif file.endswith('csv'):
-            func = pd.read_csv
-        elif file.endswith('arff'):
-            def func(f):
-                df_ = pd.DataFrame(arff.loadarff(f)[0])
-                df_ = df_.replace({b'no': 0, b'yes': 1})
-                df_ = df_.drop('id', axis=1)
-                return df_
-        else:
-            raise NotImplementedError('')
-
-        df = func(file)
-        df.replace([np.inf, -np.inf], np.nan, inplace=True)
-        df.fillna(method='ffill', inplace=True)
-        x = df.values[:, :-1]
-        y = np.array(df.values[:, -1], dtype=int)
+    x, y = import_data(file)
 
     # train-test splitting
     if split == '50%-normal':
@@ -216,17 +170,8 @@ def read_data(file, split='50%-normal', normalization='z-score', seed=42):
     return x_train, y_train, x_test, y_test
 
 
-def get_data_lst(dataset_dir, dataset):
-    if dataset == 'FULL':
-        print(os.path.join(dataset_dir, '*.*'))
-        data_lst = glob.glob(os.path.join(dataset_dir, '*.*'))
-    else:
-        name_lst = dataset.split(',')
-        data_lst = []
-        for d in name_lst:
-            data_lst.extend(glob.glob(os.path.join(dataset_dir, d + '.*')))
-    data_lst = sorted(data_lst)
-    return data_lst
+
+
 
 
 def import_ts_data_unsupervised(data_root, data, entities=None, combine=False):
@@ -299,23 +244,74 @@ def get_anom_pairs(y):
     return anom_pairs
 
 
-def set_semi_supervised(y_label, n_known=1, seed=42):
-    semi_y = np.zeros_like(y_label)
+def split_train_test_val(x, y, test_ratio, val_ratio, random_state=None, del_features=True):
+    idx_norm = y == 0
+    idx_out = y == 1
 
-    anom_pairs = get_anom_pairs(y_label)
-    print()
-    print(f'This Dataset has [{len(anom_pairs)}] anom pairs in total')
-    if n_known == -1:
-        n_known = len(anom_pairs)
-    n_known = min(n_known, len(anom_pairs))
+    n_f = x.shape[1]
 
-    rng = np.random.RandomState(seed)
-    pair_ids = rng.choice(len(anom_pairs), n_known)
-    known_segs = []
-    for p in pair_ids:
-        segment = anom_pairs[p]
-        semi_y[segment[0]: segment[1]+1] = 1
-        known_segs.append(segment)
+    if del_features:
+        del_list = []
+        for i in range(n_f):
+            if np.std(x[:, i]) == 0:
+                del_list.append(i)
+        if len(del_list) > 0:
+            print("Pre-process: Delete %d features as every instances have the same behaviour: " % len(del_list))
+            x = np.delete(x, del_list, axis=1)
 
-    print(f'known segment: {known_segs}, {int(np.sum(semi_y))} / {len(semi_y)}')
-    return semi_y
+    # keep outlier ratio, norm is normal out is outlier
+    x_train_norm, x_teval_norm, y_train_norm, y_teval_norm = train_test_split(x[idx_norm], y[idx_norm],
+                                                                              test_size=test_ratio + val_ratio,
+                                                                              random_state=random_state)
+    x_train_out, x_teval_out, y_train_out, y_teval_out = train_test_split(x[idx_out], y[idx_out],
+                                                                          test_size=test_ratio + val_ratio,
+                                                                          random_state=random_state)
+
+    x_test_norm, x_val_norm, y_test_norm, y_val_norm = train_test_split(x_teval_norm, y_teval_norm,
+                                                                        test_size=val_ratio / (test_ratio + val_ratio),
+                                                                        random_state=random_state)
+    x_test_out, x_val_out, y_test_out, y_val_out = train_test_split(x_teval_out, y_teval_out,
+                                                                    test_size=val_ratio / (test_ratio + val_ratio),
+                                                                    random_state=random_state)
+
+    x_train = np.concatenate((x_train_norm, x_train_out))
+    x_test = np.concatenate((x_test_norm, x_test_out))
+    x_val = np.concatenate((x_val_norm, x_val_out))
+    y_train = np.concatenate((y_train_norm, y_train_out))
+    y_test = np.concatenate((y_test_norm, y_test_out))
+    y_val = np.concatenate((y_val_norm, y_val_out))
+
+    from collections import Counter
+    print('train counter', Counter(y_train))
+    print('val counter  ', Counter(y_val))
+    print('test counter ', Counter(y_test))
+
+    # # Scale to range [0,1]
+    minmax_scaler = MinMaxScaler()
+    minmax_scaler.fit(x_train)
+    x_train = minmax_scaler.transform(x_train)
+    x_test = minmax_scaler.transform(x_test)
+    x_val = minmax_scaler.transform(x_val)
+
+    return x_train, y_train, x_test, y_test, x_val, y_val
+
+
+def semi_setting(y_train, n_known_outliers=30):
+    """
+    default: using ratio to get known outliers, also can using n_known_outliers to get semi-y
+    use the first k outlier as known
+    :param y_train:
+    :param n_known_outliers:
+    :return:
+    """
+    outlier_indices = np.where(y_train == 1)[0]
+    n_outliers = len(outlier_indices)
+    n_known_outliers = min(n_known_outliers, n_outliers)
+
+    # rng = np.random.RandomState(random_state)
+    # known_idx = rng.choice(outlier_indices, n_known_outliers, replace=False)
+    known_idx = outlier_indices[:n_known_outliers]
+
+    new_y_train = np.zeros_like(y_train, dtype=int)
+    new_y_train[known_idx] = 1
+    return new_y_train

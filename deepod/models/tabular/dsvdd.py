@@ -28,17 +28,6 @@ class DeepSVDD(BaseDeepAD):
     lr: float, optional (default=1e-3)
         Learning rate
 
-    network: str, optional (default='MLP')
-        network structure for different data structures
-
-    seq_len: int, optional (default=100)
-        Size of window used to create subsequences from the data
-        deprecated when handling tabular data (network=='MLP')
-
-    stride: int, optional (default=1)
-        number of time points the window will move between two subsequences
-        deprecated when handling tabular data (network=='MLP')
-
     rep_dim: int, optional (default=128)
         Dimensionality of the representation space
 

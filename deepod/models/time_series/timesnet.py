@@ -28,7 +28,6 @@ class TimesNet(BaseDeepAD):
         self.top_k = top_k
         self.num_kernels = num_kernels
 
-
     def fit(self, X, y=None):
         self.n_features = X.shape[1]
 

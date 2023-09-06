@@ -53,4 +53,12 @@ TimesNet:
   top_k: 5
   num_kernels: 6
 
-
+RoSAS:
+  epoch_steps: 16
+  epochs: 200
+  batch_size: 32
+  lr: 0.005
+  n_emb: 128
+  alpha: 0.5
+  margin: 1
+  beta: 1

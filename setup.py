@@ -9,7 +9,7 @@ with open(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'requirements
 
 setuptools.setup(
     name="deepod",
-    version="0.3.0",
+    version="0.4.0",
     author="Hongzuo Xu",
     author_email="hongzuoxu@126.com",
     description="",
@@ -25,6 +25,7 @@ setuptools.setup(
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
         "License :: OSI Approved :: BSD License",
     ],
 )

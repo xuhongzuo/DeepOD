@@ -11,7 +11,8 @@ import yaml
 import time
 import importlib as imp
 import numpy as np
-import utils
+from utils import  import_ts_data_unsupervised
+from deepod.metrics import ts_metrics, point_adjustment
 
 
 dataset_root = f'/home/{getpass.getuser()}/dataset/5-TSdata/_processed_data/'
@@ -27,7 +28,8 @@ parser.add_argument("--dataset", type=str,
                     )
 parser.add_argument("--entities", type=str,
                     default='FULL',
-                    help='FULL represents all the csv file in the folder, or a list of entity names split by comma'
+                    help='FULL represents all the csv file in the folder, '
+                         'or a list of entity names split by comma'
                     )
 parser.add_argument("--entity_combined", type=int, default=1)
 parser.add_argument("--model", type=str, default='TimesNet', help="")
@@ -41,7 +43,7 @@ parser.add_argument('--stride', type=int, default=10)
 
 args = parser.parse_args()
 
-module = imp.import_module('deepod.models.time_series')
+module = imp.import_module('deepod.models')
 model_class = getattr(module, args.model)
 
 path = 'configs.yaml'
@@ -82,7 +84,7 @@ dataset_name_lst = args.dataset.split(',')
 
 for dataset in dataset_name_lst:
     # # import data
-    data_pkg = utils.import_ts_data_unsupervised(dataset_root,
+    data_pkg = import_ts_data_unsupervised(dataset_root,
                                                  dataset, entities=args.entities,
                                                  combine=args.entity_combined)
     train_lst, test_lst, label_lst, name_lst = data_pkg
@@ -103,8 +105,8 @@ for dataset in dataset_name_lst:
             scores = clf.decision_function(test_data)
             t = time.time() - t1
 
-            eval_metrics = utils.get_metrics(labels, scores)
-            adj_eval_metrics = utils.get_metrics(labels, utils.adjust_scores(labels, scores))
+            eval_metrics = ts_metrics(labels, scores)
+            adj_eval_metrics = ts_metrics(labels, point_adjustment(labels, scores))
 
             # print single results
             txt = f'{dataset_name},'

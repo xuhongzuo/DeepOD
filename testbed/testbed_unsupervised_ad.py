@@ -10,8 +10,9 @@ import argparse
 import getpass
 import time
 import numpy as np
-import utils
 import importlib as imp
+from utils import get_data_lst, read_data
+from deepod.metrics import tabular_metrics
 
 
 dataset_root = f'/home/{getpass.getuser()}/dataset/1-tabular/'
@@ -26,7 +27,7 @@ parser.add_argument("--output_dir", type=str, default='@record/',
                     help="the output file path")
 parser.add_argument("--dataset", type=str, default='*thyroid*',
                     help="FULL represents all the csv file in the folder, "
-                         "or a list of data set names splitted by comma")
+                         "or a list of data set names split by comma")
 parser.add_argument("--model", type=str, default='SLAD', help="",)
 parser.add_argument("--normalization", type=str, default='min-max', help="",)
 parser.add_argument('--silent_header', action='store_true')
@@ -35,7 +36,7 @@ args = parser.parse_args()
 
 
 os.makedirs(args.output_dir, exist_ok=True)
-data_lst = utils.get_data_lst(os.path.join(dataset_root, args.input_dir), args.dataset)
+data_lst = get_data_lst(os.path.join(dataset_root, args.input_dir), args.dataset)
 print(os.path.join(dataset_root, args.input_dir))
 print(data_lst)
 
@@ -55,7 +56,6 @@ if not args.silent_header:
     f.close()
 
 
-avg_auc_lst, avg_ap_lst, avg_f1_lst = [], [], []
 for file in data_lst:
     dataset_name = os.path.splitext(os.path.split(file)[1])[0]
 
@@ -63,10 +63,9 @@ for file in data_lst:
 
     split = '50%-normal'
     print(f'train-test split: {split}, normalization: {args.normalization}')
-    x_train, y_train, x_test, y_test = utils.read_data(file=file,
-                                                       split=split,
-                                                       normalization=args.normalization,
-                                                       seed=42)
+    x_train, y_train, x_test, y_test = read_data(file=file, split=split,
+                                                 normalization=args.normalization,
+                                                 seed=42)
     if x_train is None:
         continue
 
@@ -83,7 +82,7 @@ for file in data_lst:
         scores = clf.decision_function(x_test)
         done_time = time.time()
 
-        auc, ap, f1 = utils.evaluate(y_test, scores)
+        auc, ap, f1 = tabular_metrics(y_test, scores)
         auc_lst[i], ap_lst[i], f1_lst[i] = auc, ap, f1
         t1_lst[i] = train_time - start_time
         t2_lst[i] = done_time - start_time
@@ -105,9 +104,3 @@ for file in data_lst:
     print(txt, file=f)
     print(txt)
     f.close()
-
-    avg_auc_lst.append(avg_auc)
-    avg_ap_lst.append(avg_ap)
-    avg_f1_lst.append(avg_f1)
-
-
