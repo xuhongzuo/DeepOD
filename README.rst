@@ -184,8 +184,8 @@ Implemented Models
  :header: "Model", "Venue", "Year", "Type", "Title"
  :widths: 4, 4, 4, 8, 20 
 
- TimesNet, ICLR, 2023, unsupervised, TIMESNET: Temporal 2D-Variation Modeling for General Time Series Analysis
- AnomalyTransformer, ICLR, 2022, unsupervised, Anomaly Transformer: Time Series Anomaly Detection with Association Discrepancy
+ TimesNet, ICLR, 2023, unsupervised, TIMESNET: Temporal 2D-Variation Modeling for General Time Series Analysis [#Wu2023timesnet]_
+ AnomalyTransformer, ICLR, 2022, unsupervised, Anomaly Transformer: Time Series Anomaly Detection with Association Discrepancy [#Xu2022transformer]_
  TranAD, VLDB, 2022, unsupervised, TranAD: Deep Transformer Networks for Anomaly Detection in Multivariate Time Series Data  
  COUTA, arXiv, 2022, unsupervised, Calibrated One-class Classification for Unsupervised Time Series Anomaly Detection
  USAD, KDD, 2020, unsupervised, USAD: UnSupervised Anomaly Detection on Multivariate Time Series  
@@ -241,3 +241,7 @@ Reference
 .. [#Bergman2020GOAD] Bergman, Liron, and Yedid Hoshen. "Classification-Based Anomaly Detection for General Data". ICLR. 2020.
 
 .. [#Qiu2021Neutral] Qiu, Chen, et al. "Neural Transformation Learning for Deep Anomaly Detection Beyond Images". ICML. 2021.
+
+.. [#Xu2022transformer] Xu Jiehui, et al. "Anomaly Transformer: Time Series Anomaly Detection with Association Discrepancy". ICLR, 2022.
+
+.. [#Wu2023timesnet] Wu Haixu, et al. "TimesNet: Temporal 2D-Variation Modeling for General Time Series Analysis". ICLR. 2023.
