@@ -17,7 +17,7 @@ def my_kl_loss(p, q):
 
 
 class DCdetector(BaseDeepAD):
-    def __init__(self, seq_len=100, stride=1, lr=0.001, epochs=5, batch_size=128,
+    def __init__(self, seq_len=100, stride=1, lr=0.0001, epochs=5, batch_size=128,
                  epoch_steps=20, prt_steps=1, device='cuda',
                  n_heads=1, d_model=256, e_layers=3, patch_size=None,
                  verbose=2, random_state=42):
@@ -28,7 +28,7 @@ class DCdetector(BaseDeepAD):
             verbose=verbose, random_state=random_state
         )
         if patch_size is None:
-            self.patch_size = [5]  # patch_size must be divisible by seq_len
+            self.patch_size = [5]  # seq_len must be divisible by patch_size
         self.patch_size = patch_size
         self.n_heads = n_heads
         self.d_model = d_model
@@ -150,7 +150,7 @@ class DCdetector(BaseDeepAD):
             metric = torch.softmax((-series_loss - prior_loss), dim=-1)
             cri = metric.detach().cpu().numpy()
             attens_energy.append(cri)
-        attens_energy = np.concatenate(attens_energy, axis=0) # anomaly scores
+        attens_energy = np.concatenate(attens_energy, axis=0)  # anomaly scores
         test_energy = np.array(attens_energy)  # anomaly scores
 
         return test_energy, preds  # (n,d)
