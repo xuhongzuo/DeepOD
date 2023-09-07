@@ -18,7 +18,7 @@ Python Deep Outlier/Anomaly Detection (DeepOD)
 and `Anomaly Detection <https://en.wikipedia.org/wiki/Anomaly_detection>`_. ``DeepOD`` supports tabular anomaly detection and time-series anomaly detection.
 
 
-DeepOD includes **25** deep outlier detection / anomaly detection algorithms (in unsupervised/weakly-supervised paradigm). 
+DeepOD includes **26** deep outlier detection / anomaly detection algorithms (in unsupervised/weakly-supervised paradigm).
 More baseline algorithms will be included later.
 
 
