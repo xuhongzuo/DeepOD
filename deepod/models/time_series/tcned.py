@@ -9,8 +9,8 @@ from deepod.core.networks.ts_network_tcn import TcnAE
 
 
 class TcnED(BaseDeepAD):
-    def __init__(self, seq_len=100, stride=1, epochs=10, batch_size=32, lr=1e-3,
-                 rep_dim=32, hidden_dims=32, kernel_size=3, act='ReLU', bias=False, dropout=0.2,
+    def __init__(self, seq_len=100, stride=1, epochs=10, batch_size=32, lr=1e-4,
+                 rep_dim=32, hidden_dims=32, kernel_size=3, act='LeakyReLU', bias=False, dropout=0.2,
                  epoch_steps=-1, prt_steps=10, device='cuda',
                  verbose=2, random_state=42):
         super(TcnED, self).__init__(
