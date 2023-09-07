@@ -184,6 +184,7 @@ Implemented Models
  :header: "Model", "Venue", "Year", "Type", "Title"
  :widths: 4, 4, 4, 8, 20 
 
+ DCdetector, KDD, 2023, unsupervised, DCdetector: Dual Attention Contrastive Representation Learning for Time Series Anomaly Detection [#Yang2023dcdetector]_
  TimesNet, ICLR, 2023, unsupervised, TIMESNET: Temporal 2D-Variation Modeling for General Time Series Analysis [#Wu2023timesnet]_
  AnomalyTransformer, ICLR, 2022, unsupervised, Anomaly Transformer: Time Series Anomaly Detection with Association Discrepancy [#Xu2022transformer]_
  TranAD, VLDB, 2022, unsupervised, TranAD: Deep Transformer Networks for Anomaly Detection in Multivariate Time Series Data  
@@ -245,3 +246,5 @@ Reference
 .. [#Xu2022transformer] Xu Jiehui, et al. "Anomaly Transformer: Time Series Anomaly Detection with Association Discrepancy". ICLR, 2022.
 
 .. [#Wu2023timesnet] Wu Haixu, et al. "TimesNet: Temporal 2D-Variation Modeling for General Time Series Analysis". ICLR. 2023.
+
+.. [#Yang2023dcdetector] Yang Yiyuan et al. "DCdetector: Dual Attention Contrastive Representation Learning for Time Series Anomaly Detection". KDD. 2023
