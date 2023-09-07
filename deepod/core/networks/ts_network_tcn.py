@@ -15,42 +15,42 @@ class TcnAE(torch.nn.Module):
             n_hidden = [int(a) for a in n_hidden]
         num_layers = len(n_hidden)
 
-        self.encoder_layers = []
+        encoder_layers = []
         # encoder
         for i in range(num_layers+1):
             dilation_size = 2 ** i
             padding_size = (kernel_size-1) * dilation_size
             in_channels = n_features if i == 0 else n_hidden[i-1]
             out_channels = n_emb if i == num_layers else n_hidden[i]
-            self.encoder_layers += [TcnResidualBlock(in_channels, out_channels, kernel_size,
-                                                     stride=1, dilation=dilation_size,
-                                                     padding=padding_size, dropout=dropout, bias=bias,
-                                                     activation=activation)]
+            encoder_layers += [TcnResidualBlock(in_channels, out_channels, kernel_size,
+                                                stride=1, dilation=dilation_size,
+                                                padding=padding_size, dropout=dropout, bias=bias,
+                                                activation=activation)]
 
         # decoder
         decoder_n_hidden = n_hidden[::-1]
-        self.decoder_layers = []
+        decoder_layers = []
         for i in range(num_layers+1):
             # no dilation in decoder
             in_channels = n_emb if i == 0 else decoder_n_hidden[i-1]
             out_channels = n_features if i==num_layers else decoder_n_hidden[i]
             dilation_size = 2 ** (num_layers-i)
             padding_size = (kernel_size-1) * dilation_size
-            self.decoder_layers += [TcnResidualBlockTranspose(in_channels, out_channels, kernel_size,
-                                                              stride=1, dilation=dilation_size,
-                                                              padding=padding_size, dropout=dropout,
-                                                              activation=activation)]
+            decoder_layers += [TcnResidualBlockTranspose(in_channels, out_channels, kernel_size,
+                                                         stride=1, dilation=dilation_size,
+                                                         padding=padding_size, dropout=dropout, bias=bias,
+                                                         activation=activation)]
 
-        # to register parameters in list of layers, each layer must be an object
-        self.enc_layer_names = ["enc_" + str(num) for num in range(len(self.encoder_layers))]
-        self.dec_layer_names = ["dec_" + str(num) for num in range(len(self.decoder_layers))]
-        for name, layer in zip(self.enc_layer_names, self.encoder_layers):
-            setattr(self, name, layer)
-        for name, layer in zip(self.dec_layer_names, self.decoder_layers):
-            setattr(self, name, layer)
+        # # to register parameters in list of layers, each layer must be an object
+        # self.enc_layer_names = ["enc_" + str(num) for num in range(len(encoder_layers))]
+        # self.dec_layer_names = ["dec_" + str(num) for num in range(len(decoder_layers))]
+        # for name, layer in zip(self.enc_layer_names, self.encoder_layers):
+        #     setattr(self, name, layer)
+        # for name, layer in zip(self.dec_layer_names, self.decoder_layers):
+        #     setattr(self, name, layer)
 
-        self.encoder = torch.nn.Sequential(*self.encoder_layers)
-        self.decoder = torch.nn.Sequential(*self.decoder_layers)
+        self.encoder = torch.nn.Sequential(*encoder_layers)
+        self.decoder = torch.nn.Sequential(*decoder_layers)
 
     def forward(self, x):
         out = x.permute(0, 2, 1)
@@ -61,7 +61,7 @@ class TcnAE(torch.nn.Module):
 
 class TCNnet(torch.nn.Module):
     """TCN is adapted from https://github.com/locuslab/TCN"""
-    def __init__(self, n_features, n_hidden='500,100', n_output=20,
+    def __init__(self, n_features, n_hidden='8', n_output=20,
                  kernel_size=2, bias=False,
                  dropout=0.2, activation='ReLU'):
         super(TCNnet, self).__init__()
@@ -140,10 +140,10 @@ class TcnResidualBlock(torch.nn.Module):
 
 class TcnResidualBlockTranspose(torch.nn.Module):
     def __init__(self, n_inputs, n_outputs, kernel_size, stride, dilation, padding,
-                 dropout=0.2, activation='ReLU'):
+                 dropout=0.2, activation='ReLU', bias=False):
         super(TcnResidualBlockTranspose, self).__init__()
         self.conv1 = weight_norm(torch.nn.ConvTranspose1d(n_inputs, n_outputs, kernel_size,
-                                                          stride=stride, padding=padding,
+                                                          stride=stride, padding=padding, bias=bias,
                                                           dilation=dilation))
 
         self.pad1 = Pad1d(padding)
@@ -151,8 +151,8 @@ class TcnResidualBlockTranspose(torch.nn.Module):
         self.dropout1 = torch.nn.Dropout(dropout)
 
         self.conv2 = weight_norm(torch.nn.ConvTranspose1d(n_outputs, n_outputs, kernel_size,
-                                           stride=stride, padding=padding,
-                                           dilation=dilation))
+                                                          stride=stride, padding=padding, bias=bias,
+                                                          dilation=dilation))
         self.pad2 = Pad1d(padding)
         self.act2 = _instantiate_class("torch.nn.modules.activation", activation)
         self.dropout2 = torch.nn.Dropout(dropout)

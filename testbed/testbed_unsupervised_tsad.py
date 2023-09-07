@@ -24,7 +24,7 @@ parser.add_argument("--runs", type=int, default=5,
 parser.add_argument("--output_dir", type=str, default='@records/',
                     help="the output file path")
 parser.add_argument("--dataset", type=str,
-                    default='ASD,SMAP,MSL',
+                    default='SWaT_cut',
                     )
 parser.add_argument("--entities", type=str,
                     default='FULL',
@@ -32,14 +32,14 @@ parser.add_argument("--entities", type=str,
                          'or a list of entity names split by comma'
                     )
 parser.add_argument("--entity_combined", type=int, default=1)
-parser.add_argument("--model", type=str, default='TimesNet', help="")
+parser.add_argument("--model", type=str, default='TcnED', help="")
 
 parser.add_argument('--silent_header', action='store_true')
 parser.add_argument("--flag", type=str, default='')
 parser.add_argument("--note", type=str, default='')
 
 parser.add_argument('--seq_len', type=int, default=30)
-parser.add_argument('--stride', type=int, default=10)
+parser.add_argument('--stride', type=int, default=1)
 
 args = parser.parse_args()
 
