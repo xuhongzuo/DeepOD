@@ -324,9 +324,7 @@ class BaseDeepAD(metaclass=ABCMeta):
         return self
 
     def _training(self):
-        optimizer = torch.optim.Adam(self.net.parameters(),
-                                     lr=self.lr,
-                                     weight_decay=1e-5)
+        optimizer = torch.optim.Adam(self.net.parameters(), lr=self.lr, eps=1e-6)
 
         self.net.train()
         for i in range(self.epochs):

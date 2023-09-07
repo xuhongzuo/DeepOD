@@ -36,10 +36,13 @@ COUTA:
   batch_size: 64
 
 TcnED:
-  epochs: 10
-  lr: 0.0001
-  rep_dim: 64
-  hidden_dims: 32
+  epochs: 100
+  lr: 0.00015
+  dropout: 0.42
+  kernel_size: 2
+  rep_dim: 8
+  hidden_dims: '8,8'
+  batch_size: 512
 
 AnomalyTransformer:
   lr: 0.0001
