@@ -48,16 +48,9 @@ class TcnAE(torch.nn.Module):
         #     setattr(self, name, layer)
         # for name, layer in zip(self.dec_layer_names, self.decoder_layers):
         #     setattr(self, name, layer)
-            # # to register parameters in list of layers, each layer must be an object
-            # self.enc_layer_names = ["enc_" + str(num) for num in range(len(encoder_layers))]
-            # self.dec_layer_names = ["dec_" + str(num) for num in range(len(decoder_layers))]
-            # for name, layer in zip(self.enc_layer_names, self.encoder_layers):
-            #     setattr(self, name, layer)
-            # for name, layer in zip(self.dec_layer_names, self.decoder_layers):
-            #     setattr(self, name, layer)
 
-            self.encoder = torch.nn.Sequential(*encoder_layers)
-            self.decoder = torch.nn.Sequential(*decoder_layers)
+        self.encoder = torch.nn.Sequential(*encoder_layers)
+        self.decoder = torch.nn.Sequential(*decoder_layers)
 
     def forward(self, x):
         out = x.permute(0, 2, 1)
@@ -150,7 +143,7 @@ class TcnResidualBlockTranspose(torch.nn.Module):
                  dropout=0.2, activation='ReLU', bias=False):
         super(TcnResidualBlockTranspose, self).__init__()
         self.conv1 = weight_norm(torch.nn.ConvTranspose1d(n_inputs, n_outputs, kernel_size,
-                                                          stride=stride, padding=padding,
+                                                          stride=stride, padding=padding, bias=bias,
                                                           dilation=dilation))
 
         self.pad1 = Pad1d(padding)
@@ -158,8 +151,8 @@ class TcnResidualBlockTranspose(torch.nn.Module):
         self.dropout1 = torch.nn.Dropout(dropout)
 
         self.conv2 = weight_norm(torch.nn.ConvTranspose1d(n_outputs, n_outputs, kernel_size,
-                                           stride=stride, padding=padding, bias=bias,
-                                           dilation=dilation))
+                                                          stride=stride, padding=padding, bias=bias,
+                                                          dilation=dilation))
         self.pad2 = Pad1d(padding)
         self.act2 = _instantiate_class("torch.nn.modules.activation", activation)
         self.dropout2 = torch.nn.Dropout(dropout)
