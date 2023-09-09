@@ -282,6 +282,8 @@ class BaseDeepAD(metaclass=ABCMeta):
         best_config = best_trial.config
         self.load_ray_checkpoint(best_config=best_config, best_checkpoint=best_checkpoint)
 
+        best_config['epochs'] = best_checkpoint['epoch']
+
         # testing on the input training data
         self.decision_scores_ = self.decision_function(X)
         self.labels_ = self._process_decision_scores()

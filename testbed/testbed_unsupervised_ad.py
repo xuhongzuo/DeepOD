@@ -88,7 +88,7 @@ for file in data_lst:
         print(f'\nRunning [1/{args.runs}] of [{args.model}] on Dataset [{dataset_name}] (rat tune)')
         tuned_model_configs = clf.fit_auto_hyper(X=x_train,
                                                  X_test=x_test, y_test=y_test,
-                                                 n_ray_samples=3, time_budget_s=None)
+                                                 n_ray_samples=1, time_budget_s=None)
         model_configs = tuned_model_configs
         print(f'model parameter configure update to: {model_configs}')
         scores = clf.decision_function(x_test)

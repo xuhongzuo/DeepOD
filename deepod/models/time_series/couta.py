@@ -385,7 +385,7 @@ class COUTA(BaseDeepAD):
                 )
 
             checkpoint_data = {
-                "epoch": i,
+                "epoch": i+1,
                 "net_state_dict": self.net.state_dict(),
                 "optimizer_state_dict": optimizer.state_dict(),
                 'c': self.c
