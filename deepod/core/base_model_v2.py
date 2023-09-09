@@ -4,8 +4,6 @@ Base class for deep Anomaly detection models
 some functions are adapted from the pyod library
 @Author: Hongzuo Xu <hongzuoxu@126.com, xuhongzuo13@nudt.edu.cn>
 """
-import sys
-import warnings
 
 import numpy as np
 import torch
@@ -15,9 +13,8 @@ from abc import ABCMeta, abstractmethod
 from tqdm import tqdm
 from scipy.stats import binom
 from ray import tune
-from ray.air import session, Checkpoint
+from ray.air import Checkpoint, session
 from ray.tune.schedulers import ASHAScheduler
-from functools import partial
 from deepod.utils.utility import get_sub_seqs, get_sub_seqs_label
 
 
@@ -137,8 +134,6 @@ class BaseDeepAD(metaclass=ABCMeta):
 
         self.train_data = None
         self.train_label = None
-        self.val_data = None
-        self.val_label = None
 
         self.decision_scores_ = None
         self.labels_ = None
@@ -200,92 +195,6 @@ class BaseDeepAD(metaclass=ABCMeta):
         self.labels_ = self._process_decision_scores()
 
         return self
-
-    def fit_auto_hyper(self, X, y=None, X_test=None, y_test=None,
-                       n_ray_samples=5, time_budget_s=None):
-        """
-        Fit detector. y is ignored in unsupervised methods.
-
-        Parameters
-        ----------
-        X : numpy array of shape (n_samples, n_features)
-            The input samples.
-
-        y : numpy array of shape (n_samples, )
-            Not used in unsupervised methods, present for API consistency by convention.
-            used in (semi-/weakly-) supervised methods
-
-        X_test : numpy array of shape (n_samples, n_features), default=None
-            The input testing samples for hyper-parameter tuning.
-
-        y_test : numpy array of shape (n_samples, ), default=None
-            Label of input testing samples for hyper-parameter tuning.
-
-        n_ray_samples: int, default=5
-            Number of times to sample from the hyperparameter space
-
-        time_budget_s: int, default=None
-            Global time budget in seconds after which all trials of Ray are stopped.
-
-        Returns
-        -------
-        config : dict
-            tuned hyper-parameter
-        """
-        if self.data_type == 'ts':
-            self.train_data = get_sub_seqs(X, self.seq_len, self.stride)
-            self.train_label = get_sub_seqs_label(y, self.seq_len, self.stride) if y is not None else None
-            self.n_samples, self.n_features = self.train_data.shape[0], self.train_data.shape[2]
-
-        elif self.data_type == 'tabular':
-            self.train_data = X
-            self.train_label = y
-            self.n_samples, self.n_features = self.train_data.shape
-
-        else:
-            raise NotImplementedError('unsupported data_type')
-
-        config = self.set_tuned_params()
-        metric = "loss" if X_test is None else 'metric'
-        mode = "min" if X_test is None else 'max'
-        scheduler = ASHAScheduler(
-            metric=metric,
-            mode=mode,
-            max_t=self.epochs,
-            grace_period=1,
-            reduction_factor=2,
-        )
-
-        size = sys.getsizeof(self.train_data)/(1024**2)
-        if size >= 30:
-            split = int(len(self.train_data) / (size / 30))
-            self.train_data = self.train_data[:split]
-            self.train_label = self.train_label[:split] if y is not None else None
-            warnings.warn('split training data to meet the 95 MiB limit of ray ImplitFunc')
-
-        result = tune.run(
-            partial(self._training_ray,
-                    X_test=X_test, y_test=y_test),
-            resources_per_trial={"cpu": 4, "gpu": 0 if self.device == 'cpu' else 1},
-            config=config,
-            num_samples=n_ray_samples,
-            time_budget_s=time_budget_s,
-            scheduler=scheduler,
-        )
-
-        best_trial = result.get_best_trial(metric=metric, mode=mode, scope="last")
-        print(f"Best trial config: {best_trial.config}")
-        print(f"Best trial final validation loss: {best_trial.last_result['loss']}")
-
-        # tuned results
-        best_checkpoint = best_trial.checkpoint.to_air_checkpoint().to_dict()
-        best_config = best_trial.config
-        self.load_ray_checkpoint(best_config=best_config, best_checkpoint=best_checkpoint)
-
-        # testing on the input training data
-        self.decision_scores_ = self.decision_function(X)
-        self.labels_ = self._process_decision_scores()
-        return best_config
 
     def decision_function(self, X, return_rep=False):
         """Predict raw anomaly scores of X using the fitted detector.
@@ -418,7 +327,7 @@ class BaseDeepAD(metaclass=ABCMeta):
 
         return self
 
-    def _training(self):
+    def _training(config):
         optimizer = torch.optim.Adam(self.net.parameters(), lr=self.lr, eps=1e-6)
 
         self.net.train()
@@ -450,9 +359,6 @@ class BaseDeepAD(metaclass=ABCMeta):
 
             self.epoch_update()
 
-        return
-
-    def _training_ray(self, config, X_test, y_test):
         return
 
     def _inference(self):
@@ -503,17 +409,6 @@ class BaseDeepAD(metaclass=ABCMeta):
     def decision_function_update(self, z, scores):
         """for any updating operation after decision function"""
         return z, scores
-
-    def set_tuned_net(self, config):
-        return
-
-    @staticmethod
-    def set_tuned_params():
-        config = {}
-        return config
-
-    def load_ray_checkpoint(self, best_config, best_checkpoint):
-        return
 
     @staticmethod
     def set_seed(seed):

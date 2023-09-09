@@ -5,12 +5,19 @@ Calibrated One-class classifier for Unsupervised Time series Anomaly detection (
 
 import numpy as np
 import torch
+import time
 from torch.utils.data import Dataset
 from numpy.random import RandomState
 from torch.utils.data import DataLoader
-from deepod.utils.utility import get_sub_seqs
+from ray import tune, air
+from ray.air import session, Checkpoint
+from ray.tune.schedulers import ASHAScheduler
+from functools import partial
+
+from deepod.utils.utility import get_sub_seqs, get_sub_seqs_label
 from deepod.core.networks.ts_network_tcn import TcnResidualBlock
 from deepod.core.base_model import BaseDeepAD
+from deepod.metrics import ts_metrics, point_adjustment
 
 
 class COUTA(BaseDeepAD):
@@ -21,39 +28,55 @@ class COUTA(BaseDeepAD):
     ----------
     seq_len: integer, default=100
         sliding window length
+
     stride: integer, default=1
         sliding window stride
+
     epochs: integer, default=40
         the number of training epochs
+
     batch_size: integer, default=64
         the size of mini-batches
+
     lr: float, default=1e-4
         learning rate
+
     ss_type: string, default='FULL'
         types of perturbation operation type, which can be 'FULL' (using all
         three anomaly types), 'point', 'contextual', or 'collective'.
+
     hidden_dims: integer or list of integer, default=16,
         the number of neural units in the hidden layer
+
     rep_dim: integer, default=16
         the dimensionality of the feature space
+
     rep_hidden: integer, default=16
         the number of neural units of the hidden layer
+
     pretext_hidden: integer, default=16
+        the number of neural units of the hidden layer
+
     kernel_size: integer, default=2
         the size of the convolutional kernel in TCN
+
     dropout: float, default=0
         the dropout rate
+
     bias: bool, default=True
         the bias term of the linear layer
+
     alpha: float, default=0.1
         the weight of the classification head of NAC
+
     neg_batch_ratio: float, default=0.2
         the ratio of generated native anomaly examples
-    es: bool, default=False
-        early stopping
-    seed: integer, default=42
+
+    random_state: integer, default=42
         random state seed
+
     device: string, default='cuda'
+
     """
     def __init__(self, seq_len=100, stride=1,
                  epochs=40, batch_size=64, lr=1e-4, ss_type='FULL',
@@ -138,7 +161,7 @@ class COUTA(BaseDeepAD):
         )
         self.net.to(self.device)
 
-        self.set_c(train_seqs)
+        self.c = self._set_c(self.net, train_seqs)
         self.net = self.train(self.net, train_seqs, val_seqs)
 
         self.decision_scores_ = self.decision_function(X)
@@ -146,7 +169,7 @@ class COUTA(BaseDeepAD):
 
         return
 
-    def decision_function(self, X):
+    def decision_function(self, X, return_rep=False):
         """
         Predict raw anomaly score of X using the fitted detector.
         For consistency, outliers are assigned with larger anomaly scores.
@@ -156,6 +179,9 @@ class COUTA(BaseDeepAD):
         X : numpy array of shape (n_samples, n_features)
             The input samples. Sparse matrices are accepted only
             if they are supported by the base estimator.
+
+        return_rep: boolean, optional, default=False
+            whether return representations
 
         Returns
         -------
@@ -240,11 +266,9 @@ class COUTA(BaseDeepAD):
 
                 loss_lst.append(loss)
                 loss_oc_lst.append(loss_oc)
-                # loss_ssl_lst.append(loss_ssl)
 
             epoch_loss = torch.mean(torch.stack(loss_lst)).data.cpu().item()
             epoch_loss_oc = torch.mean(torch.stack(loss_oc_lst)).data.cpu().item()
-            # epoch_loss_ssl = torch.mean(torch.stack(loss_ssl_lst)).data.cpu().item()
 
             # validation phase
             val_loss = np.NAN
@@ -268,23 +292,161 @@ class COUTA(BaseDeepAD):
 
         return net
 
-    def set_c(self, seqs, eps=0.1):
+    def _training_ray(self, config, X_test, y_test):
+        train_data = self.train_data[:int(0.8 * len(self.train_data))]
+        val_data = self.train_data[int(0.8 * len(self.train_data)):]
+
+        train_loader = DataLoader(dataset=SubseqData(train_data), batch_size=self.batch_size,
+                                  drop_last=True, pin_memory=True, shuffle=True)
+        val_loader = DataLoader(dataset=SubseqData(val_data), batch_size=self.batch_size,
+                                drop_last=True, pin_memory=True, shuffle=True)
+
+        self.net = self.set_tuned_net(config)
+        self.c = self._set_c(self.net, train_data)
+        criterion_oc_umc = DSVDDUncLoss(c=self.c, reduction='mean')
+        criterion_mse = torch.nn.MSELoss(reduction='mean')
+        optimizer = torch.optim.Adam(self.net.parameters(), lr=config['lr'], eps=1e-6)
+
+        self.net.train()
+        for i in range(config['epochs']):
+            t1 = time.time()
+            rng = RandomState(seed=self.random_state+i)
+            epoch_seed = rng.randint(0, 1e+6, len(train_loader))
+            loss_lst, loss_oc_lst, loss_ssl_lst, = [], [], []
+            for ii, x0 in enumerate(train_loader):
+                x0 = x0.float().to(self.device)
+                y0 = -1 * torch.ones(self.batch_size).float().to(self.device)
+
+                x0_output = self.net(x0)
+
+                rep_x0 = x0_output[0]
+                rep_x0_dup = x0_output[1]
+                loss_oc = criterion_oc_umc(rep_x0, rep_x0_dup)
+
+                tmp_rng = RandomState(epoch_seed[ii])
+                neg_batch_size = int(config['neg_batch_ratio'] * self.batch_size)
+                neg_candidate_idx = tmp_rng.randint(0, self.batch_size, neg_batch_size)
+
+                x1, y1 = create_batch_neg(
+                    batch_seqs=x0[neg_candidate_idx],
+                    max_cut_ratio=self.max_cut_ratio,
+                    seed=epoch_seed[ii],
+                    return_mul_label=False,
+                    ss_type=self.ss_type
+                )
+                x1, y1 = x1.to(self.device), y1.to(self.device)
+                y = torch.hstack([y0, y1])
+
+                x1_output = self.net(x1)
+                pred_x1 = x1_output[-1]
+                pred_x0 = x0_output[-1]
+
+                out = torch.cat([pred_x0, pred_x1]).view(-1)
+
+                loss_ssl = criterion_mse(out, y)
+                loss = loss_oc + config['alpha'] * loss_ssl
+
+                self.net.zero_grad()
+                loss.backward()
+                optimizer.step()
+
+                loss_lst.append(loss)
+                loss_oc_lst.append(loss_oc)
+
+            epoch_loss = torch.mean(torch.stack(loss_lst)).data.cpu().item()
+            epoch_loss_oc = torch.mean(torch.stack(loss_oc_lst)).data.cpu().item()
+
+            # validation phase
+            val_loss = []
+            with torch.no_grad():
+                for x in val_loader:
+                    x = x.float().to(self.device)
+                    x_out = self.net(x)
+                    loss = criterion_oc_umc(x_out[0], x_out[1])
+                    loss = torch.mean(loss)
+                    val_loss.append(loss)
+            val_loss = torch.mean(torch.stack(val_loss)).data.cpu().item()
+
+            test_metric = -1
+            if X_test is not None and y_test is not None:
+                scores = self.decision_function(X_test)
+                adj_eval_metrics = ts_metrics(y_test, point_adjustment(y_test, scores))
+                test_metric = adj_eval_metrics[2]  # use adjusted Best-F1
+
+            t = time.time() - t1
+            if self.verbose >= 1 and (i == 0 or (i+1) % self.prt_steps == 0):
+                print(
+                    f'epoch: {i+1:3d}, '
+                    f'training loss: {epoch_loss:.6f}, '
+                    f'training loss_oc: {epoch_loss_oc:.6f}, '
+                    f'validation loss: {val_loss:.6f}, '
+                    f'test F1: {test_metric:.3f},  '
+                    f'time: {t:.1f}s'
+                )
+
+            checkpoint_data = {
+                "epoch": i,
+                "net_state_dict": self.net.state_dict(),
+                "optimizer_state_dict": optimizer.state_dict(),
+                'c': self.c
+            }
+            checkpoint = Checkpoint.from_dict(checkpoint_data)
+            session.report(
+                {"loss": val_loss, "metric": test_metric},
+                checkpoint=checkpoint,
+            )
+
+    @staticmethod
+    def set_tuned_params():
+        config = {
+            'lr': tune.grid_search([1e-5, 1e-4, 1e-3, 1e-2]),
+            'epochs': tune.grid_search([20, 50, 100]),
+            'rep_dim': tune.choice([16, 64, 128, 512]),
+            'hidden_dims': tune.choice(['16', '32,16']),
+            'alpha': tune.choice([0.1, 0.2, 0.5, 0.8, 1.0]),
+            'neg_batch_ratio': tune.choice([0.2, 0.5]),
+        }
+        return config
+
+    def set_tuned_net(self, config):
+        net = COUTANet(
+            input_dim=self.n_features,
+            hidden_dims=config['hidden_dims'],
+            n_output=config['rep_dim'],
+            pretext_hidden=self.pretext_hidden,
+            rep_hidden=self.rep_hidden,
+            out_dim=1,
+            kernel_size=self.kernel_size,
+            dropout=self.dropout,
+            bias=self.bias,
+            pretext=True,
+            dup=True
+        ).to(self.device)
+        return net
+
+    def load_ray_checkpoint(self, best_config, best_checkpoint):
+        self.c = best_checkpoint['c']
+        self.net = self.set_tuned_net(best_config)
+        self.net.load_state_dict(best_checkpoint['net_state_dict'])
+        return
+
+    def _set_c(self, net, seqs, eps=0.1):
         """Initializing the center for the hypersphere"""
         dataloader = DataLoader(dataset=SubseqData(seqs), batch_size=self.batch_size,
                                 drop_last=True, pin_memory=True, shuffle=True)
         z_ = []
-        self.net.eval()
+        net.eval()
         with torch.no_grad():
             for x in dataloader:
                 x = x.float().to(self.device)
-                x_output = self.net(x)
+                x_output = net(x)
                 rep = x_output[0]
                 z_.append(rep.detach())
         z_ = torch.cat(z_)
         c = torch.mean(z_, dim=0)
         c[(abs(c) < eps) & (c < 0)] = -eps
         c[(abs(c) < eps) & (c > 0)] = eps
-        self.c = c
+        return c
 
     def training_forward(self, batch_x, net, criterion):
         """define forward step in training"""
@@ -378,7 +540,12 @@ class COUTANet(torch.nn.Module):
 
         self.layers = []
 
-        if type(hidden_dims) == int: hidden_dims = [hidden_dims]
+        if type(hidden_dims) == int:
+            hidden_dims = [hidden_dims]
+        elif type(hidden_dims) == str:
+            hidden_dims = hidden_dims.split(',')
+            hidden_dims = [int(a) for a in hidden_dims]
+
         num_layers = len(hidden_dims)
         for i in range(num_layers):
             dilation_size = 2 ** i
