@@ -276,6 +276,7 @@ class BaseDeepAD(metaclass=ABCMeta):
         best_trial = result.get_best_trial(metric=metric, mode=mode, scope="last")
         print(f"Best trial config: {best_trial.config}")
         print(f"Best trial final validation loss: {best_trial.last_result['loss']}")
+        print(f"Best trial final testing metric: {best_trial.last_result['metric']}")
 
         # tuned results
         best_checkpoint = best_trial.checkpoint.to_air_checkpoint().to_dict()
