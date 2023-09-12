@@ -5,7 +5,7 @@ testbed of unsupervised tabular anomaly detection
 """
 
 import os
-import pickle
+import warnings
 import argparse
 import getpass
 import time
@@ -25,10 +25,12 @@ parser.add_argument("--input_dir", type=str,
                     help="the path of the data sets")
 parser.add_argument("--output_dir", type=str, default='@record/',
                     help="the output file path")
-parser.add_argument("--dataset", type=str, default='*thyroid*',
+parser.add_argument("--dataset", type=str, default='38_thyroid*',
                     help="FULL represents all the csv file in the folder, "
                          "or a list of data set names split by comma")
-parser.add_argument("--model", type=str, default='SLAD', help="",)
+parser.add_argument("--model", type=str, default='DeepSVDD', help="",)
+parser.add_argument("--auto_hyper", default=True, action='store_true', help="")
+
 parser.add_argument("--normalization", type=str, default='min-max', help="",)
 parser.add_argument('--silent_header', action='store_true')
 parser.add_argument("--flag", type=str, default='')
@@ -70,25 +72,50 @@ for file in data_lst:
         continue
 
     auc_lst, ap_lst, f1_lst = np.zeros(args.runs), np.zeros(args.runs), np.zeros(args.runs)
-    t1_lst, t2_lst = np.zeros(args.runs), np.zeros(args.runs)
-    clf = None
-    for i in range(args.runs):
+    t1_lst, t2_lst = [], []
+    runs = args.runs
+
+    model_configs = {}
+    if args.auto_hyper:
+        clf = model_class(random_state=42)
+
+        # check whether the anomaly detection model supports ray tuning
+        if not hasattr(clf, 'fit_auto_hyper'):
+            warnings.warn(f'anomaly detection model {args.model} '
+                          f'does not support auto tuning hyper-parameters currently.')
+            break
+
+        print(f'\nRunning [1/{args.runs}] of [{args.model}] on Dataset [{dataset_name}] (rat tune)')
+        tuned_model_configs = clf.fit_auto_hyper(X=x_train,
+                                                 X_test=x_test, y_test=y_test,
+                                                 n_ray_samples=1, time_budget_s=None)
+        model_configs = tuned_model_configs
+        print(f'model parameter configure update to: {model_configs}')
+        scores = clf.decision_function(x_test)
+
+        auc, ap, f1 = tabular_metrics(y_test, scores)
+
+        print(f'{dataset_name}, {auc:.4f}, {ap:.4f}, {f1:.4f}, '
+              f'{args.model}')
+
+    for i in range(runs):
         start_time = time.time()
         print(f'\nRunning [{i+1}/{args.runs}] of [{args.model}] on Dataset [{dataset_name}]')
 
-        clf = model_class(epochs=50, random_state=42+i)
+        clf = model_class(**model_configs, random_state=42+i)
         clf.fit(x_train)
+
         train_time = time.time()
         scores = clf.decision_function(x_test)
         done_time = time.time()
 
         auc, ap, f1 = tabular_metrics(y_test, scores)
         auc_lst[i], ap_lst[i], f1_lst[i] = auc, ap, f1
-        t1_lst[i] = train_time - start_time
-        t2_lst[i] = done_time - start_time
+        t1_lst.append(train_time - start_time)
+        t2_lst.append(done_time - start_time)
 
         print(f'{dataset_name}, {auc_lst[i]:.4f}, {ap_lst[i]:.4f}, {f1_lst[i]:.4f}, '
-              f'{t1_lst[i]:.1f}/{t2_lst[i]:.1f}, {args.model}')
+              f'{t1_lst[i]:.1f}/{t2_lst[i]:.1f}, {args.model}, {str(model_configs)}')
 
     avg_auc, avg_ap, avg_f1 = np.average(auc_lst), np.average(ap_lst), np.average(f1_lst)
     std_auc, std_ap, std_f1 = np.std(auc_lst), np.std(ap_lst), np.std(f1_lst)
@@ -100,7 +127,7 @@ for file in data_lst:
           f'{avg_auc:.4f}, {std_auc:.4f}, ' \
           f'{avg_ap:.4f}, {std_ap:.4f}, ' \
           f'{avg_f1:.4f}, {std_f1:.4f}, ' \
-          f'{avg_time1:.1f}/{avg_time2:.1f}'
+          f'{avg_time1:.1f}/{avg_time2:.1f}, {args.model}, {str(model_configs)}'
     print(txt, file=f)
     print(txt)
     f.close()

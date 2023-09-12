@@ -6,8 +6,14 @@ One-class classification
 
 from deepod.core.base_model import BaseDeepAD
 from deepod.core.networks.base_networks import MLPnet
+from deepod.metrics import tabular_metrics
 from torch.utils.data import DataLoader
 import torch
+import time
+from ray import tune
+from ray.air import session, Checkpoint
+from ray.tune.schedulers import ASHAScheduler
+from functools import partial
 
 
 class DeepSVDD(BaseDeepAD):
@@ -16,9 +22,6 @@ class DeepSVDD(BaseDeepAD):
 
     Parameters
     ----------
-    data_type: str, optional (default='tabular')
-        Data type, choice=['tabular', 'ts']
-
     epochs: int, optional (default=100)
         Number of training epochs
 
@@ -103,7 +106,8 @@ class DeepSVDD(BaseDeepAD):
     def inference_prepare(self, X):
         test_loader = DataLoader(X, batch_size=self.batch_size,
                                  drop_last=False, shuffle=False)
-        self.criterion.reduction = 'none'
+        assert self.c is not None
+        self.criterion = DSVDDLoss(c=self.c, reduction='none')
         return test_loader
 
     def training_forward(self, batch_x, net, criterion):
@@ -117,6 +121,98 @@ class DeepSVDD(BaseDeepAD):
         batch_z = net(batch_x)
         s = criterion(batch_z)
         return batch_z, s
+
+    def _training_ray(self, config, X_test, y_test):
+        train_data = self.train_data[:int(0.8 * len(self.train_data))]
+        val_data = self.train_data[int(0.8 * len(self.train_data)):]
+
+        train_loader = DataLoader(train_data, batch_size=self.batch_size, shuffle=True)
+        val_loader = DataLoader(val_data, batch_size=self.batch_size, shuffle=True)
+
+        self.net = self.set_tuned_net(config)
+
+        self.c = self._set_c(self.net, train_loader)
+        criterion = DSVDDLoss(c=self.c, reduction='mean')
+
+        optimizer = torch.optim.Adam(self.net.parameters(), lr=config['lr'], eps=1e-6)
+
+        self.net.train()
+        for i in range(config['epochs']):
+            t1 = time.time()
+            total_loss = 0
+            cnt = 0
+            for batch_x in train_loader:
+                loss = self.training_forward(batch_x, self.net, criterion)
+                self.net.zero_grad()
+                loss.backward()
+                optimizer.step()
+
+                total_loss += loss.item()
+                cnt += 1
+
+                # terminate this epoch when reaching assigned maximum steps per epoch
+                if cnt > self.epoch_steps != -1:
+                    break
+
+            # validation phase
+            val_loss = []
+            with torch.no_grad():
+                for batch_x in val_loader:
+                    loss = self.training_forward(batch_x, self.net, criterion)
+                    val_loss.append(loss)
+            val_loss = torch.mean(torch.stack(val_loss)).data.cpu().item()
+
+            test_metric = -1
+            if X_test is not None and y_test is not None:
+                scores = self.decision_function(X_test)
+                test_metric = tabular_metrics(y_test, scores)[0]  # use adjusted Best-F1
+
+            t = time.time() - t1
+            if self.verbose >= 1 and (i == 0 or (i+1) % self.prt_steps == 0):
+                print(f'epoch{i+1:3d}, '
+                      f'training loss: {total_loss/cnt:.6f}, '
+                      f'validation loss: {val_loss:.6f}, '
+                      f'test F1: {test_metric:.3f},  '
+                      f'time: {t:.1f}s')
+
+            checkpoint_data = {
+                "epoch": i,
+                "net_state_dict": self.net.state_dict(),
+                "optimizer_state_dict": optimizer.state_dict(),
+                'c': self.c
+            }
+            checkpoint = Checkpoint.from_dict(checkpoint_data)
+            session.report(
+                {"loss": val_loss, "metric": test_metric},
+                checkpoint=checkpoint,
+            )
+
+    def load_ray_checkpoint(self, best_config, best_checkpoint):
+        self.net = self.set_tuned_net(best_config)
+        self.net.load_state_dict(best_checkpoint['net_state_dict'])
+        self.c = best_checkpoint['c']
+        return
+
+    def set_tuned_net(self, config):
+        network_params = {
+            'n_features': self.n_features,
+            'n_hidden': config['hidden_dims'],
+            'n_output': config['rep_dim'],
+            'activation': self.act,
+            'bias': self.bias
+        }
+        net = MLPnet(**network_params).to(self.device)
+        return net
+
+    @staticmethod
+    def set_tuned_params():
+        config = {
+            'lr': tune.grid_search([1e-5, 1e-4, 1e-3, 1e-2]),
+            'epochs': tune.grid_search([20, 50, 100]),
+            'rep_dim': tune.grid_search([16, 64, 128, 512]),
+            'hidden_dims': tune.choice(['100,100', '100'])
+        }
+        return config
 
     def _set_c(self, net, dataloader, eps=0.1):
         """Initializing the center for the hypersphere"""

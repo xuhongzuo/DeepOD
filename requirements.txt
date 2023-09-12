@@ -4,4 +4,6 @@ scikit_learn>=0.20.0
 pandas>=1.0.0
 torch>=1.10.0,<1.13.1
 tqdm>=4.62.3
+ray==2.6.1
+pyarrow>=11.0.0
 einops

@@ -6,4 +6,6 @@ dependencies:
   - scipy
   - pytorch
   - tqdm
+  - ray
+  - pyarrow
 
