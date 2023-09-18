@@ -19,7 +19,7 @@ from ray.air import session, Checkpoint
 from ray.tune.schedulers import ASHAScheduler
 from functools import partial
 from deepod.utils.utility import get_sub_seqs, get_sub_seqs_label
-
+import pickle
 
 class BaseDeepAD(metaclass=ABCMeta):
     """
@@ -517,6 +517,16 @@ class BaseDeepAD(metaclass=ABCMeta):
 
     def load_ray_checkpoint(self, best_config, best_checkpoint):
         return
+
+    def save_model(self, path):
+        with open(f"{path}.pkl", mode="wb") as f:
+            pickle.dump(self, f)
+
+    def load_model(self, path):
+        model = None
+        with open(f"{path}.pkl", mode="rb") as f:
+            model = pickle.load(f)
+        return model
 
     @staticmethod
     def set_seed(seed):
