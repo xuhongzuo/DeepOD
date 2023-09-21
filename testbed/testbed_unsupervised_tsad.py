@@ -17,8 +17,6 @@ from deepod.metrics import ts_metrics, point_adjustment
 
 
 dataset_root = f'/home/{getpass.getuser()}/dataset/5-TSdata/_processed_data/'
-
-
 parser = argparse.ArgumentParser()
 parser.add_argument("--runs", type=int, default=5,
                     help="how many times we repeat the experiments to "
