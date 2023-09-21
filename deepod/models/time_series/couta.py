@@ -9,10 +9,8 @@ import time
 from torch.utils.data import Dataset
 from numpy.random import RandomState
 from torch.utils.data import DataLoader
-from ray import tune, air
+from ray import tune
 from ray.air import session, Checkpoint
-from ray.tune.schedulers import ASHAScheduler
-from functools import partial
 
 from deepod.utils.utility import get_sub_seqs, get_sub_seqs_label
 from deepod.core.networks.ts_network_tcn import TcnResidualBlock
@@ -225,6 +223,12 @@ class COUTA(BaseDeepAD):
 
         net.train()
         for i in range(self.epochs):
+
+            copy_times = 1
+            while len(train_seqs) * copy_times < self.batch_size:
+                copy_times += 1
+            train_seqs = np.concatenate([train_seqs for _ in range(copy_times)])
+
             train_loader = DataLoader(dataset=SubseqData(train_seqs),
                                       batch_size=self.batch_size,
                                       drop_last=True, pin_memory=True, shuffle=True)
