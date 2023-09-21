@@ -12,13 +12,11 @@ import yaml
 import time
 import importlib as imp
 import numpy as np
-from utils import  import_ts_data_unsupervised
+from utils import import_ts_data_unsupervised
 from deepod.metrics import ts_metrics, point_adjustment
 
 
 dataset_root = f'/home/{getpass.getuser()}/dataset/5-TSdata/_processed_data/'
-
-
 parser = argparse.ArgumentParser()
 parser.add_argument("--runs", type=int, default=1,
                     help="how many times we repeat the experiments to "

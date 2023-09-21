@@ -3,4 +3,4 @@ pytest-cov==2.10.0
 coveralls==2.1.1
 setuptools>=49.6.0
 tqdm>=4.62.3
-
+einops
