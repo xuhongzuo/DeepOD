@@ -12,7 +12,7 @@ import yaml
 import time
 import importlib as imp
 import numpy as np
-from utils import  import_ts_data_unsupervised
+from utils import import_ts_data_unsupervised
 from deepod.metrics import ts_metrics, point_adjustment
 
 
@@ -20,20 +20,20 @@ dataset_root = f'/home/{getpass.getuser()}/dataset/5-TSdata/_processed_data/'
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--runs", type=int, default=1,
+parser.add_argument("--runs", type=int, default=5,
                     help="how many times we repeat the experiments to "
                          "obtain the average performance")
 parser.add_argument("--output_dir", type=str, default='@records/',
                     help="the output file path")
-parser.add_argument("--dataset", type=str, default='ASD',
+parser.add_argument("--dataset", type=str, default='MSL',
                     help='dataset name or a list of names split by comma')
 parser.add_argument("--entities", type=str,
-                    default='FULL',
+                    default='C-2',
                     help='FULL represents all the csv file in the folder, '
                          'or a list of entity names split by comma')
-parser.add_argument("--entity_combined", type=int, default=1)
+parser.add_argument("--entity_combined", type=int, default=0)
 parser.add_argument("--model", type=str, default='COUTA', help="")
-parser.add_argument("--auto_hyper", default=True, action='store_true', help="")
+parser.add_argument("--auto_hyper", default=False, action='store_true', help="")
 
 parser.add_argument('--silent_header', action='store_true')
 parser.add_argument("--flag", type=str, default='')

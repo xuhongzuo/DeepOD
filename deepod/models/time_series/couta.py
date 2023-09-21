@@ -437,7 +437,7 @@ class COUTA(BaseDeepAD):
     def _set_c(self, net, seqs, eps=0.1):
         """Initializing the center for the hypersphere"""
         dataloader = DataLoader(dataset=SubseqData(seqs), batch_size=self.batch_size,
-                                drop_last=True, pin_memory=True, shuffle=True)
+                                drop_last=False, pin_memory=True, shuffle=True)
         z_ = []
         net.eval()
         with torch.no_grad():

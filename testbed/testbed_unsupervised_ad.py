@@ -18,14 +18,14 @@ from deepod.metrics import tabular_metrics
 dataset_root = f'/home/{getpass.getuser()}/dataset/1-tabular/'
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--runs", type=int, default=1,
+parser.add_argument("--runs", type=int, default=5,
                     help="how many times we repeat the experiments to obtain the average performance")
 parser.add_argument("--input_dir", type=str,
                     default='ADBench-classical',
                     help="the path of the data sets")
 parser.add_argument("--output_dir", type=str, default='@record/',
                     help="the output file path")
-parser.add_argument("--dataset", type=str, default='38_thyroid*',
+parser.add_argument("--dataset", type=str, default='FULL',
                     help="FULL represents all the csv file in the folder, "
                          "or a list of data set names split by comma")
 parser.add_argument("--model", type=str, default='DeepSVDD', help="",)
@@ -95,8 +95,7 @@ for file in data_lst:
 
         auc, ap, f1 = tabular_metrics(y_test, scores)
 
-        print(f'{dataset_name}, {auc:.4f}, {ap:.4f}, {f1:.4f}, '
-              f'{args.model}')
+        print(f'{dataset_name}, {auc:.4f}, {ap:.4f}, {f1:.4f}, {args.model}')
 
     for i in range(runs):
         start_time = time.time()
