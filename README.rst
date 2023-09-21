@@ -149,7 +149,7 @@ Example:
     cd DeepOD
     pip install .
     cd testbed
-    python testbed_unsupervised_ad.py --model DIF --runs 5 --input_dir ADBench
+    python testbed_unsupervised_ad.py --model DeepIsolationForest --runs 5 --input_dir ADBench
    
 
 
