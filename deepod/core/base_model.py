@@ -519,14 +519,13 @@ class BaseDeepAD(metaclass=ABCMeta):
         return
 
     def save_model(self, path):
-        with open(f"{path}.pkl", mode="wb") as f:
+        with open(path, mode="wb") as f:
             pickle.dump(self, f)
 
-    def load_model(self, path):
-        model = None
-        with open(f"{path}.pkl", mode="rb") as f:
-            model = pickle.load(f)
-        return model
+    @classmethod
+    def load_model(cls, path):
+        with open(path, mode="rb") as f:
+            return pickle.load(f)
 
     @staticmethod
     def set_seed(seed):
@@ -538,11 +537,3 @@ class BaseDeepAD(metaclass=ABCMeta):
         # torch.backends.cudnn.benchmark = False
         # torch.backends.cudnn.deterministic = True
 
-    @classmethod
-    def load_model(cls, path):
-        with open(f"{path}.pkl", mode="rb") as f:
-            return pickle.load(f)
-
-    def save_model(self, path):
-        with open(f"{path}.pkl", mode="wb") as f:
-            pickle.dump(self, f)
