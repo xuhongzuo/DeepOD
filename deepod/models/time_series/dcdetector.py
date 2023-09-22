@@ -22,14 +22,15 @@ class DCdetector(BaseDeepAD):
                  n_heads=1, d_model=256, e_layers=3, patch_size=None,
                  verbose=2, random_state=42):
         super(DCdetector, self).__init__(
-            model_name='TranAD', data_type='ts', epochs=epochs, batch_size=batch_size, lr=lr,
+            model_name='DCdetector', data_type='ts', epochs=epochs, batch_size=batch_size, lr=lr,
             seq_len=seq_len, stride=stride,
             epoch_steps=epoch_steps, prt_steps=prt_steps, device=device,
             verbose=verbose, random_state=random_state
         )
         if patch_size is None:
             self.patch_size = [5]  # seq_len must be divisible by patch_size
-        self.patch_size = patch_size
+        else:
+            self.patch_size = patch_size
         self.n_heads = n_heads
         self.d_model = d_model
         self.e_layers = e_layers

@@ -6,7 +6,7 @@ some functions are adapted from the pyod library
 """
 import sys
 import warnings
-
+import pickle
 import numpy as np
 import torch
 import random
@@ -527,3 +527,12 @@ class BaseDeepAD(metaclass=ABCMeta):
         random.seed(seed)
         # torch.backends.cudnn.benchmark = False
         # torch.backends.cudnn.deterministic = True
+
+    @classmethod
+    def load_model(cls, path):
+        with open(f"{path}.pkl", mode="rb") as f:
+            return pickle.load(f)
+
+    def save_model(self, path):
+        with open(f"{path}.pkl", mode="wb") as f:
+            pickle.dump(self, f)
