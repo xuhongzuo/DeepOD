@@ -1,3 +1,6 @@
+# Revised by Yiyuan Yang on 2023/10/28
+# There are some differences between the original code and the revised code.
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -17,7 +20,7 @@ def my_kl_loss(p, q):
 
 
 class DCdetector(BaseDeepAD):
-    def __init__(self, seq_len=100, stride=1, lr=0.0001, epochs=5, batch_size=128,
+    def __init__(self, seq_len=100, stride=1, lr=0.0001, epochs=3, batch_size=256,
                  epoch_steps=20, prt_steps=1, device='cuda',
                  n_heads=1, d_model=256, e_layers=3, patch_size=None,
                  verbose=2, random_state=42):
@@ -35,7 +38,6 @@ class DCdetector(BaseDeepAD):
         self.d_model = d_model
         self.e_layers = e_layers
         self.criterion = nn.MSELoss()
-
         return
 
     def fit(self, X, y=None):
@@ -55,7 +57,7 @@ class DCdetector(BaseDeepAD):
         self.model.train()
         for e in range(self.epochs):
             loss = self.training(dataloader)
-            print(f'Epoch {e + 1},\t L1 = {loss}')
+            print(f'Epoch {e + 1}')
 
         self.decision_scores_ = self.decision_function(X)
         self.labels_ = self._process_decision_scores()
@@ -64,17 +66,17 @@ class DCdetector(BaseDeepAD):
     def decision_function(self, X, return_rep=False):
         seqs = get_sub_seqs(X, seq_len=self.seq_len, stride=1)
         dataloader = DataLoader(seqs, batch_size=self.batch_size,
-                                shuffle=False, drop_last=False)
+                                shuffle=False, drop_last=True)
 
-        self.model.eval()
-        loss, _ = self.inference(dataloader)  # (n,d)
+        loss, preds = self.inference(dataloader)  # (n,d)
+        
         loss_final = np.mean(loss, axis=1)  # (n,)
-
-        padding_list = np.zeros([X.shape[0]-loss.shape[0], loss.shape[1]])
-        loss_pad = np.concatenate([padding_list, loss], axis=0)
         loss_final_pad = np.hstack([0 * np.ones(X.shape[0] - loss_final.shape[0]), loss_final])
+        
+        preds_final = np.mean(preds, axis=1)  # (n,)
+        preds_final_pad = np.hstack([0 * np.ones(X.shape[0] - preds_final.shape[0]), preds_final])
 
-        return loss_final_pad
+        return loss_final_pad, preds_final_pad
 
     def training(self, dataloader):
         loss_list = []
@@ -121,7 +123,41 @@ class DCdetector(BaseDeepAD):
         return np.average(loss_list)
 
     def inference(self, dataloader):
-        temperature = 50
+        
+        attens_energy = []
+        for input_data in dataloader: # threhold
+            input = input_data.float().to(self.device)
+            series, prior = self.model(input)
+            series_loss = 0.0
+            prior_loss = 0.0
+            for u in range(len(prior)):
+                if u == 0:
+                    series_loss = my_kl_loss(series[u], (
+                            prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1,
+                                                                                                   self.seq_len)).detach())
+                    prior_loss = my_kl_loss(
+                        (prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1,
+                                                                                                self.seq_len)),
+                        series[u].detach())
+                else:
+                    series_loss += my_kl_loss(series[u], (
+                            prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1,
+                                                                                                   self.seq_len)).detach())
+                    prior_loss += my_kl_loss(
+                        (prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1,
+                                                                                                self.seq_len)),
+                        series[u].detach())
+
+            metric = torch.softmax((-series_loss - prior_loss), dim=-1)
+            cri = metric.detach().cpu().numpy()
+            attens_energy.append(cri)
+
+        attens_energy = np.concatenate(attens_energy, axis=0).reshape(-1)
+        test_energy = np.array(attens_energy)
+        thresh = np.percentile(test_energy, 100 - 1) #hyperparameter need to be tuned
+        print('Threshold:', thresh)
+        
+        temperature = 10 #hyperparameter need to be tuned
         attens_energy = []
         preds = []
 
@@ -154,6 +190,8 @@ class DCdetector(BaseDeepAD):
         attens_energy = np.concatenate(attens_energy, axis=0)  # anomaly scores
         test_energy = np.array(attens_energy)  # anomaly scores
 
+        preds = (test_energy > thresh).astype(int)
+        
         return test_energy, preds  # (n,d)
 
     def training_forward(self, batch_x, net, criterion):
