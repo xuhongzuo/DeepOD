@@ -69,7 +69,7 @@ class AnomalyTransformer(BaseDeepAD):
         padding_list = np.zeros([X.shape[0] - loss.shape[0], loss.shape[1]])
         loss_pad = np.concatenate([padding_list, loss], axis=0)
         loss_final_pad = np.hstack([0 * np.ones(X.shape[0] - loss_final.shape[0]), loss_final])
-
+        
         return loss_final_pad
 
     def training(self, dataloader):
