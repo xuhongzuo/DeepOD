@@ -227,6 +227,15 @@ You can also use the BibTex entry below for citation.
    }
 
 
+Star History
+~~~~~~~~~~~~~~~~~
+.. image:: https://api.star-history.com/svg?repos=xuhongzuo/DeepOD&type=Date
+   :target: https://star-history.com/#xuhongzuo/DeepOD&Date
+   :align: center
+
+
+
+
 
 Reference
 ~~~~~~~~~~~~~~~~~
