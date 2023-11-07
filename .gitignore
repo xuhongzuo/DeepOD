@@ -3,3 +3,4 @@ dist/
 build/
 .idea
 **/__pycache__
+docs_output
