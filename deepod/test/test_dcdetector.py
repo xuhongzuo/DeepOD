@@ -32,8 +32,8 @@ class TestDCdetector(unittest.TestCase):
         self.yts_test = y
 
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        self.clf = DCdetector(seq_len=100, stride=1, epochs=2,
-                                      batch_size=32, lr=1e-4, patch_size=[1,2,5],
+        self.clf = DCdetector(seq_len=90, stride=1, epochs=2,
+                                      batch_size=32, lr=1e-4, patch_size=[5],
                                       device=device, random_state=42)
         self.clf.fit(self.Xts_train)
 
@@ -53,7 +53,7 @@ class TestDCdetector(unittest.TestCase):
         assert_equal(pred_scores.shape[0], self.Xts_test.shape[0])
 
     def test_prediction_labels(self):
-        pred_labels = self.clf.predict(self.Xts_test)
+        pred_labels = self.clf.predict(self.Xts_test, return_confidence=False)
         assert_equal(pred_labels.shape, self.yts_test.shape)
 
     # def test_prediction_proba(self):
