@@ -20,6 +20,10 @@ Python Deep Outlier/Anomaly Detection (DeepOD)
 .. image:: https://static.pepy.tech/personalized-badge/deepod?period=total&units=international_system&left_color=black&right_color=orange&left_text=Downloads
    :target: https://pepy.tech/project/deepod
    :alt: downloads
+
+.. image:: https://img.shields.io/badge/license-BSD2-blue
+   :alt: license
+
    
 
 ``DeepOD`` is an open-source python library for Deep Learning-based `Outlier Detection <https://en.wikipedia.org/wiki/Anomaly_detection>`_
@@ -238,6 +242,13 @@ You can also use the BibTex entry below for citation.
 
 Star History
 ~~~~~~~~~~~~~~~~~
+
+Current stars:
+
+.. image:: https://img.shields.io/github/stars/xuhongzuo/deepod?labelColor=black&color=red
+   :alt: GitHub Repo stars
+
+
 .. image:: https://api.star-history.com/svg?repos=xuhongzuo/DeepOD&type=Date
    :target: https://star-history.com/#xuhongzuo/DeepOD&Date
    :align: center
