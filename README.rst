@@ -9,6 +9,10 @@ Python Deep Outlier/Anomaly Detection (DeepOD)
     :target: https://deepod.readthedocs.io/en/latest/?badge=latest
     :alt: Documentation Status
 
+.. image:: https://app.codacy.com/project/badge/Grade/2c587126aac2441abb917c032189fbe8
+    :target: https://app.codacy.com/gh/xuhongzuo/DeepOD/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade
+    :alt: coveralls
+
 .. image:: https://coveralls.io/repos/github/xuhongzuo/DeepOD/badge.svg?branch=main
     :target: https://coveralls.io/github/xuhongzuo/DeepOD?branch=main
     :alt: coveralls
@@ -286,3 +290,16 @@ Reference
 .. [#Xu2023SLAD] Xu, Hongzuo et al. "Fascinating supervisory signals and where to find them: deep anomaly detection with scale learning". ICML. 2023. 
 
 .. [#Xu2023RoSAS] Xu, Hongzuo et al. "RoSAS: Deep semi-supervised anomaly detection with contamination-resilient continuous supervision". IP&M. 2023. 
+
+
+
+## Contributors
+
+<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
+<!-- prettier-ignore-start -->
+<!-- markdownlint-disable -->
+
+<!-- markdownlint-restore -->
+<!-- prettier-ignore-end -->
+
+<!-- ALL-CONTRIBUTORS-LIST:END -->
