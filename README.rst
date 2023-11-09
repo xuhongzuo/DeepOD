@@ -292,14 +292,17 @@ Reference
 .. [#Xu2023RoSAS] Xu, Hongzuo et al. "RoSAS: Deep semi-supervised anomaly detection with contamination-resilient continuous supervision". IP&M. 2023. 
 
 
+Contributors
+~~~~~~~~~~~~~~~~~
 
-## Contributors
+Thanks goes to these wonderful people (`emoji key`_):
 
-<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
-<!-- prettier-ignore-start -->
-<!-- markdownlint-disable -->
+.. _emoji key: https://allcontributors.org/docs/en/emoji-key
 
-<!-- markdownlint-restore -->
-<!-- prettier-ignore-end -->
+.. raw:: html
+   <!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
+   <table>
+     # ...
+   </table>
 
-<!-- ALL-CONTRIBUTORS-LIST:END -->
+   <!-- ALL-CONTRIBUTORS-LIST:END -->
