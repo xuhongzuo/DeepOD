@@ -11,7 +11,7 @@ Python Deep Outlier/Anomaly Detection (DeepOD)
 
 .. image:: https://app.codacy.com/project/badge/Grade/2c587126aac2441abb917c032189fbe8
     :target: https://app.codacy.com/gh/xuhongzuo/DeepOD/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade
-    :alt: coveralls
+    :alt: codacy
 
 .. image:: https://coveralls.io/repos/github/xuhongzuo/DeepOD/badge.svg?branch=main
     :target: https://coveralls.io/github/xuhongzuo/DeepOD?branch=main
@@ -292,17 +292,3 @@ Reference
 .. [#Xu2023RoSAS] Xu, Hongzuo et al. "RoSAS: Deep semi-supervised anomaly detection with contamination-resilient continuous supervision". IP&M. 2023. 
 
 
-Contributors
-~~~~~~~~~~~~~~~~~
-
-Thanks goes to these wonderful people (`emoji key`_):
-
-.. _emoji key: https://allcontributors.org/docs/en/emoji-key
-
-.. raw:: html
-   <!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
-   <table>
-     # ...
-   </table>
-
-   <!-- ALL-CONTRIBUTORS-LIST:END -->
