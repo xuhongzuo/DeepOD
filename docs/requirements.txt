@@ -1,3 +1,4 @@
 sphinx-rtd-theme==1.3.0
 sphinxawesome-theme==4.1.0
 sphinxcontrib-bibtex==2.5.0
+furo==2023.9.10
