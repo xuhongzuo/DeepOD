@@ -72,7 +72,6 @@ def _generate_data(n_inliers, n_outliers, n_features, coef, offset,
     return X, y
 
 
-
 def generate_data(n_train=1000, n_test=500, n_features=2, contamination=0.1,
                   train_only=False, offset=10,
                   random_state=None, n_nan=0, n_inf=0):

@@ -5,6 +5,10 @@ Python Deep Outlier/Anomaly Detection (DeepOD)
    :target: https://github.com/xuhongzuo/DeepOD/actions/workflows/testing.yml
    :alt: testing2
 
+.. image:: https://readthedocs.org/projects/deepod/badge/?version=latest
+    :target: https://deepod.readthedocs.io/en/latest/?badge=latest
+    :alt: Documentation Status
+
 .. image:: https://coveralls.io/repos/github/xuhongzuo/DeepOD/badge.svg?branch=main
     :target: https://coveralls.io/github/xuhongzuo/DeepOD?branch=main
     :alt: coveralls
@@ -18,7 +22,7 @@ Python Deep Outlier/Anomaly Detection (DeepOD)
 and `Anomaly Detection <https://en.wikipedia.org/wiki/Anomaly_detection>`_. ``DeepOD`` supports tabular anomaly detection and time-series anomaly detection.
 
 
-DeepOD includes **26** deep outlier detection / anomaly detection algorithms (in unsupervised/weakly-supervised paradigm).
+DeepOD includes **27** deep outlier detection / anomaly detection algorithms (in unsupervised/weakly-supervised paradigm).
 More baseline algorithms will be included later.
 
 
@@ -169,14 +173,14 @@ Implemented Models
  RCA, IJCAI, 2021, unsupervised, RCA: A Deep Collaborative Autoencoder Approach for Anomaly Detection [#Liu2021RCA]_
  GOAD, ICLR, 2020, unsupervised, Classification-Based Anomaly Detection for General Data [#Bergman2020GOAD]_
  NeuTraL, ICML, 2021, unsupervised, Neural Transformation Learning for Deep Anomaly Detection Beyond Images [#Qiu2021Neutral]_
- ICL, ICLR, 2022, unsupervised, Anomaly Detection for Tabular Data with Internal Contrastive Learning
- DIF, TKDE, 2023, unsupervised, Deep Isolation Forest for Anomaly Detection
- SLAD, ICML, 2023, unsupervised, Fascinating Supervisory Signals and Where to Find Them: Deep Anomaly Detection with Scale Learning
- DevNet, KDD, 2019, weakly-supervised, Deep Anomaly Detection with Deviation Networks
- PReNet, KDD, 2023, weakly-supervised, Deep Weakly-supervised Anomaly Detection
- Deep SAD, ICLR, 2020, weakly-supervised, Deep Semi-Supervised Anomaly Detection
- FeaWAD, TNNLS, 2021, weakly-supervised, Feature Encoding with AutoEncoders for Weakly-supervised Anomaly Detection
- RoSAS, IP&M, 2023, weakly-supervised, RoSAS: Deep semi-supervised anomaly detection with contamination-resilient continuous supervision
+ ICL, ICLR, 2022, unsupervised, Anomaly Detection for Tabular Data with Internal Contrastive Learning [#Shenkar2022ICL]_
+ DIF, TKDE, 2023, unsupervised, Deep Isolation Forest for Anomaly Detection [#Xu2023DIF]_
+ SLAD, ICML, 2023, unsupervised, Fascinating Supervisory Signals and Where to Find Them: Deep Anomaly Detection with Scale Learning [#Xu2023SLAD]_
+ DevNet, KDD, 2019, weakly-supervised, Deep Anomaly Detection with Deviation Networks [#Pang2019DevNet]_
+ PReNet, KDD, 2023, weakly-supervised, Deep Weakly-supervised Anomaly Detection [#Pang2023PreNet]_
+ Deep SAD, ICLR, 2020, weakly-supervised, Deep Semi-Supervised Anomaly Detection [#Ruff2020DSAD]_
+ FeaWAD, TNNLS, 2021, weakly-supervised, Feature Encoding with AutoEncoders for Weakly-supervised Anomaly Detection [#Zhou2021FeaWAD]_
+ RoSAS, IP&M, 2023, weakly-supervised, RoSAS: Deep semi-supervised anomaly detection with contamination-resilient continuous supervision [#Xu2023RoSAS]_
 
 **Time-series Anomaly Detection models:**
 
@@ -187,15 +191,16 @@ Implemented Models
  DCdetector, KDD, 2023, unsupervised, DCdetector: Dual Attention Contrastive Representation Learning for Time Series Anomaly Detection [#Yang2023dcdetector]_
  TimesNet, ICLR, 2023, unsupervised, TIMESNET: Temporal 2D-Variation Modeling for General Time Series Analysis [#Wu2023timesnet]_
  AnomalyTransformer, ICLR, 2022, unsupervised, Anomaly Transformer: Time Series Anomaly Detection with Association Discrepancy [#Xu2022transformer]_
- TranAD, VLDB, 2022, unsupervised, TranAD: Deep Transformer Networks for Anomaly Detection in Multivariate Time Series Data  
- COUTA, arXiv, 2022, unsupervised, Calibrated One-class Classification for Unsupervised Time Series Anomaly Detection
+ NCAD, IJCAI, 2022, unsupervised, Neural Contextual Anomaly Detection for Time Series [#Carmona2022NCAD]_
+ TranAD, VLDB, 2022, unsupervised, TranAD: Deep Transformer Networks for Anomaly Detection in Multivariate Time Series Data [#Tuli2022TranAD]_
+ COUTA, arXiv, 2022, unsupervised, Calibrated One-class Classification for Unsupervised Time Series Anomaly Detection [#Xu2022COUTA]_
  USAD, KDD, 2020, unsupervised, USAD: UnSupervised Anomaly Detection on Multivariate Time Series  
- DIF, TKDE, 2023, unsupervised, Deep Isolation Forest for Anomaly Detection
- TcnED, TNNLS, 2021, unsupervised, An Evaluation of Anomaly Detection and Diagnosis in Multivariate Time Series
- Deep SVDD (TS), ICML, 2018, unsupervised, Deep One-Class Classification  
- DevNet (TS), KDD, 2019, weakly-supervised, Deep Anomaly Detection with Deviation Networks
- PReNet (TS), KDD, 2023, weakly-supervised, Deep Weakly-supervised Anomaly Detection
- Deep SAD (TS), ICLR, 2020, weakly-supervised, Deep Semi-Supervised Anomaly Detection
+ DIF, TKDE, 2023, unsupervised, Deep Isolation Forest for Anomaly Detection [#Xu2023DIF]_
+ TcnED, TNNLS, 2021, unsupervised, An Evaluation of Anomaly Detection and Diagnosis in Multivariate Time Series [#Garg2021Evaluation]_
+ Deep SVDD (TS), ICML, 2018, unsupervised, Deep One-Class Classification [#Ruff2018Deep]_
+ DevNet (TS), KDD, 2019, weakly-supervised, Deep Anomaly Detection with Deviation Networks [#Pang2019DevNet]_
+ PReNet (TS), KDD, 2023, weakly-supervised, Deep Weakly-supervised Anomaly Detection [#Pang2023PreNet]_
+ Deep SAD (TS), ICLR, 2020, weakly-supervised, Deep Semi-Supervised Anomaly Detection [#Ruff2020DSAD]_
 
 NOTE:
 
@@ -252,8 +257,32 @@ Reference
 
 .. [#Qiu2021Neutral] Qiu, Chen, et al. "Neural Transformation Learning for Deep Anomaly Detection Beyond Images". ICML. 2021.
 
-.. [#Xu2022transformer] Xu Jiehui, et al. "Anomaly Transformer: Time Series Anomaly Detection with Association Discrepancy". ICLR, 2022.
+.. [#Shenkar2022ICL] Shenkar, Tom, et al. "Anomaly Detection for Tabular Data with Internal Contrastive Learning". ICLR. 2022.
 
-.. [#Wu2023timesnet] Wu Haixu, et al. "TimesNet: Temporal 2D-Variation Modeling for General Time Series Analysis". ICLR. 2023.
+.. [#Pang2019DevNet] Pang, Guansong, et al. "Deep Anomaly Detection with Deviation Networks". KDD. 2019.
 
-.. [#Yang2023dcdetector] Yang Yiyuan et al. "DCdetector: Dual Attention Contrastive Representation Learning for Time Series Anomaly Detection". KDD. 2023
+.. [#Pang2023PreNet] Pang, Guansong, et al. "Deep Weakly-supervised Anomaly Detection". KDD. 2023. 
+
+.. [#Ruff2020DSAD] Ruff, Lukas, et al. "Deep Semi-Supervised Anomaly Detection". ICLR. 2020. 
+
+.. [#Zhou2021FeaWAD] Zhou, Yingjie, et al. "Feature Encoding with AutoEncoders for Weakly-supervised Anomaly Detection". TNNLS. 2021. 
+
+.. [#Xu2022transformer] Xu, Jiehui, et al. "Anomaly Transformer: Time Series Anomaly Detection with Association Discrepancy". ICLR, 2022.
+
+.. [#Wu2023timesnet] Wu, Haixu, et al. "TimesNet: Temporal 2D-Variation Modeling for General Time Series Analysis". ICLR. 2023.
+
+.. [#Yang2023dcdetector] Yang, Yiyuan, et al. "DCdetector: Dual Attention Contrastive Representation Learning for Time Series Anomaly Detection". KDD. 2023
+
+.. [#Tuli2022TranAD] Tuli, Shreshth, et al. "TranAD: Deep Transformer Networks for Anomaly Detection in Multivariate Time Series Data". VLDB. 2022.
+
+.. [#Carmona2022NCAD] Carmona, Chris U., et al. "Neural Contextual Anomaly Detection for Time Series". IJCAI. 2022. 
+
+.. [#Garg2021Evaluation] Garg, Astha, et al. "An Evaluation of Anomaly Detection and Diagnosis in Multivariate Time Series". TNNLS. 2021. 
+
+.. [#Xu2022COUTA] Xu, Hongzuo et al. "Calibrated One-class Classification for Unsupervised Time Series Anomaly Detection". arXiv:2207.12201. 2022.
+
+.. [#Xu2023DIF] Xu, Hongzuo et al. "Deep Isolation Forest for Anomaly Detection". TKDE. 2023.
+
+.. [#Xu2023SLAD] Xu, Hongzuo et al. "Fascinating supervisory signals and where to find them: deep anomaly detection with scale learning". ICML. 2023. 
+
+.. [#Xu2023RoSAS] Xu, Hongzuo et al. "RoSAS: Deep semi-supervised anomaly detection with contamination-resilient continuous supervision". IP&M. 2023. 

@@ -15,6 +15,9 @@ import numpy as np
 
 
 class GOAD(BaseDeepAD):
+    """
+    Classification-Based Anomaly Detection for General Data (ICLR'20)
+    """
     def __init__(self, epochs=100, batch_size=64, lr=1e-3,
                  n_trans=256, trans_dim=32,
                  alpha=0.1, margin=1., eps=0,

@@ -1,9 +1,12 @@
+# TCN is partially adapted from https://github.com/locuslab/TCN
+
 import torch
 from torch.nn.utils import weight_norm
 from deepod.core.networks.network_utility import _instantiate_class, _handle_n_hidden
 
 
 class TcnAE(torch.nn.Module):
+    """Temporal Convolutional Network-based AutoEncoder"""
     def __init__(self, n_features, n_hidden='500,100', n_emb=20, activation='ReLU', bias=False,
                  kernel_size=2, dropout=0.2):
         super(TcnAE, self).__init__()
@@ -60,7 +63,7 @@ class TcnAE(torch.nn.Module):
 
 
 class TCNnet(torch.nn.Module):
-    """TCN is adapted from https://github.com/locuslab/TCN"""
+    """Temporal Convolutional Network (TCN) for encoding/representing input time series sequences"""
     def __init__(self, n_features, n_hidden='8', n_output=20,
                  kernel_size=2, bias=False,
                  dropout=0.2, activation='ReLU'):

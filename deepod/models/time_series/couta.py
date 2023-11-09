@@ -1,6 +1,6 @@
 """
 Calibrated One-class classifier for Unsupervised Time series Anomaly detection (COUTA)
-@author: Hongzuo Xu (hongzuo.xu@gmail.com)
+@author: Hongzuo Xu <hongzuoxu@126.com, xuhongzuo13@nudt.edu.cn>
 """
 
 import numpy as np
@@ -20,7 +20,8 @@ from deepod.metrics import ts_metrics, point_adjustment
 
 class COUTA(BaseDeepAD):
     """
-    COUTA class for Calibrated One-class classifier for Unsupervised Time series Anomaly detection
+    Calibrated One-class classifier for Unsupervised Time series
+    Anomaly detection (arXiv'22)
 
     Parameters
     ----------
@@ -144,7 +145,7 @@ class COUTA(BaseDeepAD):
             train_seqs = sequences
             val_seqs = None
 
-        self.net = COUTANet(
+        self.net = _COUTANet(
             input_dim=self.n_features,
             hidden_dims=self.hidden_dims,
             n_output=self.rep_dim,
@@ -187,7 +188,7 @@ class COUTA(BaseDeepAD):
             The anomaly score of the input samples.
         """
         test_sub_seqs = get_sub_seqs(X, seq_len=self.seq_len, stride=1)
-        test_dataset = SubseqData(test_sub_seqs)
+        test_dataset = _SubseqData(test_sub_seqs)
         dataloader = DataLoader(dataset=test_dataset, batch_size=self.batch_size, drop_last=False, shuffle=False)
 
         representation_lst = []
@@ -211,12 +212,12 @@ class COUTA(BaseDeepAD):
         return dis_pad
 
     def train(self, net, train_seqs, val_seqs=None):
-        val_loader = DataLoader(dataset=SubseqData(val_seqs),
+        val_loader = DataLoader(dataset=_SubseqData(val_seqs),
                                 batch_size=self.batch_size,
                                 drop_last=False, shuffle=False) if val_seqs is not None else None
         optimizer = torch.optim.Adam(net.parameters(), lr=self.lr)
 
-        criterion_oc_umc = DSVDDUncLoss(c=self.c, reduction='mean')
+        criterion_oc_umc = _DSVDDUncLoss(c=self.c, reduction='mean')
         criterion_mse = torch.nn.MSELoss(reduction='mean')
 
         y0 = -1 * torch.ones(self.batch_size).float().to(self.device)
@@ -229,7 +230,7 @@ class COUTA(BaseDeepAD):
                 copy_times += 1
             train_seqs = np.concatenate([train_seqs for _ in range(copy_times)])
 
-            train_loader = DataLoader(dataset=SubseqData(train_seqs),
+            train_loader = DataLoader(dataset=_SubseqData(train_seqs),
                                       batch_size=self.batch_size,
                                       drop_last=True, pin_memory=True, shuffle=True)
 
@@ -246,7 +247,7 @@ class COUTA(BaseDeepAD):
                 loss_oc = criterion_oc_umc(rep_x0, rep_x0_dup)
 
                 neg_cand_idx = RandomState(epoch_seed[ii]).randint(0, self.batch_size, self.neg_batch_size)
-                x1, y1 = create_batch_neg(batch_seqs=x0[neg_cand_idx],
+                x1, y1 = self.create_batch_neg(batch_seqs=x0[neg_cand_idx],
                                           max_cut_ratio=self.max_cut_ratio,
                                           seed=epoch_seed[ii],
                                           return_mul_label=False,
@@ -300,14 +301,14 @@ class COUTA(BaseDeepAD):
         train_data = self.train_data[:int(0.8 * len(self.train_data))]
         val_data = self.train_data[int(0.8 * len(self.train_data)):]
 
-        train_loader = DataLoader(dataset=SubseqData(train_data), batch_size=self.batch_size,
+        train_loader = DataLoader(dataset=_SubseqData(train_data), batch_size=self.batch_size,
                                   drop_last=True, pin_memory=True, shuffle=True)
-        val_loader = DataLoader(dataset=SubseqData(val_data), batch_size=self.batch_size,
+        val_loader = DataLoader(dataset=_SubseqData(val_data), batch_size=self.batch_size,
                                 drop_last=True, pin_memory=True, shuffle=True)
 
         self.net = self.set_tuned_net(config)
         self.c = self._set_c(self.net, train_data)
-        criterion_oc_umc = DSVDDUncLoss(c=self.c, reduction='mean')
+        criterion_oc_umc = _DSVDDUncLoss(c=self.c, reduction='mean')
         criterion_mse = torch.nn.MSELoss(reduction='mean')
         optimizer = torch.optim.Adam(self.net.parameters(), lr=config['lr'], eps=1e-6)
 
@@ -331,7 +332,7 @@ class COUTA(BaseDeepAD):
                 neg_batch_size = int(config['neg_batch_ratio'] * self.batch_size)
                 neg_candidate_idx = tmp_rng.randint(0, self.batch_size, neg_batch_size)
 
-                x1, y1 = create_batch_neg(
+                x1, y1 = self.create_batch_neg(
                     batch_seqs=x0[neg_candidate_idx],
                     max_cut_ratio=self.max_cut_ratio,
                     seed=epoch_seed[ii],
@@ -413,7 +414,7 @@ class COUTA(BaseDeepAD):
         return config
 
     def set_tuned_net(self, config):
-        net = COUTANet(
+        net = _COUTANet(
             input_dim=self.n_features,
             hidden_dims=config['hidden_dims'],
             n_output=config['rep_dim'],
@@ -436,7 +437,7 @@ class COUTA(BaseDeepAD):
 
     def _set_c(self, net, seqs, eps=0.1):
         """Initializing the center for the hypersphere"""
-        dataloader = DataLoader(dataset=SubseqData(seqs), batch_size=self.batch_size,
+        dataloader = DataLoader(dataset=_SubseqData(seqs), batch_size=self.batch_size,
                                 drop_last=False, pin_memory=True, shuffle=True)
         z_ = []
         net.eval()
@@ -468,79 +469,79 @@ class COUTA(BaseDeepAD):
         """define test_loader"""
         return
 
+    @staticmethod
+    def create_batch_neg(batch_seqs, max_cut_ratio=0.5, seed=0, return_mul_label=False, ss_type='FULL'):
+        rng = np.random.RandomState(seed=seed)
 
-def create_batch_neg(batch_seqs, max_cut_ratio=0.5, seed=0, return_mul_label=False, ss_type='FULL'):
-    rng = np.random.RandomState(seed=seed)
+        batch_size, l, dim = batch_seqs.shape
+        cut_start = l - rng.randint(1, int(max_cut_ratio * l), size=batch_size)
+        n_cut_dim = rng.randint(1, dim+1, size=batch_size)
+        cut_dim = [rng.randint(dim, size=n_cut_dim[i]) for i in range(batch_size)]
 
-    batch_size, l, dim = batch_seqs.shape
-    cut_start = l - rng.randint(1, int(max_cut_ratio * l), size=batch_size)
-    n_cut_dim = rng.randint(1, dim+1, size=batch_size)
-    cut_dim = [rng.randint(dim, size=n_cut_dim[i]) for i in range(batch_size)]
+        if type(batch_seqs) == np.ndarray:
+            batch_neg = batch_seqs.copy()
+            neg_labels = np.zeros(batch_size, dtype=int)
+        else:
+            batch_neg = batch_seqs.clone()
+            neg_labels = torch.LongTensor(batch_size)
 
-    if type(batch_seqs) == np.ndarray:
-        batch_neg = batch_seqs.copy()
-        neg_labels = np.zeros(batch_size, dtype=int)
-    else:
-        batch_neg = batch_seqs.clone()
-        neg_labels = torch.LongTensor(batch_size)
+        if ss_type != 'FULL':
+            pool = rng.randint(1e+6, size=int(1e+4))
+            if ss_type == 'collective':
+                pool = [a % 6 == 0 or a % 6 == 1 for a in pool]
+            elif ss_type == 'contextual':
+                pool = [a % 6 == 2 or a % 6 == 3 for a in pool]
+            elif ss_type == 'point':
+                pool = [a % 6 == 4 or a % 6 == 5 for a in pool]
+            flags = rng.choice(pool, size=batch_size, replace=False)
+        else:
+            flags = rng.randint(1e+5, size=batch_size)
 
-    if ss_type != 'FULL':
-        pool = rng.randint(1e+6, size=int(1e+4))
-        if ss_type == 'collective':
-            pool = [a % 6 == 0 or a % 6 == 1 for a in pool]
-        elif ss_type == 'contextual':
-            pool = [a % 6 == 2 or a % 6 == 3 for a in pool]
-        elif ss_type == 'point':
-            pool = [a % 6 == 4 or a % 6 == 5 for a in pool]
-        flags = rng.choice(pool, size=batch_size, replace=False)
-    else:
-        flags = rng.randint(1e+5, size=batch_size)
+        n_types = 6
+        for ii in range(batch_size):
+            flag = flags[ii]
 
-    n_types = 6
-    for ii in range(batch_size):
-        flag = flags[ii]
+            # collective anomalies
+            if flag % n_types == 0:
+                batch_neg[ii, cut_start[ii]:, cut_dim[ii]] = 0
+                neg_labels[ii] = 1
 
-        # collective anomalies
-        if flag % n_types == 0:
-            batch_neg[ii, cut_start[ii]:, cut_dim[ii]] = 0
-            neg_labels[ii] = 1
+            elif flag % n_types == 1:
+                batch_neg[ii, cut_start[ii]:, cut_dim[ii]] = 1
+                neg_labels[ii] = 1
 
-        elif flag % n_types == 1:
-            batch_neg[ii, cut_start[ii]:, cut_dim[ii]] = 1
-            neg_labels[ii] = 1
+            # contextual anomalies
+            elif flag % n_types == 2:
+                mean = torch.mean(batch_neg[ii, -10:, cut_dim[ii]], dim=0)
+                batch_neg[ii, -1, cut_dim[ii]] = mean + 0.5
+                neg_labels[ii] = 2
 
-        # contextual anomalies
-        elif flag % n_types == 2:
-            mean = torch.mean(batch_neg[ii, -10:, cut_dim[ii]], dim=0)
-            batch_neg[ii, -1, cut_dim[ii]] = mean + 0.5
-            neg_labels[ii] = 2
+            elif flag % n_types == 3:
+                mean = torch.mean(batch_neg[ii, -10:, cut_dim[ii]], dim=0)
+                batch_neg[ii, -1, cut_dim[ii]] = mean - 0.5
+                neg_labels[ii] = 2
 
-        elif flag % n_types == 3:
-            mean = torch.mean(batch_neg[ii, -10:, cut_dim[ii]], dim=0)
-            batch_neg[ii, -1, cut_dim[ii]] = mean - 0.5
-            neg_labels[ii] = 2
+            # point anomalies
+            elif flag % n_types == 4:
+                batch_neg[ii, -1, cut_dim[ii]] = 2
+                neg_labels[ii] = 3
 
-        # point anomalies
-        elif flag % n_types == 4:
-            batch_neg[ii, -1, cut_dim[ii]] = 2
-            neg_labels[ii] = 3
+            elif flag % n_types == 5:
+                batch_neg[ii, -1, cut_dim[ii]] = -2
+                neg_labels[ii] = 3
 
-        elif flag % n_types == 5:
-            batch_neg[ii, -1, cut_dim[ii]] = -2
-            neg_labels[ii] = 3
-
-    if return_mul_label:
-        return batch_neg, neg_labels
-    else:
-        neg_labels = torch.ones(batch_size).long()
-        return batch_neg, neg_labels
+        if return_mul_label:
+            return batch_neg, neg_labels
+        else:
+            neg_labels = torch.ones(batch_size).long()
+            return batch_neg, neg_labels
 
 
-class COUTANet(torch.nn.Module):
+class _COUTANet(torch.nn.Module):
     def __init__(self, input_dim, hidden_dims=32, rep_hidden=32, pretext_hidden=16,
                  n_output=10, kernel_size=2, dropout=0.2, out_dim=2,
                  bias=True, dup=True, pretext=True):
-        super(COUTANet, self).__init__()
+        super(_COUTANet, self).__init__()
 
         self.layers = []
 
@@ -598,7 +599,7 @@ class COUTANet(torch.nn.Module):
                 return rep
 
 
-class SubseqData(Dataset):
+class _SubseqData(Dataset):
     def __init__(self, x, y=None, w1=None, w2=None):
         self.sub_seqs = x
         self.label = y
@@ -624,7 +625,7 @@ class SubseqData(Dataset):
         return self.sub_seqs[idx]
 
 
-class DSVDDUncLoss(torch.nn.Module):
+class _DSVDDUncLoss(torch.nn.Module):
     def __init__(self, c, reduction='mean'):
         super(DSVDDUncLoss, self).__init__()
         self.c = c

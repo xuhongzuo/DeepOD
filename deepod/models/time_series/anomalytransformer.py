@@ -15,6 +15,11 @@ def my_kl_loss(p, q):
 
 
 class AnomalyTransformer(BaseDeepAD):
+    """
+    Anomaly Transformer: Time Series Anomaly Detection with Association Discrepancy
+    (ICLR'22)
+
+    """
     def __init__(self, seq_len=100, stride=1, lr=0.0001, epochs=10, batch_size=32,
                  epoch_steps=20, prt_steps=1, device='cuda',
                  k=3, verbose=2, random_state=42):

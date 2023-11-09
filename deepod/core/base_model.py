@@ -21,6 +21,7 @@ from functools import partial
 from deepod.utils.utility import get_sub_seqs, get_sub_seqs_label
 import pickle
 
+
 class BaseDeepAD(metaclass=ABCMeta):
     """
     Abstract class for deep outlier detection models

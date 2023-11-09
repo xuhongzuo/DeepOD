@@ -13,7 +13,13 @@ def point_adjustment(y_true, y_score):
         data label, 0 indicates normal timestamp, and 1 is anomaly
 
     y_score: np.array, required
-        anomaly score, higher score indicates higher likelihoods to be anomaly
+        predicted anomaly scores, higher score indicates higher likelihoods to be anomaly
+
+    Returns
+    -------
+    score: np.array
+        adjusted anomaly scores
+
     """
     score = y_score.copy()
     assert len(score) == len(y_true)

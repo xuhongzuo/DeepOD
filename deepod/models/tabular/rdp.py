@@ -15,6 +15,9 @@ import copy
 
 class RDP(BaseDeepAD):
     """
+    Unsupervised Representation Learning by Predicting Random Distances
+    (IJCAI'20)
+
     Parameters
     ----------
     epochs: int, optional (default=100)

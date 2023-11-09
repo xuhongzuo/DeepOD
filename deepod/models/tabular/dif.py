@@ -17,9 +17,19 @@ import numpy as np
 
 
 class DeepIsolationForest(BaseDeepAD):
+    """
+    Deep Isolation Forest for Anomaly Detection
+
+    Args:
+        epochs (int):
+            number of training epochs (Default=100).
+        batch_size (int):
+            number of samples in a mini-batch (Default=64)
+        lr (float):
+            it is for consistency, unused in this model
+    """
     def __init__(self,
                  epochs=100, batch_size=1000, lr=1e-3,
-                 seq_len=100, stride=1,
                  rep_dim=128, hidden_dims='100,50', act='ReLU', bias=False,
                  n_ensemble=50, n_estimators=6,
                  max_samples=256, n_jobs=1,
@@ -28,7 +38,7 @@ class DeepIsolationForest(BaseDeepAD):
         super(DeepIsolationForest, self).__init__(
             model_name='DIF', data_type='tabular',
             epochs=epochs, batch_size=batch_size, lr=lr,
-            network='MLP', seq_len=seq_len, stride=stride,
+            network='MLP',
             epoch_steps=epoch_steps, prt_steps=prt_steps, device=device,
             verbose=verbose, random_state=random_state
         )

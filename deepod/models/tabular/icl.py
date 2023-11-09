@@ -15,8 +15,10 @@ import numpy as np
 
 
 class ICL(BaseDeepAD):
-    """ Anomaly Detection for Tabular Data with Internal Contrastive Learning (ICL for short)
-    See :cite:`shenkar2022internal` for details
+    """
+    Anomaly Detection for Tabular Data with Internal Contrastive Learning
+     (ICLR'22)
+    :cite:`shenkar2022internal`
 
     Parameters
     ----------

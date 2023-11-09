@@ -15,8 +15,7 @@ from collections import Counter
 
 
 class DeepSAD(BaseDeepAD):
-    """ Deep Semi-supervised Anomaly Detection (Deep SAD)
-    See :cite:`ruff2020dsad` for details
+    """ Deep Semi-supervised Anomaly Detection (ICLR'20)
 
     Parameters
     ----------

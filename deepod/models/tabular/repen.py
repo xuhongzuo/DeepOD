@@ -19,9 +19,9 @@ import numpy as np
 
 class REPEN(BaseDeepAD):
     """
-    Pang et al.: Learning Representations of Ultrahigh-dimensional Data for Random
+    Learning Representations of Ultrahigh-dimensional Data for Random
     Distance-based Outlier Detection (KDD'18)
-    See :cite:`pang2018repen` for details
+    :cite:`pang2018repen`
 
     """
     def __init__(self, epochs=100, batch_size=64, lr=1e-3,

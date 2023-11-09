@@ -10,6 +10,10 @@ from deepod.core.base_model import BaseDeepAD
 
 
 class TranAD(BaseDeepAD):
+    """
+    TranAD: Deep Transformer Networks for Anomaly Detection in Multivariate Time Series Data (VLDB'22)
+
+    """
     def __init__(self, seq_len=100, stride=1, lr=0.001, epochs=5, batch_size=128,
                  epoch_steps=20, prt_steps=1, device='cuda',
                  verbose=2, random_state=42):

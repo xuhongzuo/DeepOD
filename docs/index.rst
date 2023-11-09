@@ -13,6 +13,10 @@ Welcome to DeepOD documentation!
    :target: https://github.com/xuhongzuo/DeepOD/actions/workflows/testing.yml
    :alt: testing2
 
+.. image:: https://readthedocs.org/projects/deepod/badge/?version=latest
+    :target: https://deepod.readthedocs.io/en/latest/?badge=latest
+    :alt: Documentation Status
+
 .. image:: https://coveralls.io/repos/github/xuhongzuo/DeepOD/badge.svg?branch=main
     :target: https://coveralls.io/github/xuhongzuo/DeepOD?branch=main
     :alt: coveralls
@@ -20,7 +24,9 @@ Welcome to DeepOD documentation!
 .. image:: https://static.pepy.tech/personalized-badge/deepod?period=total&units=international_system&left_color=black&right_color=orange&left_text=Downloads
    :target: https://pepy.tech/project/deepod
    :alt: downloads
-   
+
+
+
 
 ``DeepOD`` is an open-source python library for Deep Learning-based `Outlier Detection <https://en.wikipedia.org/wiki/Anomaly_detection>`_
 and `Anomaly Detection <https://en.wikipedia.org/wiki/Anomaly_detection>`_. ``DeepOD`` supports tabular anomaly detection and time-series anomaly detection.
@@ -41,6 +47,9 @@ More baseline algorithms will be included later.
 
 
 If you are interested in our project, we are pleased to have your stars and forks :thumbsup: :beers: .
+
+
+
 
 
 
@@ -68,15 +77,6 @@ You can also use the BibTex entry below for citation.
    }
 
 
-Star History
-~~~~~~~~~~~~~~~~~
-.. image:: https://api.star-history.com/svg?repos=xuhongzuo/DeepOD&type=Date
-   :target: https://star-history.com/#xuhongzuo/DeepOD&Date
-   :align: center
-
-
-
-
 
 
 ----
@@ -87,6 +87,23 @@ Star History
    :hidden:
    :caption: Getting Started
 
+   start.install
+   start.examples
+   start.model_save
 
-   install
+.. toctree::
+   :maxdepth: 2
+   :hidden:
+   :caption: Documentation
 
+   api_reference
+   api_cc
+
+.. toctree::
+   :maxdepth: 2
+   :hidden:
+   :caption: Additional Information
+
+   additional.contributing
+   additional.license
+   additional.star_history
