@@ -6,7 +6,7 @@ from deepod.core.networks.ts_network_dilated_conv import DilatedConvEncoder
 from deepod.core.networks.ts_network_tcn import TCNnet, TcnAE
 # from deepod.core.base_transformer_network_dev import TSTransformerEncoder
 from deepod.core.networks.network_utility import _instantiate_class, _handle_n_hidden
-
+import torch.nn.modules.activation
 
 sequential_net_name = ['TCN', 'GRU', 'LSTM', 'Transformer', 'ConvSeq', 'DilatedConv']
 
@@ -32,6 +32,26 @@ def get_network(network_name):
 
 
 class ConvNet(torch.nn.Module):
+    """Convolutional Network
+
+    Args:
+        n_features (int):
+            number of input data features
+        kernel_size (int):
+            kernel size (Default=1)
+        n_hidden (int):
+            number of hidden units in hidden layers (Default=8)
+        n_layers (int):
+            number of layers (Default=5)
+        activation (str):
+            name of activation layer,
+            activation should be implemented in torch.nn.module.activation
+            (Default='ReLU')
+        bias (bool):
+            use bias or not
+            (Default=False)
+
+    """
     def __init__(self, n_features, kernel_size=1, n_hidden=8, n_layers=5,
                  activation='ReLU', bias=False):
         super(ConvNet, self).__init__()
@@ -49,7 +69,7 @@ class ConvNet(torch.nn.Module):
                 self.layers += [
                     # torch.nn.LeakyReLU(inplace=True)
                     _instantiate_class(module_name="torch.nn.modules.activation",
-                                      class_name=activation)
+                                       class_name=activation)
                 ]
             in_channels = n_hidden
 
@@ -62,6 +82,7 @@ class ConvNet(torch.nn.Module):
 
 
 class MlpAE(torch.nn.Module):
+    """MLP-based AutoEncoder"""
     def __init__(self, n_features, n_hidden='500,100', n_emb=20, activation='ReLU',
                  bias=False, batch_norm=False,
                  skip_connection=None, dropout=None
@@ -105,6 +126,7 @@ class MlpAE(torch.nn.Module):
 
 
 class MLPnet(torch.nn.Module):
+    """MLP-based Representation Network"""
     def __init__(self, n_features, n_hidden='500,100', n_output=20, mid_channels=None,
                  activation='ReLU', bias=False, batch_norm=False,
                  skip_connection=None, dropout=None):
@@ -140,7 +162,6 @@ class MLPnet(torch.nn.Module):
             ]
         self.network = torch.nn.Sequential(*self.layers)
 
-
     def forward(self, x):
         x = self.network(x)
         return x
@@ -158,6 +179,7 @@ class MLPnet(torch.nn.Module):
 
 
 class LinearBlock(torch.nn.Module):
+    """Linear Block"""
     def __init__(self, in_channels, out_channels, mid_channels=None,
                  activation='Tanh', bias=False, batch_norm=False,
                  skip_connection=None, dropout=None):
@@ -214,6 +236,7 @@ class LinearBlock(torch.nn.Module):
 
 
 class GRUNet(torch.nn.Module):
+    """GRU Network"""
     def __init__(self, n_features, n_hidden='20', n_output=20,
                  bias=False, dropout=None, activation='ReLU'):
         super(GRUNet, self).__init__()
@@ -235,8 +258,8 @@ class GRUNet(torch.nn.Module):
         return out
 
 
-
 class LSTMNet(torch.nn.Module):
+    """LSTM Network"""
     def __init__(self, n_features, n_hidden='20', n_output=20,
                  bias=False, dropout=None, activation='ReLU'):
         super(LSTMNet, self).__init__()
@@ -309,6 +332,7 @@ class ConvSeqEncoder(torch.nn.Module):
 
 
 class ConvResBlock(torch.nn.Module):
+    """Convolutional Residual Block"""
     def __init__(self, in_dim, out_dim, conv_param=None, down_sample=None,
                  batch_norm=False, bias=False, activation='ReLU'):
         super(ConvResBlock, self).__init__()

@@ -20,7 +20,11 @@ def my_kl_loss(p, q):
 
 
 class DCdetector(BaseDeepAD):
-    def __init__(self, seq_len=100, stride=1, lr=0.0001, epochs=3, batch_size=256,
+    """
+    DCdetector: Dual Attention Contrastive Representation Learning
+    for Time Series Anomaly Detection (KDD'23)
+    """
+    def __init__(self, seq_len=100, stride=1, lr=0.0001, epochs=5, batch_size=128,
                  epoch_steps=20, prt_steps=1, device='cuda',
                  n_heads=1, d_model=256, e_layers=3, patch_size=None,
                  verbose=2, random_state=42, threshold_ = 1):
@@ -244,6 +248,28 @@ class DCdetector(BaseDeepAD):
             return loss_final_pad, preds_final_pad
         else:
             return preds_final_pad
+
+
+    def predict(self, X, return_confidence=False):
+
+        ##   self.threshold
+
+
+        self.threshold_ = None
+
+
+        # ------------------------------ #
+
+        pred_score = self.decision_function(X)
+
+        prediction = (pred_score > self.threshold_).astype('int').ravel()
+
+        if return_confidence:
+            confidence = self._predict_confidence(pred_score)
+            return prediction, confidence
+
+        return prediction
+
 
 
     def training_forward(self, batch_x, net, criterion):

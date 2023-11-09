@@ -23,14 +23,17 @@ parser.add_argument("--runs", type=int, default=5,
                          "obtain the average performance")
 parser.add_argument("--output_dir", type=str, default='@records/',
                     help="the output file path")
-parser.add_argument("--dataset", type=str, default='ASD',
+parser.add_argument("--dataset", type=str,
+                    default='ASD',
+                    # default='SMD,MSL,SMAP,SWaT_cut,EP,DASADS',
                     help='dataset name or a list of names split by comma')
 parser.add_argument("--entities", type=str,
+                    # default='omi-1',
                     default='FULL',
                     help='FULL represents all the csv file in the folder, '
                          'or a list of entity names split by comma')
 parser.add_argument("--entity_combined", type=int, default=1)
-parser.add_argument("--model", type=str, default='DCdetector', help="")
+parser.add_argument("--model", type=str, default='NCAD', help="")
 parser.add_argument("--auto_hyper", default=False, action='store_true', help="")
 
 parser.add_argument('--silent_header', action='store_true')

@@ -9,6 +9,9 @@ from deepod.core.base_model import BaseDeepAD
 
 
 class USAD(BaseDeepAD):
+    """
+
+    """
     def __init__(self, seq_len=100, stride=1, hidden_dims=100, rep_dim=128,
                  epochs=100, batch_size=128, lr=1e-3,
                  es=1, train_val_pc=0.2,

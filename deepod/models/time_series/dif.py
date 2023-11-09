@@ -17,6 +17,10 @@ import numpy as np
 
 
 class DeepIsolationForestTS(BaseDeepAD):
+    """
+    Deep isolation forest for anomaly detection (TKDE'23)
+
+    """
     def __init__(self,
                  epochs=100, batch_size=1000, lr=1e-3,
                  seq_len=100, stride=1,

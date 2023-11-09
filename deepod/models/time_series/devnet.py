@@ -16,6 +16,9 @@ import numpy as np
 
 class DevNetTS(BaseDeepAD):
     """
+    Deviation Networks for Weakly-supervised Anomaly Detection (KDD'19)
+    :cite:`pang2019deep`
+
     Parameters
     ----------
     epochs: int, optional (default=100)

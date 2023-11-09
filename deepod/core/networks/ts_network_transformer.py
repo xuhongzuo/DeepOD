@@ -271,16 +271,13 @@ class TransformerBatchNormEncoderLayer(torch.nn.modules.Module):
         return src
 
 
-
-
 class TSTransformerEncoder(torch.nn.Module):
     """
-    Simplest classifier/regressor. Can be either regressor or classifier because the output does not include
-    softmax. Concatenates final layer embeddings and uses 0s to ignore padding embeddings in final output layer.
+    Transformer for encoding/representing input time series sequences
     """
 
     def __init__(self, n_features, n_output=20, seq_len=100, d_model=128,
-                 n_heads=8, n_hidden='128', dropout=0.1,
+                 n_heads=8, n_hidden='512', dropout=0.1,
                  token_encoding='convolutional', pos_encoding='fixed', activation='GELU', bias=False,
                  attn='self_attn', norm='LayerNorm', freeze=False):
         super(TSTransformerEncoder, self).__init__()
@@ -290,11 +287,11 @@ class TSTransformerEncoder(torch.nn.Module):
         n_hidden, n_layers = _handle_n_hidden(n_hidden)
 
         # parameter check
-        assert  token_encoding in ['linear', 'convolutional'], \
+        assert token_encoding in ['linear', 'convolutional'], \
             f"use 'linear' or 'convolutional', {token_encoding} is not supported in token_encoding"
-        assert  pos_encoding in ['learnable', 'fixed'],\
+        assert pos_encoding in ['learnable', 'fixed'],\
             f"use 'learnable' or 'fixed', {pos_encoding} is not supported in pos_encoding"
-        assert  norm in ['LayerNorm', 'BatchNorm'],\
+        assert norm in ['LayerNorm', 'BatchNorm'],\
             f"use 'learnable' or 'fixed', {norm} is not supported in norm"
 
         if token_encoding == 'linear':

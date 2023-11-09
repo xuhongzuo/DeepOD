@@ -11,14 +11,12 @@ import torch
 
 
 class DeepSVDDTS(BaseDeepAD):
-    """ Deep One-class Classification (Deep SVDD) for anomaly detection
-    See :cite:`ruff2018deepsvdd` for details
+    """
+    Deep One-class Classification for Anomaly Detection (ICML'18)
+     :cite:`ruff2018deepsvdd`
 
     Parameters
     ----------
-    data_type: str, optional (default='tabular')
-        Data type, choice=['tabular', 'ts']
-
     epochs: int, optional (default=100)
         Number of training epochs
 

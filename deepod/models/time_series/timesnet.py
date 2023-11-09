@@ -10,6 +10,10 @@ from deepod.core.base_model import BaseDeepAD
 
 
 class TimesNet(BaseDeepAD):
+    """
+    TIMESNET: Temporal 2D-Variation Modeling for General Time Series Analysis (ICLR'23)
+
+    """
     def __init__(self, seq_len=100, stride=1, lr=0.0001, epochs=10, batch_size=32,
                  epoch_steps=20, prt_steps=1, device='cuda',
                  pred_len=0, e_layers=2, d_model=64, d_ff=64, dropout=0.1, top_k=5, num_kernels=6,

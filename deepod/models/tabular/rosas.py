@@ -7,6 +7,10 @@ from deepod.core.networks.base_networks import MLPnet
 
 
 class RoSAS(BaseDeepAD):
+    """
+    RoSAS: Deep semi-supervised anomaly detection with contamination-resilient
+    continuous supervision (IP&M'23)
+    """
     def __init__(self, epochs=100, batch_size=128, lr=0.005,
                  rep_dim=32, hidden_dims='32', act='LeakyReLU', bias=False,
                  margin=5., alpha=0.5, T=2, k=2,

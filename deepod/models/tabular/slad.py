@@ -12,6 +12,10 @@ import torch
 
 
 class SLAD(BaseDeepAD):
+    """
+    Fascinating Supervisory Signals and Where to Find Them:
+    Deep Anomaly Detection with Scale Learning (ICML'23)
+    """
     def __init__(self, epochs=100, batch_size=128, lr=1e-3,
                  hidden_dims=100, act='LeakyReLU',
                  distribution_size=10, # the member size in a group, c in the paper

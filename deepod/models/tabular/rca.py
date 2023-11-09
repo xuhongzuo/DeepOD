@@ -15,58 +15,61 @@ import numpy as np
 
 class RCA(BaseDeepAD):
     """
-    epochs: int, optional (default=100)
-        Number of training epochs
+    A Deep Collaborative Autoencoder Approach for Anomaly Detection (IJCAI'21)
 
-    batch_size: int, optional (default=64)
-        Number of samples in a mini-batch
+    Args:
+        epochs: int, optional (default=100)
+            Number of training epochs
 
-    lr: float, optional (default=1e-3)
-        Learning rate
+        batch_size: int, optional (default=64)
+            Number of samples in a mini-batch
 
-    rep_dim: int, optional (default=128)
-        Dimensionality of the representation space
+        lr: float, optional (default=1e-3)
+            Learning rate
 
-    hidden_dims: list, str or int, optional (default='100,50')
-        Number of neural units in hidden layers
-            - If list, each item is a layer
-            - If str, neural units of hidden layers are split by comma
-            - If int, number of neural units of single hidden layer
+        rep_dim: int, optional (default=128)
+            Dimensionality of the representation space
 
-    act: str, optional (default='ReLU')
-        activation layer name
-        choice = ['ReLU', 'LeakyReLU', 'Sigmoid', 'Tanh']
+        hidden_dims: list, str or int, optional (default='100,50')
+            Number of neural units in hidden layers
+                - If list, each item is a layer
+                - If str, neural units of hidden layers are split by comma
+                - If int, number of neural units of single hidden layer
 
-    bias: bool, optional (default=False)
-        Additive bias in linear layer
+        act: str, optional (default='ReLU')
+            activation layer name
+            choice = ['ReLU', 'LeakyReLU', 'Sigmoid', 'Tanh']
 
-    alpha: float, optional (default=0.5)
-        decay rate in determining beta
+        bias: bool, optional (default=False)
+            Additive bias in linear layer
 
-    anom_ratio: float, optional (default=0.5)
-        decay rate in determining beta
+        alpha: float, optional (default=0.5)
+            decay rate in determining beta
 
-    dropout: float or None, optional (default=0.5)
-        dropout probability, the default setting is 0.5
+        anom_ratio: float, optional (default=0.5)
+            decay rate in determining beta
 
-    inference_ensemble: int, optional(default=10)
-        the ensemble size during the inference stage
+        dropout: float or None, optional (default=0.5)
+            dropout probability, the default setting is 0.5
 
-    epoch_steps: int, optional (default=-1)
-        Maximum steps in an epoch
-            - If -1, all the batches will be processed
+        inference_ensemble: int, optional(default=10)
+            the ensemble size during the inference stage
 
-    prt_steps: int, optional (default=10)
-        Number of epoch intervals per printing
+        epoch_steps: int, optional (default=-1)
+            Maximum steps in an epoch
+                - If -1, all the batches will be processed
 
-    device: str, optional (default='cuda')
-        torch device,
+        prt_steps: int, optional (default=10)
+            Number of epoch intervals per printing
 
-    verbose: int, optional (default=1)
-        Verbosity mode
+        device: str, optional (default='cuda')
+            torch device,
 
-    random_state： int, optional (default=42)
-        the seed used by the random
+        verbose: int, optional (default=1)
+            Verbosity mode
+
+        random_state： int, optional (default=42)
+            the seed used by the random
     """
     def __init__(self, epochs=100, batch_size=64, lr=1e-3,
                  rep_dim=128, hidden_dims='100,50', act='LeakyReLU', bias=False,

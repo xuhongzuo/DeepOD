@@ -15,54 +15,47 @@ import numpy as np
 
 class DevNet(BaseDeepAD):
     """
-    Parameters
-    ----------
-    epochs: int, optional (default=100)
-        Number of training epochs
+    Deviation Networks for Weakly-supervised Anomaly Detection (KDD'19)
+    :cite:`pang2019deep`
 
-    batch_size: int, optional (default=64)
-        Number of samples in a mini-batch
-
-    lr: float, optional (default=1e-3)
-        Learning rate
-
-    rep_dim: int, optional (default=128)
-        it is for consistency, unused in this model
-
-    hidden_dims: list, str or int, optional (default='100,50')
-        Number of neural units in hidden layers
-            - If list, each item is a layer
-            - If str, neural units of hidden layers are split by comma
-            - If int, number of neural units of single hidden layer
-
-    act: str, optional (default='ReLU')
-        activation layer name
-        choice = ['ReLU', 'LeakyReLU', 'Sigmoid', 'Tanh']
-
-    bias: bool, optional (default=False)
-        Additive bias in linear layer
-
-    margin: float, optional (default=5.)
-        margin value used in the deviation loss function
-
-    l: int, optional (default=5000.)
-        the size of samples of the Gaussian distribution used in the deviation loss function
-
-    epoch_steps: int, optional (default=-1)
-        Maximum steps in an epoch
-            - If -1, all the batches will be processed
-
-    prt_steps: int, optional (default=10)
-        Number of epoch intervals per printing
-
-    device: str, optional (default='cuda')
-        torch device,
-
-    verbose: int, optional (default=1)
-        Verbosity mode
-
-    random_state： int, optional (default=42)
-        the seed used by the random
+    Args:
+        epochs (int, optional):
+            number of training epochs (default: 100).
+        batch_size (int, optional):
+            number of samples in a mini-batch (default: 64)
+        lr (float, optional):
+            learning rate (default: 1e-3)
+        rep_dim (int, optional):
+            it is for consistency, unused in this model.
+        hidden_dims (list, str or int, optional):
+            number of neural units in hidden layers,
+            If list, each item is a layer;
+            If str, neural units of hidden layers are split by comma;
+            If int, number of neural units of single hidden layer
+            (default: '100,50')
+        act (str, optional):
+            activation layer name,
+            choice = ['ReLU', 'LeakyReLU', 'Sigmoid', 'Tanh']
+            (default='ReLU')
+        bias (bool, optional):
+            Additive bias in linear layer (default=False)
+        margin (float, optional):
+            margin value used in the deviation loss function (default=5.)
+        l (int, optional):
+            the size of samples of the Gaussian distribution
+            used in the deviation loss function (default=5000.)
+        epoch_steps (int, optional):
+            Maximum steps in an epoch.
+            If -1, all the batches will be processed
+            (default=-1)
+        prt_steps (int, optional):
+            Number of epoch intervals per printing (default=10)
+        device (str, optional):
+            torch device (default='cuda').
+        verbose (int, optional):
+            Verbosity mode (default=1)
+        random_state (int, optional):
+            the seed used by the random  (default=42)
     """
     def __init__(self, epochs=100, batch_size=64, lr=1e-3,
                  network='MLP',
@@ -87,6 +80,18 @@ class DevNet(BaseDeepAD):
         return
 
     def training_prepare(self, X, y):
+        """
+
+        Args:
+            X (np.array): input data array
+            y (np.array): input data label
+
+        Returns:
+            train_loader (torch.DataLoader): data loader of training data
+            net (torch.nn.Module): neural network
+            criterion (torch.nn.Module): loss function
+
+        """
         # loader: balanced loader, a mini-batch contains a half of normal data and a half of anomalies
         n_anom = np.where(y == 1)[0].shape[0]
         n_norm = self.n_samples - n_anom

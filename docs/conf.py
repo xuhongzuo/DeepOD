@@ -24,7 +24,7 @@ version_path = os.path.join(deepod_dir, 'deepod', 'version.py')
 exec(open(version_path).read())
 # -- Project information -----------------------------------------------------
 
-project = 'deepod'
+project = 'DeepOD'
 copyright = '2023, Hongzuo Xu'
 author = 'Hongzuo Xu'
 
@@ -45,9 +45,11 @@ extensions = [
     'sphinx.ext.coverage',
     'sphinx.ext.imgmath',
     'sphinx.ext.viewcode',
+    'sphinx.ext.autosummary',
     'sphinxcontrib.bibtex',
     # 'sphinx.ext.napoleon',
-    # 'sphinx_rtd_theme',
+    'sphinx_rtd_theme',
+    'sphinx.ext.napoleon'
 ]
 
 bibtex_bibfiles = ['zreferences.bib']
@@ -68,7 +70,7 @@ master_doc = 'index'
 #
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
-language = None
+language = 'en'
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -84,18 +86,42 @@ pygments_style = 'sphinx'
 # a list of builtin themes.
 # https://www.sphinx-doc.org/en/master/usage/theming.html#themes#Themes
 # html_theme = 'default'
-html_theme = "alabaster"
+# html_theme = "alabaster"
+# html_theme = 'sphinxawesome_theme'
+html_theme = 'furo'
+# html_theme = 'sphinx_rtd_theme'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
 #
-# html_theme_options = {}
+# html_theme_options = {
+#     'canonical_url': '',
+#     'logo_only': False,
+#     'display_version': True,
+#     'prev_next_buttons_location': 'bottom',
+#     'style_external_links': False,
+#     #'vcs_pageview_mode': '',
+#     #'style_nav_header_background': 'white',
+#     # Toc options
+#     'collapse_navigation': True,
+#     'sticky_navigation': True,
+#     'navigation_depth': 7,
+#     'includehidden': True,
+#     'titles_only': False,
+# }
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
+
+autosummary_generate = True
+autodoc_default_options = {'members': True,
+                           'inherited-members': True,
+                           }
+autodoc_typehints = "none"
+
 
 # Custom sidebar templates, must be a dictionary that maps document names
 # to template names.

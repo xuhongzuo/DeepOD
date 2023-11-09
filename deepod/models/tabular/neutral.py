@@ -14,6 +14,10 @@ import numpy as np
 
 
 class NeuTraL(BaseDeepAD):
+    """
+    Neural Transformation Learning-based Anomaly Detection (ICML'21)
+
+    """
     def __init__(self, epochs=100, batch_size=64, lr=1e-3,
                  n_trans=11, trans_type='residual', temp=0.1,
                  rep_dim=128, hidden_dims='100,50', trans_hidden_dims=50,

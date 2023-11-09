@@ -15,6 +15,9 @@ from ray.air import session, Checkpoint
 
 
 class TcnED(BaseDeepAD):
+    """
+    An Evaluation of Anomaly Detection and Diagnosis in Multivariate Time Series (TNNLS'21)
+    """
     def __init__(self, seq_len=100, stride=1, epochs=10, batch_size=32, lr=1e-4,
                  rep_dim=32, hidden_dims=32, kernel_size=3, act='ReLU', bias=True, dropout=0.2,
                  epoch_steps=-1, prt_steps=1, device='cuda',

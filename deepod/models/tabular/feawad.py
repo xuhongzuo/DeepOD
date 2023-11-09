@@ -15,6 +15,9 @@ import numpy as np
 
 class FeaWAD(BaseDeepAD):
     """
+    Feature Encoding with AutoEncoders for Weakly-supervised Anomaly Detection
+    (TNNLS'21)
+
     Parameters
     ----------
     epochs: int, optional (default=100)
