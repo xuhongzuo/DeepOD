@@ -2,8 +2,7 @@ from statsmodels.tsa.stattools import acf
 from scipy.signal import argrelextrema
 import numpy as np
 
-import matplotlib.patches as mpatches 
-import matplotlib.pyplot as plt
+
 # determine sliding window (period) based on ACF
 def find_length(data):
     if len(data.shape)>1:
