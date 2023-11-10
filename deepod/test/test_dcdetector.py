@@ -33,8 +33,8 @@ class TestDCdetector(unittest.TestCase):
 
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
         self.clf = DCdetector(seq_len=90, stride=1, epochs=2,
-                                      batch_size=32, lr=1e-4, patch_size=[5],
-                                      device=device, random_state=42)
+                              batch_size=32, lr=1e-4, patch_size=[5],
+                              device=device, random_state=42)
         self.clf.fit(self.Xts_train)
 
     def test_parameters(self):

@@ -80,7 +80,6 @@ class DCdetector(BaseDeepAD):
 
         return loss_final_pad
 
-
     def training(self, dataloader):
         loss_list = []
 
@@ -161,11 +160,8 @@ class DCdetector(BaseDeepAD):
         test_energy = np.array(attens_energy)  # anomaly scores
         
         return test_energy, preds  # (n,d)
-    
-
 
     def predict(self, X, return_confidence=True):
-
         seqs = get_sub_seqs(X, seq_len=self.seq_len, stride=1)
         dataloader = DataLoader(seqs, batch_size=self.batch_size,
                                 shuffle=False, drop_last=True)
@@ -237,7 +233,6 @@ class DCdetector(BaseDeepAD):
         test_energy = np.array(attens_energy)  # anomaly scores
 
         preds = (test_energy > thresh).astype(int)
-        
 
         loss_final = np.mean(test_energy, axis=1)  # (n,)
         loss_final_pad = np.hstack([0 * np.ones(X.shape[0] - loss_final.shape[0]), loss_final])        
@@ -245,32 +240,10 @@ class DCdetector(BaseDeepAD):
         preds_final_pad = np.hstack([0 * np.ones(X.shape[0] - preds_final.shape[0]), preds_final])
 
         if return_confidence:
-            return loss_final_pad, preds_final_pad
+            confidence = self._predict_confidence(loss_final_pad)
+            return preds_final_pad, confidence
         else:
             return preds_final_pad
-
-
-    def predict(self, X, return_confidence=False):
-
-        ##   self.threshold
-
-
-        self.threshold_ = None
-
-
-        # ------------------------------ #
-
-        pred_score = self.decision_function(X)
-
-        prediction = (pred_score > self.threshold_).astype('int').ravel()
-
-        if return_confidence:
-            confidence = self._predict_confidence(pred_score)
-            return prediction, confidence
-
-        return prediction
-
-
 
     def training_forward(self, batch_x, net, criterion):
         """define forward step in training"""

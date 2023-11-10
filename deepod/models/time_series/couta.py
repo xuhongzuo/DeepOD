@@ -627,7 +627,7 @@ class _SubseqData(Dataset):
 
 class _DSVDDUncLoss(torch.nn.Module):
     def __init__(self, c, reduction='mean'):
-        super(DSVDDUncLoss, self).__init__()
+        super(_DSVDDUncLoss, self).__init__()
         self.c = c
         self.reduction = reduction
 
