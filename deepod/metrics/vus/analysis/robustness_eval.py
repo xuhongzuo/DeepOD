@@ -1,12 +1,5 @@
-from random import shuffle
 import numpy as np
-import math
-import matplotlib.pyplot as plt
-from matplotlib import cm
-import pandas as pd
 from tqdm import tqdm as tqdm
-import time
-from sklearn.preprocessing import MinMaxScaler
 import random
 
 
@@ -331,13 +324,3 @@ def generate_curve(label,score,slidingWindow):
     
     return Y, Z, X, X_ap, W, Z_ap,avg_auc_3d, avg_ap_3d
 
-def box_plot(data, edge_color, fill_color):
-    bp = ax.boxplot(data, patch_artist=True)
-    
-    for element in ['boxes', 'whiskers', 'fliers', 'means', 'medians', 'caps']:
-        plt.setp(bp[element], color=edge_color)
-
-    for patch in bp['boxes']:
-        patch.set(facecolor=fill_color)       
-        
-    return bp
