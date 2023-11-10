@@ -9,11 +9,8 @@ module_path = os.path.abspath(os.path.join('../..'))
 if module_path not in sys.path:
     sys.path.append(module_path)
 
-from deepod.metrics.vus.utils.slidingWindows import find_length
 from deepod.metrics.vus.utils.metrics import metricor
 
-from deepod.metrics.vus.models.distance import Fourier
-from deepod.metrics.vus.models.feature import Window
 
 
 def generate_new_label(label,lag):
