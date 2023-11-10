@@ -7,3 +7,4 @@ tqdm>=4.62.3
 ray==2.6.1
 pyarrow>=11.0.0
 einops
+statsmodel

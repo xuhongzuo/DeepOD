@@ -2,10 +2,8 @@
 import numpy as np
 import math
 import pandas as pd
-from tqdm import tqdm as tqdm
 import time
 from sklearn.preprocessing import MinMaxScaler
-import random
 
 
 import os

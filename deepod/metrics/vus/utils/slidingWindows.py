@@ -11,8 +11,7 @@ def find_length(data):
     
     base = 3
     auto_corr = acf(data, nlags=400, fft=True)[base:]
-    
-    
+
     local_max = argrelextrema(auto_corr, np.greater)[0]
     try:
         max_local_max = np.argmax([auto_corr[lcm] for lcm in local_max])
