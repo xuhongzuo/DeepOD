@@ -5,20 +5,20 @@ def point_adjustment(y_true, y_score):
     """
     adjust the score for segment detection. i.e., for each ground-truth anomaly segment,
     use the maximum score as the score of all points in that segment. This corresponds to point-adjust f1-score.
-    ** This function is copied/modified from the source code in [Zhihan Li et al. KDD21]
+    *This function is copied/modified from the source code in [Zhihan Li et al. KDD21]* 
 
-    Parameters
-    ----------
-    y_true: np.array, required
-        data label, 0 indicates normal timestamp, and 1 is anomaly
+    Args:
+    
+        y_true (np.array, required): 
+            Data label, 0 indicates normal timestamp, and 1 is anomaly.
+            
+        y_score (np.array, required): 
+            Predicted anomaly scores, higher score indicates higher likelihoods to be anomaly.
 
-    y_score: np.array, required
-        predicted anomaly scores, higher score indicates higher likelihoods to be anomaly
-
-    Returns
-    -------
-    score: np.array
-        adjusted anomaly scores
+    Returns:
+    
+        np.array: 
+            Adjusted anomaly scores.
 
     """
     score = y_score.copy()
