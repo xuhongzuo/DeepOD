@@ -73,7 +73,7 @@ class BaseDeepAD(metaclass=ABCMeta):
     verbose: int, optional (default=1)
         Verbosity mode
 
-    random_state： int, optional (default=42)
+    random_state: int, optional (default=42)
         the seed used by the random
 
     Attributes
