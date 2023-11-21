@@ -19,71 +19,84 @@ class DevNetTS(BaseDeepAD):
     Deviation Networks for Weakly-supervised Anomaly Detection (KDD'19)
     :cite:`pang2019deep`
 
-    Parameters
-    ----------
-    epochs: int, optional (default=100)
-        Number of training epochs
+    Deviation Networks (DevNet) designed for weakly-supervised anomaly detection.
+    This implementation is based on the architecture presented in the KDD'19 paper:
+    "Deviation Networks for Weakly-supervised Anomaly Detection" by Pang et al.
 
-    batch_size: int, optional (default=64)
-        Number of samples in a mini-batch
-
-    lr: float, optional (default=1e-3)
-        Learning rate
-
-    rep_dim: int, optional (default=128)
-        it is for consistency, unused in this model
-
-    hidden_dims: list, str or int, optional (default='100,50')
-        Number of neural units in hidden layers
+    Args:
+            
+        hidden_dims (Union[list, str, int], optional): 
+            The dimensions for the hidden layers. Can be a list of integers, a string of comma-separated integers, or a single integer.
             - If list, each item is a layer
             - If str, neural units of hidden layers are split by comma
             - If int, number of neural units of single hidden layer
-
-    act: str, optional (default='ReLU')
-        activation layer name
-        choice = ['ReLU', 'LeakyReLU', 'Sigmoid', 'Tanh']
-
-    bias: bool, optional (default=False)
-        Additive bias in linear layer
-
-    n_heads: int, optional(default=8):
-        number of head in multi-head attention
-        used when network='transformer', deprecated in other networks
-
-    d_model: int, optional (default=64)
-        number of dimensions in Transformer
-        used when network='transformer', deprecated in other networks
-
-    pos_encoding: str, optional (default='fixed')
-        manner of positional encoding, deprecated in other networks
-        choice = ['fixed', 'learnable']
-
-    norm: str, optional (default='BatchNorm')
-        manner of norm in Transformer, deprecated in other networks
-        choice = ['LayerNorm', 'BatchNorm']
-
-    margin: float, optional (default=5.)
-        margin value used in the deviation loss function
-
-    l: int, optional (default=5000.)
-        the size of samples of the Gaussian distribution used in the deviation loss function
-
-    epoch_steps: int, optional (default=-1)
-        Maximum steps in an epoch
-            - If -1, all the batches will be processed
-
-    prt_steps: int, optional (default=10)
-        Number of epoch intervals per printing
-
-    device: str, optional (default='cuda')
-        torch device,
-
-    verbose: int, optional (default=1)
-        Verbosity mode
-
-    random_state： int, optional (default=42)
-        the seed used by the random
+            - Defaults to '100,50'.
+            
+        act (str, optional): 
+            Activation function to use. Choices include 'ReLU', 'LeakyReLU', 'Sigmoid', 'Tanh'. Default is 'ReLU'.
+            
+        bias (bool, optional): 
+            Whether to include a bias term in the linear layers. Default is False.
+            
+        n_heads (int, optional): 
+            Number of heads in multi-head attention. Only used when network is 'transformer'. Default is 8.
+            
+        pos_encoding (str, optional): 
+            The type of positional encoding to use. Only relevant when network is 'transformer'. Choices are 'fixed' or 'learnable'. Default is 'fixed'.
+            
+        norm (str, optional): 
+            Normalization method in the Transformer. Only relevant when network is 'transformer'. Choices are 'LayerNorm' or 'BatchNorm'. Default is 'LayerNorm'.
+            
+        epochs (int, optional):
+            Number of training epochs. Default is 100.
+            
+        batch_size (int, optional): 
+            Batch size for training. Default is 64.
+            
+        lr (float, optional): 
+            Learning rate for the optimizer. Default is 1e-3.
+            
+        network (str, optional): 
+            Type of network architecture to use. Default is 'Transformer'.
+            
+        seq_len (int, optional): 
+            Length of input sequences for models that require it. Default is 100.
+            
+        stride (int, optional): 
+            Stride of the convolutional layers. Default is 1.
+            
+        rep_dim (int, optional): 
+            The representation dimension. Unused in this model but kept for consistency. Default is 128.
+            
+        d_model (int, optional): 
+            The number of expected features in the transformer model. Only used when network is 'transformer'. Default is 512.
+            
+        attn (str, optional): 
+            Type of attention to use. Only used when network is 'transformer'. Default is 'self_attn'.
+            
+        margin (float, optional): 
+            Margin for the deviation loss function. Default is 5.
+            
+        l (int, optional): 
+            The size of the sample for the Gaussian distribution in the deviation loss function. Default is 5000.
+            
+        epoch_steps (int, optional): 
+            Maximum number of steps per epoch. If -1, all batches will be processed. Default is -1.
+            
+        prt_steps (int, optional): 
+            Number of epoch intervals for printing during training. Default is 10.
+        
+        device (str, optional): 
+            The device to use for training ('cuda' or 'cpu'). Default is 'cuda'.
+        
+        verbose (int, optional): 
+            Verbosity mode. 0 = silent, 1 = progress bar, 2 = one line per epoch. Default is 2.
+        
+        random_state (int, optional): 
+            Seed for the random number generator for reproducibility. Default is 42.
+            
     """
+    
     def __init__(self, epochs=100, batch_size=64, lr=1e-3,
                  network='Transformer', seq_len=100, stride=1,
                  rep_dim=128, hidden_dims='100,50', act='ReLU', bias=False,
@@ -91,6 +104,9 @@ class DevNetTS(BaseDeepAD):
                  margin=5., l=5000,
                  epoch_steps=-1, prt_steps=10, device='cuda',
                  verbose=2, random_state=42):
+        """
+        Initialize the DevNetTS.
+        """
         super(DevNetTS, self).__init__(
             data_type='ts', model_name='DevNet', epochs=epochs, batch_size=batch_size, lr=lr,
             network=network, seq_len=seq_len, stride=stride,
@@ -115,6 +131,31 @@ class DevNetTS(BaseDeepAD):
         return
 
     def training_prepare(self, X, y):
+        """
+        Prepares the data and model for training by creating a balanced data loader, 
+        initializing the network, and setting up the loss criterion.
+
+        Args:
+        
+            X (np.ndarray): 
+                The input features for training.
+            
+            y (np.ndarray): 
+                The target labels for training, where 1 indicates an anomaly.
+
+        Returns:
+        
+            train_loader (DataLoader): 
+                A DataLoader with balanced mini-batches for training.
+                
+            net (nn.Module): 
+                The initialized neural network model.
+                
+            criterion (Loss): 
+                The loss function used during training.
+                
+        """
+        
         # loader: balanced loader, a mini-batch contains a half of normal data and a half of anomalies
         n_anom = np.where(y == 1)[0].shape[0]
         n_norm = self.n_samples - n_anom
@@ -153,12 +194,47 @@ class DevNetTS(BaseDeepAD):
         return train_loader, net, criterion
 
     def inference_prepare(self, X):
+        """
+        Prepares the data for inference.
+
+        Args:
+        
+            X (Tensor): 
+                The input features for inference.
+
+        Returns:
+        
+            test_loader (DataLoader): 
+                A DataLoader for inference.
+                
+        """
+        
         test_loader = DataLoader(X, batch_size=self.batch_size,
                                  drop_last=False, shuffle=False)
         self.criterion.reduction = 'none'
         return test_loader
 
     def training_forward(self, batch_x, net, criterion):
+        """
+        Performs a forward pass during training.
+
+        Args:
+        
+            batch_x (tuple): 
+                A batch of input features and target labels.
+                
+            net (nn.Module): 
+                The neural network model.
+            
+            criterion (Loss): 
+                The loss function used during training.
+
+        Returns:
+        
+            loss (Tensor): 
+                The computed loss for the batch.
+        """
+        
         batch_x, batch_y = batch_x
         batch_x = batch_x.float().to(self.device)
         batch_y = batch_y.to(self.device)
@@ -167,6 +243,30 @@ class DevNetTS(BaseDeepAD):
         return loss
 
     def inference_forward(self, batch_x, net, criterion):
+        """
+        Performs a forward pass during inference.
+
+        Args:
+        
+            batch_x (Tensor): 
+                A batch of input features.
+            
+            net (nn.Module): 
+                The neural network model.
+            
+            criterion (Loss): 
+                The loss function used during training. Not used.
+
+        Returns:
+        
+            batch_z (Tensor): 
+                The batch of input features (unmodified).
+            
+            s (Tensor): 
+                The computed scores for the batch.
+            
+        """
+        
         batch_x = batch_x.float().to(self.device)
         s = net(batch_x)
         s = s.view(-1)

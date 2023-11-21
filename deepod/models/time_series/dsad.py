@@ -18,71 +18,71 @@ from collections import Counter
 class DeepSADTS(BaseDeepAD):
     """ Deep Semi-supervised Anomaly Detection (ICLR'20)
     :cite:`ruff2020dsad`
+    
+    This model extends the semi-supervised anomaly detection framework to time-series datasets, aiming
+    to detect anomalies by learning a representation of the data in a lower-dimensional hypersphere.
 
-    Parameters
-    ----------
-    data_type: str, optional (default='tabular')
-        Data type
+    Args:
 
-    epochs: int, optional (default=100)
-        Number of training epochs
-
-    batch_size: int, optional (default=64)
-        Number of samples in a mini-batch
-
-    lr: float, optional (default=1e-3)
-        Learning rate
-
-    network: str, optional (default='MLP')
-        network structure for different data structures
-
-    rep_dim: int, optional (default=128)
-        Dimensionality of the representation space
-
-    hidden_dims: list, str or int, optional (default='100,50')
-        Number of neural units in hidden layers
-            - If list, each item is a layer
-            - If str, neural units of hidden layers are split by comma
-            - If int, number of neural units of single hidden layer
-
-    act: str, optional (default='ReLU')
-        activation layer name
-        choice = ['ReLU', 'LeakyReLU', 'Sigmoid', 'Tanh']
-
-    bias: bool, optional (default=False)
-        Additive bias in linear layer
-
-    n_heads: int, optional(default=8):
-        number of head in multi-head attention
-        used when network='transformer', deprecated in other networks
-
-    d_model: int, optional (default=64)
-        number of dimensions in Transformer
-        used when network='transformer', deprecated in other networks
-
-    pos_encoding: str, optional (default='fixed')
-        manner of positional encoding, deprecated in other networks
-        choice = ['fixed', 'learnable']
-
-    norm: str, optional (default='BatchNorm')
-        manner of norm in Transformer, deprecated in other networks
-        choice = ['LayerNorm', 'BatchNorm']
-
-    epoch_steps: int, optional (default=-1)
-        Maximum steps in an epoch
-            - If -1, all the batches will be processed
-
-    prt_steps: int, optional (default=10)
-        Number of epoch intervals per printing
-
-    device: str, optional (default='cuda')
-        torch device,
-
-    verbose: int, optional (default=1)
-        Verbosity mode
-
-    random_state： int, optional (default=42)
-        the seed used by the random
+        data_type (str, optional): 
+            The type of data, here it's defaulted to 'ts' (time-series).
+        
+        epochs (int, optional): 
+            The number of epochs for training, default is 100.
+        
+        batch_size (int, optional): 
+            The size of the mini-batch for training, default is 64.
+        
+        lr (float, optional): 
+            The learning rate for the optimizer, default is 1e-3.
+        
+        network (str, optional): 
+            The type of network architecture to use, default is 'TCN'.
+        
+        rep_dim (int, optional): 
+            The size of the representation dimension, default is 128.
+        
+        hidden_dims (Union[list, str, int], optional): 
+            The dimensions for hidden layers. It can be a list, a comma-separated string, or a single integer. Default is '100,50'.
+                - If list, each item is a layer
+                - If str, neural units of hidden layers are split by comma
+                - If int, number of neural units of single hidden layer
+        
+        act (str, optional): 
+            The activation function to use. Possible values are 'ReLU', 'LeakyReLU', 'Sigmoid', 'Tanh', default is 'ReLU'.
+        
+        bias (bool, optional): 
+            Whether to include a bias term in the layers, default is False.
+        
+        n_heads (int, optional): 
+            The number of heads in a multi-head attention mechanism, default is 8.
+        
+        d_model (int, optional): 
+            The number of dimensions in the transformer model, default is 512.
+        
+        attn (str, optional): 
+            The type of attention mechanism used, default is 'self_attn'.
+        
+        pos_encoding (str, optional): 
+            The type of positional encoding used in the transformer model, default is 'fixed'.
+        
+        norm (str, optional): 
+            The type of normalization used in the transformer model, default is 'LayerNorm'.
+        
+        epoch_steps (int, optional): 
+            The maximum number of steps per epoch, default is -1, indicating that all batches will be processed.
+        
+        prt_steps (int, optional): 
+            The number of epoch intervals for printing progress, default is 10.
+        
+        device (str, optional): 
+            The device to use for training and inference, default is 'cuda'.
+        
+        verbose (int, optional): 
+            The verbosity mode, default is 2.
+        
+        random_state (int, optional): 
+            The seed for the random number generator, default is 42.
 
     """
 
@@ -92,6 +92,10 @@ class DeepSADTS(BaseDeepAD):
                  n_heads=8, d_model=512, attn='self_attn', pos_encoding='fixed', norm='LayerNorm',
                  epoch_steps=-1, prt_steps=10, device='cuda',
                  verbose=2, random_state=42):
+        """
+        Initializes the DeepSADTS model with the provided parameters.
+        """
+        
         super(DeepSADTS, self).__init__(
             data_type='ts', model_name='DeepSAD', epochs=epochs, batch_size=batch_size, lr=lr,
             network=network, seq_len=seq_len, stride=stride,
@@ -116,6 +120,30 @@ class DeepSADTS(BaseDeepAD):
         return
 
     def training_prepare(self, X, y):
+        """
+        Prepares the model for training by setting up data loaders, initializing the network, and defining the loss criterion.
+
+        Args:
+        
+            X (np.ndarray): 
+                The input feature matrix for training.
+                
+            y (np.ndarray): 
+                The target labels where 1 indicates known anomalies.
+
+        Returns:
+        
+            train_loader (DataLoader): 
+                The data loader for training.
+            
+            net (nn.Module): 
+                The neural network for feature extraction.
+            
+            criterion (Loss): 
+                The loss function used for training.
+            
+        """
+        
         # By following the original paper,
         #   use -1 to denote known anomalies, and 1 to denote known inliers
         known_anom_id = np.where(y == 1)
@@ -166,12 +194,48 @@ class DeepSADTS(BaseDeepAD):
         return train_loader, net, criterion
 
     def inference_prepare(self, X):
+        """
+        Prepares the model for inference by setting up data loaders.
+
+        Args:
+        
+            X (np.ndarray): 
+                The input feature matrix for inference.
+
+        Returns:
+        
+            test_loader (DataLoader): 
+                The data loader for inference.
+            
+        """
+        
         test_loader = DataLoader(X, batch_size=self.batch_size,
                                  drop_last=False, shuffle=False)
         self.criterion.reduction = 'none'
         return test_loader
 
     def training_forward(self, batch_x, net, criterion):
+        """
+        Performs a forward training pass.
+
+        Args:
+        
+            batch_x (tuple): 
+                A batch of input data and labels.
+            
+            net (nn.Module): 
+                The neural network model.
+            
+            criterion (Loss): 
+                The loss function.
+
+        Returns:
+        
+            loss (torch.Tensor): 
+                The computed loss for the batch.
+            
+        """
+        
         batch_x, batch_y = batch_x
 
         # from collections import Counter
@@ -186,13 +250,57 @@ class DeepSADTS(BaseDeepAD):
         return loss
 
     def inference_forward(self, batch_x, net, criterion):
+        """
+        Performs a forward inference pass.
+
+        Args:
+            
+            batch_x (torch.Tensor):
+                A batch of input data.
+            
+            net (nn.Module): 
+                The neural network model.
+            
+            criterion (Loss): 
+                The loss function used to calculate the anomaly score.
+
+        Returns:
+            
+            batch_z (torch.Tensor): 
+                The encoded batch of data in the feature space.
+            
+            s (torch.Tensor): 
+                The anomaly scores for the batch.
+            
+        """
+        
         batch_x = batch_x.float().to(self.device)
         batch_z = net(batch_x)
         s = criterion(batch_z)
         return batch_z, s
 
     def _set_c(self, net, dataloader, eps=0.1):
-        """Initializing the center for the hypersphere"""
+        """
+        Initializes the center 'c' for the hypersphere.
+
+        Args:
+        
+            net (nn.Module): 
+                The neural network model.
+            
+            dataloader (DataLoader): 
+                The data loader to compute the center from.
+            
+            eps (float): 
+                A small value to ensure 'c' is away from zero, default is 0.1.
+
+        Returns:
+        
+            c (torch.Tensor): 
+                The initialized center of the hypersphere.
+            
+        """
+        
         net.eval()
         z_ = []
         with torch.no_grad():
