@@ -14,51 +14,72 @@ import torch.nn.functional as F
 
 class NCAD(BaseDeepAD):
     """
-    Neural Contextual Anomaly Detection for Time Series (IJCAI'22)
+    Neural Contextual Anomaly Detection for Time Series. (IJCAI'22)
+    
+    It extends the BaseDeepAD class to implement anomaly detection specific for time series data.
 
-    Parameters
-    ----------
-    epochs: int, optional (default=100)
-        Number of training epochs
-
-    batch_size: int, optional (default=64)
-        Number of samples in a mini-batch
-
-    lr: float, optional (default=1e-3)
-        Learning rate
-
-    rep_dim: int, optional (default=128)
-        Dimensionality of the representation space
-
-    hidden_dims: list, str or int, optional (default='100,50')
-        Number of neural units in hidden layers
-            - If list, each item is a layer
-            - If str, neural units of hidden layers are split by comma
-            - If int, number of neural units of single hidden layer
-
-    act: str, optional (default='ReLU')
-        activation layer name
-        choice = ['ReLU', 'LeakyReLU', 'Sigmoid', 'Tanh']
-
-    bias: bool, optional (default=False)
-        Additive bias in linear layer
-
-    epoch_steps: int, optional (default=-1)
-        Maximum steps in an epoch
-            - If -1, all the batches will be processed
-
-    prt_steps: int, optional (default=10)
-        Number of epoch intervals per printing
-
-    device: str, optional (default='cuda')
-        torch device,
-
-    verbose: int, optional (default=1)
-        Verbosity mode
-
-    random_state： int, optional (default=42)
-        the seed used by the random
-
+    Args:
+    
+        epochs: (int, optional)
+            The number of epochs to train the model (default is 100).
+            
+        batch_size: (int, optional)
+            The number of samples per batch to load (default is 64).
+            
+        lr: (float, optional)
+            Learning rate for the optimizer (default is 3e-4).
+            
+        seq_len: (int, optional)
+            Length of the input sequences for the model (default is 100).
+            
+        stride: (int, optional)
+            The stride of the window during training (default is 1).
+            
+        suspect_win_len: (int, optional)
+            The length of the window considered as suspect for anomaly (default is 10).
+            
+        coe_rate: (float, optional)
+            Rate at which contextual outlier exposure is applied (default is 0.5).
+            
+        mixup_rate: (float, optional)
+            Rate at which mixup is applied (default is 2.0).
+            
+        hidden_dims: (list or str, optional)
+            The list or comma-separated string of hidden dimensions for the neural network layers (default is '32,32,32,32').
+                - If list, each item is a layer
+                - If str, neural units of hidden layers are split by comma
+                - If int, number of neural units of single hidden layer
+                
+        rep_dim: (int, optional)
+            The size of the representation layer (default is 128).
+            
+        act: (str, optional)
+            The activation function to use in the neural network (default is 'ReLU'). choice = ['ReLU', 'LeakyReLU', 'Sigmoid', 'Tanh']
+            
+        bias: (bool, optional)
+            Whether to use bias in the layers (default is False).
+            
+        kernel_size: (int, optional)
+            The size of the kernel for convolutional layers (default is 5).
+            
+        dropout: (float, optional)
+            The dropout rate (default is 0.0).
+            
+        epoch_steps: (int, optional)
+            The maximum number of steps per epoch (default is -1, which processes all batches).
+            
+        prt_steps: (int, optional)
+            The interval for printing the training progress (default is 10).
+            
+        device: (str, optional)
+            The device to use for training the model ('cuda' or 'cpu') (default is 'cuda').
+            
+        verbose: (int, optional)
+            Verbosity mode (default is 2).
+            
+        random_state: (int, optional)
+            Seed used by the random number generator (default is 42).
+                  
     """
 
     def __init__(self, epochs=100, batch_size=64, lr=3e-4,
@@ -69,6 +90,10 @@ class NCAD(BaseDeepAD):
                  kernel_size=5, dropout=0.0,
                  epoch_steps=-1, prt_steps=10, device='cuda',
                  verbose=2, random_state=42):
+        """
+        Initializes NCAD with specified hyperparameters.
+        """
+        
         super(NCAD, self).__init__(
             model_name='NCAD', data_type='ts', epochs=epochs, batch_size=batch_size, lr=lr,
             seq_len=seq_len, stride=stride,
@@ -92,6 +117,23 @@ class NCAD(BaseDeepAD):
         return
 
     def training_prepare(self, X, y):
+        """
+        Prepares the training process by creating data loaders and initializing the network and loss criterion.
+
+        Args:
+        
+            X (numpy.ndarray): 
+                Input data array for training.
+            
+            y (numpy.ndarray): 
+                Target labels for training.
+
+        Returns:
+            tuple: 
+                A tuple containing the DataLoader for training data, the initialized neural network, and the loss criterion.
+            
+        """
+        
         y_train = np.zeros(len(X))
         train_dataset = TensorDataset(torch.from_numpy(X).float(),
                                       torch.from_numpy(y_train).long())
@@ -115,6 +157,27 @@ class NCAD(BaseDeepAD):
         return train_loader, net, criterion
 
     def training_forward(self, batch_x, net, criterion):
+        """
+        Conducts a forward pass during training, including data augmentation strategies like COE and mixup.
+
+        Args:
+        
+            batch_x (torch.Tensor): 
+                The input batch of data.
+            
+            net (NCADNet): 
+                The neural network for NCAD.
+            
+            criterion (torch.nn.modules.loss): 
+                The loss function used for training.
+
+        Returns:
+        
+            torch.Tensor: 
+                The computed loss for the batch.
+            
+        """
+        
         x0, y0 = batch_x
 
         if self.coe_rate > 0:
@@ -151,38 +214,50 @@ class NCAD(BaseDeepAD):
         return loss
 
     def inference_forward(self, batch_x, net, criterion):
+        """
+        Conducts a forward pass during inference to calculate logits for anomaly scores.
+
+        Args:
+        
+            batch_x (torch.Tensor):
+                The input batch of data.
+                
+            net (NCADNet):
+                The neural network for NCAD.
+                
+            criterion (torch.nn.modules.loss): 
+                The loss function used for inference.
+
+        Returns:
+        
+            tuple:
+                A tuple containing the input batch and the logits representing anomaly scores.
+                
+        """
+        
         ts = batch_x.float().to(self.device)
-
-        # ts = ts.transpose(2, 1)
-        # stride = self.suspect_win_len
-        # unfold_layer = torch.nn.Unfold(
-        #     kernel_size=(self.n_features, self.win_len),
-        #     stride=stride
-        # )
-        # ts_windows = unfold_layer(ts.unsqueeze(1))
-        #
-        # num_windows = int(1 + (self.seq_len - self.win_len) / stride)
-        # assert ts_windows.shape == (
-        #     batch_x.shape[0],
-        #     self.n_features * self.win_len,
-        #     num_windows,
-        # )
-        # ts_windows = ts_windows.transpose(1, 2)
-        # ts_windows = ts_windows.reshape(
-        #     batch_x.shape[0], num_windows,
-        #     self.n_features, self.win_len
-        # )
-        # x0 = ts_windows.flatten(start_dim=0, end_dim=1)
-        # x0 = x0.transpose(2, 1)
-
         x0 = ts
-
         x_context = x0[:, :-self.suspect_win_len]
         logits_anomaly = net(x0, x_context)
         logits_anomaly = logits_anomaly.squeeze()
         return batch_x, logits_anomaly
 
     def inference_prepare(self, X):
+        """
+        Prepares the inference process by creating a DataLoader for the test data.
+
+        Args:
+        
+            X (numpy.ndarray): 
+                Input data array for inference.
+
+        Returns:
+        
+            DataLoader: 
+                The DataLoader containing the test data.
+                
+        """
+        
         test_loader = DataLoader(X, batch_size=self.batch_size,
                                  drop_last=False, shuffle=False)
         self.criterion.reduction = 'none'
@@ -191,14 +266,31 @@ class NCAD(BaseDeepAD):
     @staticmethod
     def coe_batch(x: torch.Tensor, y: torch.Tensor, coe_rate: float, suspect_window_length: int,
                   random_start_end: bool = True):
-        """Contextual Outlier Exposure.
+        """
+        Generates a batch of data with contextual outlier exposure (COE) augmentations.
 
         Args:
-            x : Tensor of shape (batch, ts channels, time)
-            y : Tensor of shape (batch, )
-            coe_rate : Number of generated anomalies as proportion of the batch size.
-            random_start_end : If True, a random subset within the suspect segment is permuted between time series;
-                if False, the whole suspect segment is randomly permuted.
+        
+            x (torch.Tensor): 
+                Input batch of data with dimensions (batch, ts channels, time).
+            
+            y (torch.Tensor): 
+                Target labels for the batch.
+            
+            coe_rate (float): 
+                The proportion of the batch to augment with COE.
+            
+            suspect_window_length (int): 
+                The length of the window considered as suspect for anomaly.
+            
+            random_start_end (bool, optional): 
+                Whether to permute a random subset within the suspect segment. Defaults to True.
+
+        Returns:
+        
+            tuple: 
+                A tuple containing the augmented data and corresponding labels.
+                
         """
 
         if coe_rate == 0:
@@ -247,10 +339,24 @@ class NCAD(BaseDeepAD):
     @staticmethod
     def mixup_batch(x: torch.Tensor, y: torch.Tensor, mixup_rate: float):
         """
+        Generates a batch of data with mixup augmentations.
+
         Args:
-            x : Tensor of shape (batch, ts channels, time)
-            y : Tensor of shape (batch, )
-            mixup_rate : Number of generated anomalies as proportion of the batch size.
+        
+            x (torch.Tensor): 
+                Input batch of data with dimensions (batch, ts channels, time).
+                
+            y (torch.Tensor): 
+                Target labels for the batch.
+            
+            mixup_rate (float): 
+                The proportion of the batch to augment with mixup.
+
+        Returns:
+        
+            tuple: 
+                A tuple containing the mixup-augmented data and corresponding labels.
+                
         """
 
         if mixup_rate == 0:
@@ -287,12 +393,48 @@ class NCAD(BaseDeepAD):
 
 
 class NCADNet(torch.nn.Module):
+    """
+    Neural network module used within NCAD for time series anomaly detection.
+
+    This module is based on a temporal convolutional network architecture.
+
+    Args:
+    
+        n_features (int): 
+            Number of features in the input data.
+        
+        n_hidden (int): 
+            Number of hidden units. Default is 32.
+        
+        n_output (int): 
+            Size of the output layer. Default is 128.
+        
+        kernel_size (int): 
+            Kernel size for the convolutional layers. Default is 2.
+        
+        bias (bool): 
+            Whether to use bias in the layers. Default is True.
+        
+        eps (float): 
+            Small epsilon value for numerical stability. Default is 1e-10.
+        
+        dropout (float): 
+            Dropout rate for the network. Default is 0.2.
+        
+        activation (str): 
+            Activation function to use. Default is 'ReLU'.
+        
+    """
+    
     def __init__(self, n_features, n_hidden=32, n_output=128,
                  kernel_size=2, bias=True,
                  eps=1e-10, dropout=0.2, activation='ReLU',
                  ):
         super(NCADNet, self).__init__()
-
+        """
+        Initializes the NCADNet with specified parameters.
+        """
+        
         self.network = TCNnet(
             n_features=n_features,
             n_hidden=n_hidden,
@@ -307,6 +449,24 @@ class NCADNet(torch.nn.Module):
         self.eps = eps
 
     def forward(self, x, x_c):
+        """
+        Performs a forward pass of the NCADNet.
+
+        Args:
+        
+            x (Tensor): 
+                The input tensor containing the whole time series data.
+            
+            x_c (Tensor): 
+                The context input tensor for comparison.
+
+        Returns:
+        
+            Tensor: 
+                Logits representing the probability of differences between embeddings of `x` and `x_c`.
+            
+        """
+        
         x_whole_embedding = self.network(x)
         x_context_embedding = self.network(x_c)
 
@@ -325,15 +485,49 @@ class NCADNet(torch.nn.Module):
 
 
 class CosineDistance(torch.nn.Module):
-    r"""Returns the cosine distance between :math:`x_1` and :math:`x_2`, computed along dim."""
+    """
+    Module that calculates the cosine distance between two tensors.
+    Returns the cosine distance between :math:`x_1` and :math:`x_2`, computed along dim.
 
+    Args:
+    
+        dim (int): 
+            The dimension along which to compute the cosine distance. Default is 1.
+            
+        keepdim (bool): 
+            Whether to keep the dimension for the output. Default is True.
+            
+    """
+    
     def __init__( self, dim=1, keepdim=True):
+        """
+        Initializes the CosineDistance module with specified parameters.
+        """
+        
         super().__init__()
         self.dim = int(dim)
         self.keepdim = bool(keepdim)
         self.eps = 1e-10
 
     def forward(self, x1, x2):
+        """
+        Calculates the cosine distance between two input tensors.
+
+        Args:
+        
+            x1 (Tensor): 
+                The first input tensor.
+                
+            x2 (Tensor): 
+                The second input tensor to compare against `x1`.
+
+        Returns:
+        
+            Tensor: 
+                The cosine distance between the two input tensors.
+            
+        """
+        
         # Cosine of angle between x1 and x2
         cos_sim = F.cosine_similarity(x1, x2, dim=self.dim, eps=self.eps)
         dist = -torch.log((1 + cos_sim) / 2)
@@ -341,4 +535,3 @@ class CosineDistance(torch.nn.Module):
         if self.keepdim:
             dist = dist.unsqueeze(dim=self.dim)
         return dist
-

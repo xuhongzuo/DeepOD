@@ -11,10 +11,72 @@ import math
 
 
 class FLAD(BaseDeepAD):
+    """
+    "Fusion Learning Based Unsupervised Anomaly Detection for Multi-Dimensional Time Series" and published in Journal of Computer Reasearch and Development.
+
+    Args:
+    
+        hidden_dims (int, optional): 
+            Dimension of hidden layers. Optional, defaults to 32.
+            
+        rep_dim (int, optional):
+            Dimension of representation layer. Optional, defaults to 32.
+        
+        kernel_size (int, optional):
+            Size of the kernel in convolutional layers. Optional, defaults to 3.
+        
+        dropout (float, optional): 
+            Dropout rate for regularization. Optional, defaults to 0.2.
+        
+        act (str, optional): 
+            Activation function to use. Optional, defaults to 'ReLU'.
+        
+        num_channels (list[int], optional): 
+            Number of channels for TCN layers. Optional, defaults to [64, 128, 256].
+        
+        bias (bool, optional): 
+            Whether to use bias in convolutional layers. Optional, defaults to False.
+        
+        epoch_steps (int, optional): 
+            Number of steps per epoch. Optional, defaults to -1.
+        
+        prt_steps (int, optional): 
+            Interval of steps to print training progress. Optional, defaults to 10.
+        
+        device (str, optional): 
+            Device to use for training. Optional, defaults to 'cuda'.
+        
+        verbose (int, optional):
+            Verbosity mode. Optional, defaults to 2.
+        
+        random_state (int, optional):
+            Seed for random number generators. Optional, defaults to 42.
+        
+        seq_len (int, optional): 
+            Length of the input sequences for the model.
+        
+        stride (int, optional): 
+            Stride size for convolutional operations.
+        
+        epochs (int, optional): 
+            Number of epochs to train the model.
+        
+        batch_size (int, optional):
+            Size of batches for training.
+        
+        lr (float, optional): 
+            Learning rate for the optimizer.
+        
+    """
+    
     def __init__(self, seq_len=100, stride=1, epochs=10, batch_size=32, lr=1e-3,
                  rep_dim=32, hidden_dims=32, kernel_size=3, act='ReLU', num_channels=[64, 128, 256], bias=False, dropout=0.2,
                  epoch_steps=-1, prt_steps=10, device='cuda',
                  verbose=2, random_state=42):
+        """
+        Initialize the FLAD.
+        """
+        
         super(FLAD, self).__init__(
             model_name='FLAD', data_type='ts', epochs=epochs, batch_size=batch_size, lr=lr,
             seq_len=seq_len, stride=stride,
@@ -33,6 +95,22 @@ class FLAD(BaseDeepAD):
         return
 
     def get_model(self, inputs):
+        """
+        Constructs the FLAD model consisting of TCN and Transformer encoders and decoders,
+        along with the cross-stitch units for feature fusion.
+
+        Args:
+        
+            inputs (int): 
+                The number of input features.
+
+        Returns:
+        
+            torch.nn.Module: 
+                The constructed FLAD model.
+                
+        """
+        
         backbone_dict, decoder_dict = {}, {}
         cross_stitch_kwargs = {'alpha': 0.8, 'beta': 0.2, 'stages': ['layer1', 'layer2', 'layer3'],
                                'channels': {'layer1': 64, 'layer2': 128, 'layer3': 256},
@@ -53,6 +131,24 @@ class FLAD(BaseDeepAD):
         return model
 
     def training_prepare(self, X, y):
+        """
+        Prepares the training process by setting up the data loader, model, and loss criterion.
+
+        Args:
+        
+            X (torch.Tensor): 
+                The input features for training.
+                
+            y (torch.Tensor): 
+                The target labels for training.
+
+        Returns:
+        
+            tuple: 
+                A tuple containing the DataLoader, the model, and the criterion.
+            
+        """
+        
         train_loader = DataLoader(X, batch_size=self.batch_size, shuffle=True)
 
         net = self.get_model(self.n_features)
@@ -65,18 +161,75 @@ class FLAD(BaseDeepAD):
         return train_loader, net, criterion
 
     def inference_prepare(self, X):
+        """
+        Prepares the model for inference by setting up the data loader and setting the loss criterion
+        to not reduce to a single value.
+
+        Args:
+        
+            X (torch.Tensor):
+                The input features for inference.
+
+        Returns:
+        
+            DataLoader:
+                The DataLoader configured for inference.
+                
+        """
+        
         test_loader = DataLoader(X, batch_size=self.batch_size,
                                  drop_last=False, shuffle=False)
         self.criterion.reduction = 'none'
         return test_loader
 
     def training_forward(self, batch_x, net, criterion):
+        """
+        Performs a forward pass during training and computes the loss.
+
+        Args:
+        
+            batch_x (torch.Tensor): 
+                The batch of input data.
+            
+            net (torch.nn.Module):
+                The network to which the forward pass should be applied.
+            
+            criterion (torch.nn.modules.loss._Loss): 
+                The loss function to compute the loss.
+
+        Returns:
+        
+            torch.Tensor: The computed loss.
+            
+        """
+        
         ts_batch = batch_x.float().to(self.device)
         output, _ = net(ts_batch)
         loss = criterion(output[:, -1], ts_batch[:, -1])
         return loss
 
     def inference_forward(self, batch_x, net, criterion):
+        """
+        Performs a forward pass during inference and computes the error for each example in the batch.
+
+        Args:
+        
+            batch_x (torch.Tensor): 
+                The batch of input data.
+            
+            net (torch.nn.Module): 
+                The network to which the forward pass should be applied.
+            
+            criterion (torch.nn.modules.loss._Loss): 
+                The loss function to compute the error.
+
+        Returns:
+        
+            tuple:
+                A tuple containing the network output and error for each example.
+            
+        """
+        
         batch_x = batch_x.float().to(self.device)
         output, _ = net(batch_x)
         error = torch.nn.L1Loss(reduction='none')(output[:, -1], batch_x[:, -1])
@@ -85,7 +238,22 @@ class FLAD(BaseDeepAD):
 
 
 class SingleTaskModel(nn.Module):
-    """ Single-task baseline model with encoder + decoder """
+    """
+    A single-task baseline model that consists of an encoder and a decoder.
+
+    Args:
+    
+        encoder (nn.Module): 
+            The encoder module.
+        
+        decoder (nn.Module): 
+            The decoder module.
+        
+        task (str): 
+            The name of the task.
+        
+    """
+
     def __init__(self, encoder: nn.Module, decoder: nn.Module, task: str):
         super(SingleTaskModel, self).__init__()
         self.encoder = encoder
@@ -98,6 +266,16 @@ class SingleTaskModel(nn.Module):
         return {self.task: F.interpolate(out, out_size, mode='bilinear')}
 
 class ChannelWiseMultiply(nn.Module):
+    """
+    A module that multiplies each channel of its input with a learnable parameter.
+
+    Args:
+    
+        num_channels (int): 
+            The number of channels in the input data.
+            
+    """
+    
     def __init__(self, num_channels):
         super(ChannelWiseMultiply, self).__init__()
         self.param = nn.Parameter(torch.FloatTensor(num_channels), requires_grad=True)
@@ -111,6 +289,25 @@ class ChannelWiseMultiply(nn.Module):
 
 
 class CrossStitchUnit(nn.Module):
+    """
+    A unit for learning a combination of features from multiple tasks.
+
+    Args:
+    
+        tasks (list of str): 
+            The list of task names.
+        
+        num_channels (int): 
+            The number of channels in the input data.
+        
+        alpha (float): 
+            Initial value for diagonal elements in the cross-stitch matrix. Default is 0.8.
+        
+        beta (float): 
+            Initial value for off-diagonal elements in the cross-stitch matrix. Default is 0.2.
+        
+    """
+    
     def __init__(self, tasks, num_channels, alpha, beta):
         super(CrossStitchUnit, self).__init__()
         self.cross_stitch_unit = nn.ModuleDict(
@@ -133,10 +330,10 @@ class CrossStitchUnit(nn.Module):
 class CrossStitchNetwork(nn.Module):
     """
         Implementation of cross-stitch networks.
-        We insert a cross-stitch unit, to combine features from the task-specific backbones
-        after every stage.
+        We insert a cross-stitch unit, to combine features from the task-specific backbones after every stage.
 
-        Argument:
+        Args:
+        
             backbone:
                 nn.ModuleDict object which contains pre-trained task-specific backbones.
                 {task: backbone for task in p.TASKS.NAMES}
@@ -157,6 +354,7 @@ class CrossStitchNetwork(nn.Module):
                 floats for initializing cross-stitch units (see paper)
 
     """
+    
     def __init__(self, TASKS, backbone: nn.ModuleDict, heads: nn.ModuleDict,
                  stages: list, channels: dict, alpha: float, beta: float, num_channels: list):
         super(CrossStitchNetwork, self).__init__()
@@ -186,6 +384,17 @@ class CrossStitchNetwork(nn.Module):
         return out
 
 class Chomp1d(nn.Module):
+    """
+    A module that chops off the last few entries of a 1D convolution's output, 
+    which is a common operation in temporal convolutional networks to maintain causality.
+
+    Args:
+    
+        chomp_size (int): 
+            The number of entries to chop off from the end of the tensor.
+            
+    """
+    
     def __init__(self, chomp_size):
         super(Chomp1d, self).__init__()
         self.chomp_size = chomp_size
@@ -194,6 +403,16 @@ class Chomp1d(nn.Module):
         return x[:, :, :-self.chomp_size].contiguous()
 
 class pad1d(nn.Module):
+    """
+    A padding module that applies padding to the end of a 1D tensor along the temporal dimension.
+
+    Args:
+    
+        pad_size (int): 
+            The number of entries to pad.
+            
+    """
+    
     def __init__(self, pad_size):
         super(pad1d, self).__init__()
         self.pad_size = pad_size
@@ -202,6 +421,34 @@ class pad1d(nn.Module):
         return torch.cat([x, x[:, :, -self.pad_size:]], dim = 2).contiguous()
 
 class TemporalBlockTranspose(nn.Module):
+    """
+    A temporal block for a TCN that uses transposed convolutions for upsampling.
+
+    Args:
+    
+        n_inputs (int): 
+            The number of input channels.
+            
+        n_outputs (int): 
+            The number of output channels.
+        
+        kernel_size (int): 
+            The kernel size of the convolution.
+        
+        stride (int): 
+            The stride of the convolution.
+        
+        dilation (int):
+            The dilation of the convolution.
+        
+        padding (int): 
+            The padding of the convolution.
+        
+        dropout (float):
+            The dropout rate. Default is 0.2.
+        
+    """
+    
     def __init__(self, n_inputs, n_outputs, kernel_size, stride, dilation, padding,
         dropout=0.2):
         super(TemporalBlockTranspose, self).__init__()
@@ -237,6 +484,34 @@ class TemporalBlockTranspose(nn.Module):
         return self.relu(out + res)
 
 class TemporalBlock(nn.Module):
+    """
+    A temporal block for a TCN that encapsulates two convolutions, each followed by a non-linearity and dropout.
+
+    Args:
+    
+        n_inputs (int): 
+            The number of input channels.
+        
+        n_outputs (int):
+            The number of output channels.
+        
+        kernel_size (int): 
+            The kernel size of the convolution.
+        
+        stride (int): 
+            The stride of the convolution.
+        
+        dilation (int): 
+            The dilation of the convolution.
+        
+        padding (int): 
+            The padding of the convolution.
+        
+        dropout (float):
+            The dropout rate. Default is 0.2.
+        
+    """
+    
     def __init__(self, n_inputs, n_outputs, kernel_size, stride, dilation, padding, dropout=0.2):
         super(TemporalBlock, self).__init__()
         self.conv1 = weight_norm(nn.Conv1d(n_inputs, n_outputs, kernel_size,
@@ -269,7 +544,22 @@ class TemporalBlock(nn.Module):
         return self.relu(out + res)
 
 class PositionalEncoding(nn.Module):
+    """
+    A module that injects some information about the relative or absolute position of the tokens in the sequence.
 
+    Args:
+    
+        d_model (int): 
+            The dimensionality of the input embeddings.
+            
+        dropout (float): 
+            The dropout rate. Default is 0.1.
+            
+        max_len (int): 
+            The maximum length of the input sequences. Default is 5000.
+            
+    """
+    
     def __init__(self, d_model, dropout=0.1, max_len=5000):
         super(PositionalEncoding, self).__init__()
         self.src_mask = None
@@ -295,6 +585,19 @@ class PositionalEncoding(nn.Module):
         return self.dropout(x + self.pe[:x.size(0), :])
 
 class TokenEmbedding(nn.Module):
+    """
+    A module that converts token indices into embeddings, commonly used as the first step in a Transformer model.
+
+    Args:
+    
+        c_in (int): 
+            The number of channels in the input data.
+        
+        d_model (int): 
+            The dimensionality of the output embeddings.
+            
+    """
+    
     def __init__(self, c_in, d_model):
         super(TokenEmbedding, self).__init__()
         padding = 1 if torch.__version__>='1.5.0' else 2
@@ -309,6 +612,25 @@ class TokenEmbedding(nn.Module):
         return x.permute(2, 0, 1)
 
 class TCN_encoder(nn.Module):
+    """
+    An encoder module for a Temporal Convolutional Network.
+
+    Args:
+    
+        num_inputs (int): 
+            The number of input channels.
+        
+        num_channels (list of int): 
+            The number of output channels for each layer.
+        
+        kernel_size (int): 
+            The kernel size for the convolutional layers. Default is 2.
+        
+        dropout (float): 
+            The dropout rate. Default is 0.2.
+        
+    """
+    
     def __init__(self, num_inputs, num_channels, kernel_size=2, dropout=0.2):
         super(TCN_encoder, self).__init__()
         self.layers = []
@@ -338,6 +660,25 @@ class TCN_encoder(nn.Module):
         return self.network(out)
 
 class TCN_decoder(nn.Module):
+    """
+    A decoder module for a Temporal Convolutional Network.
+
+    Args:
+    
+        num_inputs (int): 
+            The number of input channels.
+            
+        num_channels (list of int): 
+            The number of output channels for each layer.
+        
+        kernel_size (int):
+            The kernel size for the convolutional layers. Default is 2.
+        
+        dropout (float): 
+            The dropout rate. Default is 0.2.
+        
+    """
+    
     def __init__(self, num_inputs, num_channels, kernel_size=2, dropout=0.2):
         super(TCN_decoder, self).__init__()
         layers = []
@@ -361,6 +702,25 @@ class TCN_decoder(nn.Module):
         return out[:, -1].view(out.shape[0], 1, out.shape[2])
 
 class TransformerEncoderLayer(nn.Module):
+    """
+    A single layer of a transformer encoder model.
+
+    Args:
+    
+        d_model (int): 
+            The number of expected features in the input (required).
+            
+        nhead (int): 
+            The number of heads in the multiheadattention models (required).
+        
+        dim_feedforward (int): 
+            The dimension of the feedforward network model. Default is 16.
+        
+        dropout (float): 
+            The dropout value. Default is 0.1.
+        
+    """
+    
     def __init__(self, d_model, nhead, dim_feedforward=16, dropout=0.1):
         super(TransformerEncoderLayer, self).__init__()
         self.self_attn = nn.MultiheadAttention(d_model, nhead, dropout=dropout)
@@ -388,6 +748,25 @@ class TransformerEncoderLayer(nn.Module):
 
 
 class TransformerDecoderLayer(nn.Module):
+    """
+    A single layer of a transformer decoder model.
+
+    Args:
+    
+        d_model (int): 
+            The number of expected features in the input (required).
+        
+        nhead (int): 
+            The number of heads in the multiheadattention models (required).
+        
+        dim_feedforward (int):
+            The dimension of the feedforward network model. Default is 16.
+        
+        dropout (float):
+            The dropout value. Default is 0.1.
+        
+    """
+    
     def __init__(self, d_model, nhead, dim_feedforward=16, dropout=0.1):
         super(TransformerDecoderLayer, self).__init__()
         self.self_attn = nn.MultiheadAttention(d_model, nhead, dropout=dropout)
@@ -421,6 +800,28 @@ class TransformerDecoderLayer(nn.Module):
         return tgt
 
 class Trans_encoder(nn.Module):
+    """
+    The encoder module for a transformer model.
+
+    Args:
+    
+        num_inputs (int): 
+            The number of input channels.
+        
+        feature_size (int): 
+            The dimensionality of the input embeddings. Default is 512.
+        
+        num_channels (list of int):
+            The number of channels for each layer. Default is [64, 128, 256].
+        
+        num_layers (int):
+            The number of layers in the encoder. Default is 1.
+        
+        dropout (float): 
+            The dropout rate. Default is 0.1.
+        
+    """
+    
     def __init__(self, num_inputs, feature_size=512, num_channels=[64, 128, 256], num_layers=1, dropout=0.1):
         super(Trans_encoder, self).__init__()
 
@@ -465,6 +866,25 @@ class Trans_encoder(nn.Module):
         return output.permute(1, 2, 0)
 
 class Trans_decoder(nn.Module):
+    """
+    The decoder module for a transformer model.
+
+    Args:
+    
+        num_inputs (int): 
+            The number of input channels.
+        
+        feature_size (int): 
+            The dimensionality of the input embeddings. Default is 512.
+        
+        num_layers (int): 
+            The number of layers in the decoder. Default is 1.
+        
+        dropout (float): 
+            The dropout rate. Default is 0.1.
+        
+    """
+    
     def __init__(self, num_inputs, feature_size=512, num_layers=1, dropout=0.1):
         super(Trans_decoder, self).__init__()
 
