@@ -10,6 +10,23 @@ from deepod.core.base_model import BaseDeepAD
 
 
 def my_kl_loss(p, q):
+    """
+    Custom Kullback-Leibler divergence loss calculation.
+
+    Args:
+    
+        p (torch.Tensor): 
+            The first probability distribution tensor.
+            
+        q (torch.Tensor): 
+            The second probability distribution tensor to compare against.
+
+    Returns:
+    
+        torch.Tensor: 
+            The mean KL divergence computed over all dimensions except the last one.
+    """
+    
     res = p * (torch.log(p + 0.0001) - torch.log(q + 0.0001))
     return torch.mean(torch.sum(res, dim=-1), dim=1)
 
@@ -18,11 +35,55 @@ class AnomalyTransformer(BaseDeepAD):
     """
     Anomaly Transformer: Time Series Anomaly Detection with Association Discrepancy
     (ICLR'22)
+    
+    Implements the Anomaly Transformer model for time series anomaly detection based on
+    the paper "Anomaly Transformer: Time Series Anomaly Detection with Association Discrepancy".
 
+    Inherits from BaseDeepAD which contains base functionality for anomaly detection models.
+ 
+    Args:
+        seq_len (int, optional): 
+            This parameter determines the length of the input sequences for the transformer. Default is 100.
+            
+        stride (int, optional): 
+            This parameter determines the stride with which the input sequences are sampled. Default is 1.
+            
+        lr (float, optional): 
+            This parameter sets the learning rate for the optimizer. Default is 0.001.
+            
+        epochs (int, optional): 
+            This parameter sets the number of epochs for training the model. Default is 10.
+            
+        batch_size (int, optional): 
+            This parameter sets the size of batches for training and inference. Default is 32.
+            
+        epoch_steps (int, optional): 
+            This parameter sets the number of steps (batches) per epoch. Default is 20.
+            
+        prt_steps (int, optional): 
+            This parameter sets the interval of epochs to print training progress. Default is 1.
+            
+        device (str, optional): 
+            This parameter sets the device to train the model on, 'cuda' or 'cpu'. Default is 'cuda'.
+            
+        k (int, optional): 
+            This parameter sets the hyperparameter k for loss calculation. Default is 3.
+            
+        verbose (int, optional): 
+            This parameter sets the verbosity mode. Default is 2.
+            
+        random_state (int, optional): 
+            This parameter sets the seed for random number generator for reproducibility. Default is 42.
+            
     """
+    
     def __init__(self, seq_len=100, stride=1, lr=0.0001, epochs=10, batch_size=32,
                  epoch_steps=20, prt_steps=1, device='cuda',
                  k=3, verbose=2, random_state=42):
+        """
+        Initializes the AnomalyTransformer model with specified hyperparameters and training settings.
+        """
+        
         super(AnomalyTransformer, self).__init__(
             model_name='AnomalyTransformer', data_type='ts', epochs=epochs, batch_size=batch_size, lr=lr,
             seq_len=seq_len, stride=stride,
@@ -32,6 +93,23 @@ class AnomalyTransformer(BaseDeepAD):
         self.k = k
 
     def fit(self, X, y=None):
+        """
+        This method is used to train the AnomalyTransformer model on the provided dataset.
+
+        Args:
+        
+            X (np.array, required): 
+                This is the input data that the model will be trained on. It should be a numpy array where each row represents a different time series and each column represents a different time point.
+                
+            y (np.array, optional): 
+                These are the true labels for the input data. If provided, they can be used to monitor the training process and adjust the model parameters. However, they are not necessary for the training process and their default value is None.
+
+        Returns:
+        
+            None: 
+                This method does not return any value. It modifies the state of the AnomalyTransformer object by training it on the provided data.
+        """
+        
         self.n_features = X.shape[1]
 
         train_seqs = get_sub_seqs(X, seq_len=self.seq_len, stride=self.stride)
@@ -63,6 +141,23 @@ class AnomalyTransformer(BaseDeepAD):
         return
 
     def decision_function(self, X, return_rep=False):
+        """
+        This method computes the anomaly scores for the given input data. Anomaly scores are a measure of how much a data point deviates from what is considered normal or expected. A higher score indicates a higher likelihood of the data point being anomalous.
+
+        Args:
+        
+            X (np.array, required): 
+                The input data for which the anomaly scores are to be computed. It should be a numpy array where each row represents a different time series and each column represents a different time point.
+                
+            return_rep (bool, optional): 
+                A flag that determines whether the representations should be returned along with the anomaly scores. These representations are the encoded versions of the input data as learned by the model. They can be useful for further analysis or for visualizing the data in a lower-dimensional space. The default value is False, which means that by default, the representations are not returned.
+
+        Returns:
+        
+            np.array: 
+                The anomaly scores for the input data. Each score corresponds to a data point in the input data. The scores are returned as a numpy array.
+        """
+        
         seqs = get_sub_seqs(X, seq_len=self.seq_len, stride=1)
         dataloader = DataLoader(seqs, batch_size=self.batch_size,
                                 shuffle=False, drop_last=False)
@@ -78,6 +173,20 @@ class AnomalyTransformer(BaseDeepAD):
         return loss_final_pad
 
     def training(self, dataloader):
+        """
+        This method defines the training process for one epoch. During each epoch, the model is trained on batches of input data provided by the DataLoader. The training process involves forward propagation, loss computation, backpropagation, and optimization steps. The loss function used is the Mean Squared Error (MSE) loss, which measures the average squared difference between the actual and predicted values. The loss is computed for each batch, and the average loss over all batches is returned.
+
+        Args:
+        
+            dataloader (DataLoader): 
+                The DataLoader object that provides batches of input data for training. Each batch is a tensor of shape (batch_size, sequence_length, number_of_features), where batch_size is the number of sequences in a batch, sequence_length is the length of each sequence, and number_of_features is the number of features in the data.
+
+        Returns:
+        
+            float: 
+                The average loss over all batches in the dataloader. This is a single floating-point number that represents the average of the MSE loss computed for each batch of data.
+        """
+        
         criterion = nn.MSELoss()
         loss_list = []
 
@@ -127,6 +236,26 @@ class AnomalyTransformer(BaseDeepAD):
         return np.average(loss_list)
 
     def inference(self, dataloader):
+        """
+        This method performs inference on the data provided by the dataloader. It uses the trained model to generate anomaly scores and predictions for the input data.
+
+        Args:
+        
+            dataloader (DataLoader): 
+                The DataLoader object that provides the data for inference. It should contain the input data that we want to generate anomaly scores and predictions for.
+
+        Returns:
+        
+            tuple: 
+                A tuple containing two numpy arrays. The first array contains the anomaly scores for the input data, and the second array contains the predicted labels for the input data.
+                
+            - anomaly scores (np.array):
+                An array of anomaly scores for the input data. Each score represents the degree of anomaly of the corresponding data point in the input data.
+                
+            - predictions (np.array):
+                An array of predicted labels for the input data. Each label represents the predicted class (normal or anomalous) of the corresponding data point in the input data.
+        """
+        
         criterion = nn.MSELoss(reduction='none')
         temperature = 50
         attens_energy = []
@@ -185,8 +314,52 @@ class AnomalyTransformer(BaseDeepAD):
 
 
 class AnomalyTransformerModel(nn.Module):
+    """
+    This class defines the architecture for the Anomaly Transformer model, which is specifically designed for
+    detecting anomalies in time series data. The model is based on the Transformer architecture and includes
+    an attention mechanism, multiple encoder layers, and a feed-forward network.
+    
+    Args:
+        win_size (int): 
+            The size of the window for the attention mechanism. This determines the number of time steps that the model looks at when computing attention weights.
+            
+        enc_in (int): 
+            The number of features in the input data. This corresponds to the dimensionality of the input time series data.
+            
+        c_out (int): 
+            The number of output features. This corresponds to the dimensionality of the output time series data.
+            
+        d_model (int, optional, default=512): 
+            The dimensionality of the model. This affects the size of the internal representations that the model learns.
+            
+        n_heads (int, optional, default=8): 
+            The number of attention heads. This determines the number of different attention weights that the model computes for each time step.
+            
+        e_layers (int, optional, default=3): 
+            The number of layers in the encoder. Each layer includes an attention mechanism and a feed-forward network.
+            
+        d_ff (int, optional, default=512): 
+            The dimensionality of the feed-forward network in the encoder. This affects the size of the internal representations that the model learns.
+            
+        dropout (float, optional, default=0.0): 
+            The dropout rate. This is the probability that each element in the internal representations is set to zero during training. Dropout is a regularization technique that helps prevent overfitting.
+            
+        activation (str, optional, default='gelu'): 
+            The activation function to use in the feed-forward network. This function introduces non-linearity into the model, allowing it to learn more complex patterns.
+            
+        output_attention (bool, optional, default=True): 
+            Whether to output the attention weights. If true, the model outputs the attention weights in addition to the output time series data.
+            
+        device (str, optional, default='cuda'): 
+            The device to use for tensor computations. This can be either 'cuda' for GPU computations or 'cpu' for CPU computations.
+    """
+    
     def __init__(self, win_size, enc_in, c_out, d_model=512, n_heads=8, e_layers=3, d_ff=512,
                  dropout=0.0, activation='gelu', output_attention=True, device='cuda'):
+        """
+        Initializes the AnomalyTransformerModel.
+        """
+         
         super(AnomalyTransformerModel, self).__init__()
         self.output_attention = output_attention
 
@@ -215,6 +388,20 @@ class AnomalyTransformerModel(nn.Module):
         self.projection = nn.Linear(d_model, c_out, bias=True)
 
     def forward(self, x):
+        """
+        This method defines the forward pass of the AnomalyTransformerModel. It takes as input a tensor 'x' and returns the model's output. If the 'output_attention' attribute is set to true, it also returns the attention series, prior, and sigma tensors.
+
+        Args:
+        
+            x (torch.Tensor): 
+                The input data. It is a tensor that represents the input data that will be processed by the model.
+
+        Returns:
+        
+            torch.Tensor: 
+                The output of the model. It is a tensor that represents the output data generated by the model. If the 'output_attention' attribute is set to true, it also includes the attention series, prior, and sigma tensors.
+        """
+        
         enc_out = self.embedding(x)
         enc_out, series, prior, sigmas = self.encoder(enc_out)
         enc_out = self.projection(enc_out)
@@ -226,7 +413,33 @@ class AnomalyTransformerModel(nn.Module):
 
 
 class EncoderLayer(nn.Module):
+    """
+    The EncoderLayer class represents a single layer of the encoder part in a transformer model. This layer applies
+    self-attention mechanism to the input data and then processes it through a feedforward neural network.
+    
+    Args:
+    
+        attention (nn.Module): 
+            This is the attention mechanism that the layer will use. It is responsible for determining the importance of different parts of the input data.
+            
+        d_model (int): 
+            This is the number of expected features in the input data. It defines the size of the input layer of the neural network.
+        
+        d_ff (int, optional, default=4*d_model): 
+            This is the dimension of the feedforward network model. It defines the size of the hidden layer in the neural network.
+            
+        dropout (float, optional, default=0.1): 
+            This is the dropout value. It is a regularization technique where randomly selected neurons are ignored during training to prevent overfitting.
+            
+        activation (str, optional, default="relu"):
+            This is the activation function that the layer will use. It defines the output of a neuron given an input or set of inputs.
+    """
+    
     def __init__(self, attention, d_model, d_ff=None, dropout=0.1, activation="relu"):
+        """
+        Initializes the EncoderLayer with an attention mechanism and a feedforward network.
+        """
+        
         super(EncoderLayer, self).__init__()
         d_ff = d_ff or 4 * d_model
         self.attention = attention
@@ -238,6 +451,23 @@ class EncoderLayer(nn.Module):
         self.activation = F.relu if activation == "relu" else F.gelu
 
     def forward(self, x, attn_mask=None):
+        """
+        Forward pass for the EncoderLayer.
+
+        Args:
+        
+            x (torch.Tensor): 
+                Input tensor.
+                
+            attn_mask (Optional[torch.Tensor]): 
+                Attention mask.
+
+        Returns:
+        
+            Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]: 
+                Output tensor, attention, mask, sigma.
+        """
+        
         new_x, attn, mask, sigma = self.attention(
             x, x, x,
             attn_mask=attn_mask
@@ -251,13 +481,45 @@ class EncoderLayer(nn.Module):
 
 
 class Encoder(nn.Module):
+    """
+    Composes multiple EncoderLayer modules to form the encoder. This class is responsible for stacking multiple EncoderLayer modules to create the encoder for the Anomaly Transformer model.
+        
+    Args:
+    
+        attn_layers (List[nn.Module]): 
+            A list of attention layers to be stacked. These layers will be sequentially stacked to form the encoder.
+            
+        norm_layer (nn.Module, optional): 
+            The normalization layer to use at the end of the encoder. If provided, this layer will be applied to the output of the encoder.
+    """
+    
     def __init__(self, attn_layers, norm_layer=None):
+        """
+        Initializes the Encoder with a stack of attention layers and optional normalization.
+        """
+        
         super(Encoder, self).__init__()
         self.attn_layers = nn.ModuleList(attn_layers)
         self.norm = norm_layer
 
     def forward(self, x, attn_mask=None):
-        # x [B, L, D]
+        """
+        Forward pass for the Encoder.
+
+        Args:
+        
+            x (torch.Tensor): 
+                Input tensor.
+                
+            attn_mask (Optional[torch.Tensor]): 
+                Attention mask.
+
+        Returns:
+        
+            Tuple[torch.Tensor, List[torch.Tensor], List[torch.Tensor], List[torch.Tensor]]: 
+                Output tensor, list of attention series, list of prior series, list of sigma values.
+        """
+        
         series_list = []
         prior_list = []
         sigma_list = []
@@ -274,7 +536,26 @@ class Encoder(nn.Module):
 
 
 class DataEmbedding(nn.Module):
+    """
+    Embeds input data with value and positional embeddings.
+    
+    Args:
+    
+        c_in (int, required): 
+            The number of input channels.
+            
+        d_model (int, required): 
+            The dimension of the model.
+        
+        dropout (float, optional, default=0.0): 
+            The dropout probability.
+    """
+    
     def __init__(self, c_in, d_model, dropout=0.0):
+        """
+        Initializes the DataEmbedding module.
+        """
+        
         super(DataEmbedding, self).__init__()
 
         self.value_embedding = TokenEmbedding(c_in=c_in, d_model=d_model)
@@ -283,12 +564,42 @@ class DataEmbedding(nn.Module):
         self.dropout = nn.Dropout(p=dropout)
 
     def forward(self, x):
+        """
+        Forward pass for the DataEmbedding.
+
+        Args:
+        
+            x (torch.Tensor): 
+                Input tensor.
+
+        Returns:
+        
+            torch.Tensor: 
+                The output tensor after value and positional embedding and dropout.
+        """
+        
         x = self.value_embedding(x) + self.position_embedding(x)
         return self.dropout(x)
 
 
 class TokenEmbedding(nn.Module):
+    """
+    TokenEmbedding is a class for embedding tokens with value and positional embeddings.
+    
+    Args:
+        
+        c_in (int): 
+            The number of input channels for token embedding.
+            
+        d_model (int): 
+            The dimension of the model for token embedding.
+    """
+    
     def __init__(self, c_in, d_model):
+        """
+        Initializes the TokenEmbedding class.
+        """
+        
         super(TokenEmbedding, self).__init__()
         padding = 1 if torch.__version__ >= '1.5.0' else 2
         self.tokenConv = nn.Conv1d(in_channels=c_in, out_channels=d_model,
@@ -298,12 +609,42 @@ class TokenEmbedding(nn.Module):
                 nn.init.kaiming_normal_(m.weight, mode='fan_in', nonlinearity='leaky_relu')
 
     def forward(self, x):
+        """
+        Forward pass for the TokenEmbedding.
+        
+        Args:
+        
+            x (torch.Tensor): 
+                Input tensor.
+                
+        Returns:
+        
+            torch.Tensor: 
+                The output tensor after token embedding.
+        """
+        
         x = self.tokenConv(x.permute(0, 2, 1)).transpose(1, 2)
         return x
 
 
 class PositionalEmbedding(nn.Module):
+    """
+    PositionalEmbedding is a class for embedding positions.
+    
+    Args:
+    
+        d_model (int): 
+            The dimension of the model.
+            
+        max_len (int, optional): 
+            The maximum length. Default is 5000.
+    """
+    
     def __init__(self, d_model, max_len=5000):
+        """
+        Initializes the PositionalEmbedding class.
+        """
+        
         super(PositionalEmbedding, self).__init__()
         # Compute the positional encodings once in log space.
         pe = torch.zeros(max_len, d_model).float()
@@ -319,23 +660,93 @@ class PositionalEmbedding(nn.Module):
         self.register_buffer('pe', pe)
 
     def forward(self, x):
+        """
+        Forward pass for the PositionalEmbedding.
+
+        Args:
+        
+            x (torch.Tensor): 
+                Input tensor.
+
+        Returns:
+        
+            torch.Tensor: 
+                The output tensor after positional embedding.
+        """
+        
         return self.pe[:, :x.size(1)]
 
 
 class TriangularCausalMask():
+    """
+    TriangularCausalMask is a class for creating a triangular causal mask.
+    
+    Args:
+        
+        B (int): 
+            The batch size.
+            
+        L (int): 
+            The sequence length.
+            
+        device (str, optional): 
+            The device to use. Default is "cpu".
+    """
+    
     def __init__(self, B, L, device="cpu"):
+        """
+        Initializes the TriangularCausalMask class.
+        """
+        
         mask_shape = [B, 1, L, L]
         with torch.no_grad():
             self._mask = torch.triu(torch.ones(mask_shape, dtype=torch.bool), diagonal=1).to(device)
 
     @property
     def mask(self):
+        """
+        Returns the mask.
+        
+        Returns:
+        
+            torch.Tensor: 
+                The mask tensor.
+        """
+        
         return self._mask
 
 
 class AnomalyAttention(nn.Module):
+    """
+    AnomalyAttention is a class for anomaly attention. It calculates attention scores based on the distance between queries and keys.
+    
+    Args:
+    
+        win_size (int): 
+            The window size.
+            
+        mask_flag (bool, optional): 
+            The mask flag. Default is True.
+            
+        scale (float, optional): 
+            The scale. Default is None.
+            
+        attention_dropout (float, optional): 
+            The attention dropout value. Default is 0.0.
+            
+        output_attention (bool, optional): 
+            The output attention flag. Default is False.
+            
+        device (str, optional): 
+            The device to use. Default is "cuda".     
+    """
+    
     def __init__(self, win_size, mask_flag=True, scale=None,
                  attention_dropout=0.0, output_attention=False, device='cuda'):
+        """
+        Initializes the AnomalyAttention class.
+        """
+        
         super(AnomalyAttention, self).__init__()
         self.scale = scale
         self.mask_flag = mask_flag
@@ -348,6 +759,32 @@ class AnomalyAttention(nn.Module):
                 self.distances[i][j] = abs(i - j)
 
     def forward(self, queries, keys, values, sigma, attn_mask):
+        """
+        Forward pass for the AnomalyAttention.
+
+        Args:
+        
+            queries (torch.Tensor): 
+                The tensor containing queries.
+                
+            keys (torch.Tensor): 
+                The tensor containing keys.
+                
+            values (torch.Tensor): 
+                The tensor containing values.
+                
+            sigma (torch.Tensor): 
+                The tensor containing sigma values.
+                
+            attn_mask (torch.Tensor): 
+                The tensor containing the attention mask.
+                
+        Returns:
+        
+            Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]: 
+                The output tensor, series tensor, prior tensor, and sigma tensor.
+        """
+        
         B, L, H, E = queries.shape
         _, S, _, D = values.shape
         scale = self.scale or 1. / math.sqrt(E)
@@ -376,8 +813,33 @@ class AnomalyAttention(nn.Module):
 
 
 class AttentionLayer(nn.Module):
+    """
+    AttentionLayer is a class for attention layer.
+    
+    Args:
+        
+        attention (nn.Module): 
+            The attention module.
+            
+        d_model (int): 
+            The dimension of the model.
+            
+        n_heads (int): 
+            The number of heads.
+            
+        d_keys (int, optional): 
+            The dimension of the keys. Default is None.
+            
+        d_values (int, optional): 
+            The dimension of the values. Default is None.
+    """
+    
     def __init__(self, attention, d_model, n_heads, d_keys=None,
                  d_values=None):
+        """
+        Initializes the AttentionLayer class.
+        """
+        
         super(AttentionLayer, self).__init__()
 
         d_keys = d_keys or (d_model // n_heads)
@@ -397,6 +859,29 @@ class AttentionLayer(nn.Module):
         self.n_heads = n_heads
 
     def forward(self, queries, keys, values, attn_mask):
+        """
+        Forward pass for the AttentionLayer.
+        
+        Args:
+        
+            queries (torch.Tensor): 
+                The input queries tensor.
+                
+            keys (torch.Tensor): 
+                The input keys tensor.
+                
+            values (torch.Tensor): 
+                The input values tensor.
+                
+            attn_mask (torch.Tensor): 
+                The attention mask tensor.
+                
+        Returns:
+        
+            Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]: 
+                The output tensor, series tensor, prior tensor, and sigma tensor.
+        """
+        
         B, L, _ = queries.shape
         _, S, _ = keys.shape
         H = self.n_heads
@@ -416,3 +901,4 @@ class AttentionLayer(nn.Module):
         out = out.view(B, L, -1)
 
         return self.out_projection(out), series, prior, sigma
+    
