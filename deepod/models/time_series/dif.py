@@ -80,7 +80,7 @@ class DeepIsolationForestTS(BaseDeepAD):
     def __init__(self,
                  epochs=100, batch_size=1000, lr=1e-3,
                  seq_len=100, stride=1,
-                 rep_dim=128, hidden_dims='100,50', bias=False,
+                 rep_dim=128, hidden_dims=100, bias=False,
                  n_ensemble=50, n_estimators=6,
                  max_samples=256, n_jobs=1,
                  epoch_steps=-1, prt_steps=10, device='cuda',
