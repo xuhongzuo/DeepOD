@@ -142,7 +142,7 @@ def read_data(file, split='50%-normal', normalization='z-score', seed=42):
               f'After splitting: training/testing [{len(x_train)}/{len(x_test)}]')
 
     elif split == '60%':
-        x_train, y_train, x_test, y_test = train_test_split(x, y, shuffle=True, random_state=seed,
+        x_train, x_test, y_train, y_test = train_test_split(x, y, shuffle=True, random_state=seed,
                                                             test_size=0.4, stratify=y)
 
     else:
