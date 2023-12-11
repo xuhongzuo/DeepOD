@@ -170,10 +170,6 @@ def read_data(file, split='50%-normal', normalization='z-score', seed=42):
     return x_train, y_train, x_test, y_test
 
 
-
-
-
-
 def import_ts_data_unsupervised(data_root, data, entities=None, combine=False):
     if type(entities) == str:
         entities_lst = entities.split(',')

@@ -5,6 +5,10 @@ testbed of unsupervised time series anomaly detection
 """
 
 import os
+import sys
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import argparse
 import getpass
 import warnings
@@ -61,12 +65,10 @@ model_configs['stride'] = args.stride
 
 print(f'Model Configs: {model_configs}')
 
-
 # # setting result file/folder path
 cur_time = time.strftime("%m-%d %H.%M.%S", time.localtime())
 os.makedirs(args.output_dir, exist_ok=True)
 result_file = os.path.join(args.output_dir, f'{args.model}.{args.flag}.csv')
-
 
 # # print header in the result file
 if not args.silent_header:
@@ -80,7 +82,6 @@ if not args.silent_header:
     print(f'---------------------------------------------------------', file=f)
     print(f'data, adj_auroc, std, adj_ap, std, adj_f1, std, adj_p, std, adj_r, std, time, model', file=f)
     f.close()
-
 
 dataset_name_lst = args.dataset.split(',')
 
@@ -150,11 +151,11 @@ for dataset in dataset_name_lst:
 
         for i in range(runs):
             start_time = time.time()
-            print(f'\nRunning [{i+1}/{args.runs}] of [{args.model}] on Dataset [{dataset_name}]')
+            print(f'\nRunning [{i + 1}/{args.runs}] of [{args.model}] on Dataset [{dataset_name}]')
 
             t1 = time.time()
 
-            clf = model_class(**model_configs, random_state=42+i)
+            clf = model_class(**model_configs, random_state=42 + i)
             clf.fit(train_data)
             scores = clf.decision_function(test_data)
             t = time.time() - t1
@@ -167,7 +168,7 @@ for dataset in dataset_name_lst:
             txt += ', '.join(['%.4f' % a for a in eval_metrics]) + \
                    ', pa, ' + \
                    ', '.join(['%.4f' % a for a in adj_eval_metrics])
-            txt += f', model, {args.model}, time, {t:.1f} s, runs, {i+1}/{args.runs}'
+            txt += f', model, {args.model}, time, {t:.1f} s, runs, {i + 1}/{args.runs}'
             print(txt)
 
             entries.append(adj_eval_metrics)
