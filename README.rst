@@ -24,6 +24,7 @@ Python Deep Outlier/Anomaly Detection (DeepOD)
 .. image:: https://img.shields.io/badge/license-BSD2-blue
    :alt: license
 
+
    
 
 ``DeepOD`` is an open-source python library for Deep Learning-based `Outlier Detection <https://en.wikipedia.org/wiki/Anomaly_detection>`_
