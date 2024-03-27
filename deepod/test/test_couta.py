@@ -5,6 +5,7 @@ from __future__ import print_function
 import os
 import sys
 import unittest
+import numpy as np
 
 # noinspection PyProtectedMember
 from numpy.testing import assert_equal
@@ -18,6 +19,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from deepod.models.time_series.couta import COUTA
 from deepod.utils.data import generate_data
+from deepod.metrics._anomaly_detection import ts_metrics_enhanced
 
 
 class TestCOUTA(unittest.TestCase):
@@ -53,6 +55,15 @@ class TestCOUTA(unittest.TestCase):
         pred_scores = self.clf.decision_function(self.Xts_test)
         assert_equal(pred_scores.shape[0], self.Xts_test.shape[0])
 
+    def test_metric(self):
+        pred_scores = self.clf.decision_function(self.Xts_test)
+
+        anomaly_ratio = 1
+        thresh = np.percentile(pred_scores, 100 - anomaly_ratio)
+        pred = (pred_scores > thresh).astype(int)
+        metrics = ts_metrics_enhanced(self.yts_test, pred_scores, pred)
+        print(metrics)
+
     def test_prediction_labels(self):
         pred_labels = self.clf.predict(self.Xts_test)
         assert_equal(pred_labels.shape, self.yts_test.shape)
@@ -83,6 +94,7 @@ class TestCOUTA(unittest.TestCase):
         assert_equal(confidence.shape, self.yts_test.shape)
         assert (confidence.min() >= 0)
         assert (confidence.max() <= 1)
+
 
     # def test_prediction_proba_linear_confidence(self):
     #     pred_proba, confidence = self.clf.predict_proba(self.X_test,

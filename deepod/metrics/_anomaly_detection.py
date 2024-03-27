@@ -22,7 +22,7 @@ def auc_roc(y_true, y_score):
         float: 
             The score of the area under the ROC curve.
     """
-    
+
     return metrics.roc_auc_score(y_true, y_score)
 
 
@@ -43,7 +43,7 @@ def auc_pr(y_true, y_score):
         float: 
             The score of the area under the PR curve.
     """
-    
+
     return metrics.average_precision_score(y_true, y_score)
 
 
@@ -112,7 +112,7 @@ def ts_metrics(y_true, y_score):
         - best_r (float): 
             The best score of recall.
     """
-    
+
     best_f1, best_p, best_r = get_best_f1(y_true, y_score)
     return auc_roc(y_true, y_score), auc_pr(y_true, y_score), best_f1, best_p, best_r
 
@@ -138,7 +138,7 @@ def get_best_f1(label, score):
         - best_r (float):
             The best score of recall.
     """
-    
+
     precision, recall, _ = metrics.precision_recall_curve(y_true=label, probas_pred=score)
     f1 = 2 * precision * recall / (precision + recall + 1e-5)
     best_f1 = f1[np.argmax(f1)]
@@ -149,7 +149,11 @@ def get_best_f1(label, score):
 
 def ts_metrics_enhanced(y_true, y_score, y_test):
     """
-    This function calculates additional evaluation metrics for time series anomaly detection. It returns a variety of metrics, including those sourced from the code in [A Huet et al. KDD22] and [J Paparrizos et al. VLDB22]. The function requires three inputs: y_true (data label), y_score (predicted anomaly scores), and y_test (predictions of events). 
+    This function calculates additional evaluation metrics for time series anomaly detection.
+    It returns a variety of metrics, including those sourced from the code in
+    [A Huet et al. KDD22] and [J Paparrizos et al. VLDB22].
+    The function requires three inputs: y_true (data label), y_score (predicted anomaly scores),
+    and y_test (predictions of events).
     
     Args:
         y_true (np.array): 
@@ -199,12 +203,12 @@ def ts_metrics_enhanced(y_true, y_score, y_test):
     """
 
     best_f1, best_p, best_r = get_best_f1(y_true, y_score)
-    
-    events_pred = convert_vector_to_events(y_test) 
+
+    events_pred = convert_vector_to_events(y_test)
     events_gt = convert_vector_to_events(y_true)
     Trange = (0, len(y_test))
     affiliation = pr_from_events(events_pred, events_gt, Trange)
-    vus_results = get_range_vus_roc(y_score, y_true, 100) # default slidingWindow = 100
+    vus_results = get_range_vus_roc(y_score, y_true, 100)  # default slidingWindow = 100
 
     auroc = auc_roc(y_true, y_score)
     aupr = auc_pr(y_true, y_score)
@@ -216,9 +220,5 @@ def ts_metrics_enhanced(y_true, y_score, y_test):
     vus_roc = vus_results["VUS_ROC"]
     vus_pr = vus_results["VUS_PR"]
 
-    return auroc, aupr, best_f1, best_p, best_r, \
-           affiliation_precision, affiliation_recall, \
-           vus_r_auroc, vus_r_aupr, \
-           vus_roc, vus_pr
-
-
+    return auroc, aupr, best_f1, best_p, best_r, affiliation_precision, affiliation_recall, \
+           vus_r_auroc, vus_r_aupr, vus_roc, vus_pr
