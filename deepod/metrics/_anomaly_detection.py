@@ -3,6 +3,7 @@ import numpy as np
 from deepod.metrics.affiliation.generics import convert_vector_to_events
 from deepod.metrics.vus.metrics import get_range_vus_roc
 from deepod.metrics.affiliation.metrics import pr_from_events
+from deepod.metrics._tsad_adjustment import point_adjustment
 
 
 def auc_roc(y_true, y_score):
@@ -169,19 +170,19 @@ def ts_metrics_enhanced(y_true, y_score, y_test):
         tuple: A tuple containing:
         
         - auroc (float):
-            The score of the area under the ROC curve.
+            The score of the area under the ROC curve after point adjustment.
             
         - aupr (float):
-            The score of the area under the precision-recall curve.
+            The score of the area under the precision-recall curve after point adjustment.
             
         - best_f1 (float): 
-            The best score of F1-score.
+            The best score of F1-score after point adjustment.
             
         - best_p (float): 
-            The best score of precision.
+            The best score of precision after point adjustment.
             
         - best_r (float): 
-            The best score of recall.
+            The best score of recall after point adjustment.
             
         - affiliation_precision (float):
             The score of affiliation precision.
@@ -202,16 +203,15 @@ def ts_metrics_enhanced(y_true, y_score, y_test):
             The score of VUS PR.
     """
 
-    best_f1, best_p, best_r = get_best_f1(y_true, y_score)
+    auroc = auc_roc(y_true, point_adjustment(y_true, y_score))
+    aupr = auc_pr(y_true, point_adjustment(y_true, y_score))
+    best_f1, best_p, best_r = get_best_f1(y_true, point_adjustment(y_true, y_score))
 
     events_pred = convert_vector_to_events(y_test)
     events_gt = convert_vector_to_events(y_true)
     Trange = (0, len(y_test))
     affiliation = pr_from_events(events_pred, events_gt, Trange)
-    vus_results = get_range_vus_roc(y_score, y_true, 100)  # default slidingWindow = 100
-
-    auroc = auc_roc(y_true, y_score)
-    aupr = auc_pr(y_true, y_score)
+    vus_results = get_range_vus_roc(y_score, y_true, slidingWindow=100)  # default slidingWindow = 100
 
     affiliation_precision = affiliation['Affiliation_Precision']
     affiliation_recall = affiliation['Affiliation_Recall']

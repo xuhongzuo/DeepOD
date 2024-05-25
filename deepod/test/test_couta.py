@@ -19,7 +19,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from deepod.models.time_series.couta import COUTA
 from deepod.utils.data import generate_data
-from deepod.metrics._anomaly_detection import ts_metrics_enhanced
+from deepod.metrics import ts_metrics, ts_metrics_enhanced, point_adjustment
 
 
 class TestCOUTA(unittest.TestCase):
@@ -62,7 +62,7 @@ class TestCOUTA(unittest.TestCase):
         thresh = np.percentile(pred_scores, 100 - anomaly_ratio)
         pred = (pred_scores > thresh).astype(int)
         metrics = ts_metrics_enhanced(self.yts_test, pred_scores, pred)
-        print(metrics)
+        print("metrics", metrics)
 
     def test_prediction_labels(self):
         pred_labels = self.clf.predict(self.Xts_test)
