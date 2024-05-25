@@ -8,11 +8,10 @@ adapted from https://github.com/gzerveas/mvts_transformer
 import math
 import torch
 from typing import Optional
-from torch.nn.modules import TransformerEncoderLayer
+# from torch.nn.modules import TransformerEncoderLayer
 from torch.nn import functional as F
 from torch import Tensor
 from deepod.core.networks.network_utility import _handle_n_hidden, _instantiate_class
-
 
 
 class TokenEmbedding(torch.nn.Module):
@@ -112,7 +111,6 @@ class LearnablePositionalEncoding(torch.nn.Module):
         return self.dropout(x)
 
 
-
 class TransformerEncoderLayer(torch.nn.Module):
     r"""TransformerEncoderLayer is made up of self-attn and feedforward network.
     This standard encoder layer is based on the paper "Attention Is All You Need".
@@ -162,7 +160,6 @@ class TransformerEncoderLayer(torch.nn.Module):
         assert activation in ['ReLU', 'GELU'], \
             f"activation should be ReLU/GELU, not {activation}"
         self.activation = _instantiate_class("torch.nn.modules.activation", activation)
-
 
     def __setstate__(self, state):
         if 'activation' not in state:

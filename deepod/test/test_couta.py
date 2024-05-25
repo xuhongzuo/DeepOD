@@ -9,7 +9,6 @@ import numpy as np
 
 # noinspection PyProtectedMember
 from numpy.testing import assert_equal
-from sklearn.metrics import roc_auc_score
 import torch
 import pandas as pd
 
@@ -18,8 +17,7 @@ import pandas as pd
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from deepod.models.time_series.couta import COUTA
-from deepod.utils.data import generate_data
-from deepod.metrics import ts_metrics, ts_metrics_enhanced, point_adjustment
+from deepod.metrics import ts_metrics_enhanced
 
 
 class TestCOUTA(unittest.TestCase):
