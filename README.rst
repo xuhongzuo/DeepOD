@@ -202,7 +202,7 @@ Implemented Models
  AnomalyTransformer, ICLR, 2022, unsupervised, Anomaly Transformer: Time Series Anomaly Detection with Association Discrepancy [#Xu2022transformer]_
  NCAD, IJCAI, 2022, unsupervised, Neural Contextual Anomaly Detection for Time Series [#Carmona2022NCAD]_
  TranAD, VLDB, 2022, unsupervised, TranAD: Deep Transformer Networks for Anomaly Detection in Multivariate Time Series Data [#Tuli2022TranAD]_
- COUTA, arXiv, 2022, unsupervised, Calibrated One-class Classification for Unsupervised Time Series Anomaly Detection [#Xu2022COUTA]_
+ COUTA, TKDE, 2024, unsupervised, Calibrated One-class Classification for Unsupervised Time Series Anomaly Detection [#Xu2024COUTA]_
  USAD, KDD, 2020, unsupervised, USAD: UnSupervised Anomaly Detection on Multivariate Time Series  
  DIF, TKDE, 2023, unsupervised, Deep Isolation Forest for Anomaly Detection [#Xu2023DIF]_
  TcnED, TNNLS, 2021, unsupervised, An Evaluation of Anomaly Detection and Diagnosis in Multivariate Time Series [#Garg2021Evaluation]_
@@ -295,7 +295,7 @@ Reference
 
 .. [#Garg2021Evaluation] Garg, Astha, et al. "An Evaluation of Anomaly Detection and Diagnosis in Multivariate Time Series". TNNLS. 2021. 
 
-.. [#Xu2022COUTA] Xu, Hongzuo et al. "Calibrated One-class Classification for Unsupervised Time Series Anomaly Detection". arXiv:2207.12201. 2022.
+.. [#Xu2024COUTA] Xu, Hongzuo et al. "Calibrated One-class Classification for Unsupervised Time Series Anomaly Detection". TKDE. 2024.
 
 .. [#Xu2023DIF] Xu, Hongzuo et al. "Deep Isolation Forest for Anomaly Detection". TKDE. 2023.
 
