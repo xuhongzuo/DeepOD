@@ -88,12 +88,12 @@ class DeepSVDD(BaseDeepAD):
     def __init__(self, epochs=100, batch_size=64, lr=1e-3,
                  rep_dim=128, hidden_dims='100,50', act='ReLU', bias=False,
                  epoch_steps=-1, prt_steps=10, device='cuda',
-                 verbose=2, random_state=42):
+                 verbose=2, random_state=42, **kwargs):
         super(DeepSVDD, self).__init__(
             model_name='DeepSVDD', data_type='tabular', epochs=epochs, batch_size=batch_size, lr=lr,
             network='MLP',
             epoch_steps=epoch_steps, prt_steps=prt_steps, device=device,
-            verbose=verbose, random_state=random_state
+            verbose=verbose, random_state=random_state, **kwargs
         )
 
         self.hidden_dims = hidden_dims
