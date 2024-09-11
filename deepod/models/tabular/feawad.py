@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 """
 Feature Encoding with AutoEncoders for Weakly-supervised Anomaly Detection
-PyTorch's implementation
+Optimized PyTorch's implementation
 @Author: Hongzuo Xu <hongzuoxu@126.com, xuhongzuo13@nudt.edu.cn>
+@Contributor: Huanqi Tu <tuhuanqi@gmail.com>
 """
 
 from deepod.core.base_model import BaseDeepAD
@@ -64,9 +65,10 @@ class FeaWAD(BaseDeepAD):
     random_state： int, optional (default=42)
         the seed used by the random
     """
+
     def __init__(self, epochs=100, batch_size=64, lr=1e-3,
-                 rep_dim=128, hidden_dims='100,50', act='ReLU', bias=False,
-                 margin=5.,
+                 rep_dim=4, hidden_dims='64,16', act='ReLU', bias=False,
+                 margin=5., pretrained_epoch=30,
                  epoch_steps=-1, prt_steps=10, device='cuda',
                  verbose=2, random_state=42):
         super(FeaWAD, self).__init__(
@@ -76,6 +78,8 @@ class FeaWAD(BaseDeepAD):
             verbose=verbose, random_state=random_state
         )
 
+        self.pretrained_epoch = pretrained_epoch
+        self.cur_epoch = 0
         self.margin = margin
 
         self.rep_dim = rep_dim
@@ -94,6 +98,7 @@ class FeaWAD(BaseDeepAD):
         dataset = TensorDataset(torch.from_numpy(X).float(), torch.from_numpy(y).long())
         sampler = WeightedRandomSampler(weights=[weight_map[label.item()] for data, label in dataset],
                                         num_samples=self.batch_size, replacement=True)
+        # sampler = None
         train_loader = DataLoader(dataset, batch_size=self.batch_size, sampler=sampler)
 
         network_params = {
@@ -101,7 +106,7 @@ class FeaWAD(BaseDeepAD):
             'network': self.network,
             'n_emb': self.rep_dim,
             'n_hidden': self.hidden_dims,
-            'n_hidden2': '256,32',
+            'n_hidden2': '64,16',
             'activation': self.act,
             'bias': self.bias
         }
@@ -123,8 +128,14 @@ class FeaWAD(BaseDeepAD):
         batch_x = batch_x.float().to(self.device)
         batch_y = batch_y.to(self.device)
         pred, sub_result = net(batch_x)
+        # Pretrain the Autoencoder with MSE Loss
+        if self.cur_epoch <= self.pretrained_epoch:
+            return torch.nn.functional.mse_loss(batch_x, net.AEmodel(batch_x)[0])
         loss = criterion(batch_y, pred, sub_result)
         return loss
+
+    def epoch_update(self):
+        self.cur_epoch = self.cur_epoch + 1
 
     def inference_forward(self, batch_x, net, criterion):
         batch_x = batch_x.float().to(self.device)
@@ -143,7 +154,7 @@ class FeaWadNet(torch.nn.Module):
         FWmodel = get_network('MLP')
         self.AEmodel = AEmodel_class(n_features, n_hidden=n_hidden, n_emb=n_emb,
                                      activation=activation, bias=bias)
-        self.LinearModel = FWmodel(n_features+n_emb, n_hidden=n_hidden2, n_output=1,
+        self.LinearModel = FWmodel(n_features + n_emb, n_hidden=n_hidden2, n_output=1,
                                    activation=activation, bias=bias)
 
     def forward(self, x):
@@ -181,6 +192,7 @@ class FeaWADLoss(torch.nn.Module):
             - If ``'sum'``: the output will be summed
 
     """
+
     def __init__(self, margin=5., reduction='mean'):
         super(FeaWADLoss, self).__init__()
         self.margin = margin
@@ -192,8 +204,8 @@ class FeaWADLoss(torch.nn.Module):
         inlier_loss = torch.abs(dev)
         outlier_loss = torch.abs(torch.maximum(self.margin - dev, torch.tensor(0.)))
 
-        sub_nor = torch.norm(sub_result, p=2, dim=1 if len(sub_result.shape)==2 else [1,2])
-        outlier_sub_loss = torch.abs(torch.maximum(self.margin-sub_nor, torch.tensor(0.)))
+        sub_nor = torch.norm(sub_result, p=2, dim=1 if len(sub_result.shape) == 2 else [1, 2])
+        outlier_sub_loss = torch.abs(torch.maximum(self.margin - sub_nor, torch.tensor(0.)))
         loss = (1 - y_true) * (inlier_loss + sub_nor) + y_true * (outlier_loss + outlier_sub_loss)
 
         if self.reduction == 'mean':
