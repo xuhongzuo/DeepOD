@@ -234,11 +234,21 @@ You can also use the BibTex entry below for citation.
       journal={IEEE Transactions on Knowledge and Data Engineering}, 
       title={Deep Isolation Forest for Anomaly Detection}, 
       year={2023},
-      volume={},
-      number={},
-      pages={1-14},
+      volume={35},
+      number={12},
+      pages={12591--12604},
       doi={10.1109/TKDE.2023.3270293}
    }
+
+.. code-block:: bibtex
+
+   @ARTICLE{xu2024calibrated,
+      title={Calibrated one-class classification for unsupervised time series anomaly detection},
+      author={Xu, Hongzuo and Wang, Yijie and Jian, Songlei and Liao, Qing and Wang, Yongjun and Pang, Guansong},
+      journal={IEEE Transactions on Knowledge and Data Engineering},
+      year={2024},
+      publisher={IEEE}
+}
 
 
 Star History
