@@ -220,9 +220,11 @@ NOTE:
 
 Citation
 ~~~~~~~~~~~~~~~~~
-If you use this library in your work, please cite this paper:
+If you use this library in your work, please cite these papers:
 
-Hongzuo Xu, Guansong Pang, Yijie Wang and Yongjun Wang, "Deep Isolation Forest for Anomaly Detection," in IEEE Transactions on Knowledge and Data Engineering, doi: 10.1109/TKDE.2023.3270293.
+Xu, H., Pang, G., Wang, Y., & Wang, Y. (2023). Deep isolation forest for anomaly detection. IEEE Transactions on Knowledge and Data Engineering, 35(12), 12591-12604.
+
+Xu, H., Wang, Y., Jian, S., Liao, Q., Wang, Y., & Pang, G. (2024). Calibrated one-class classification for unsupervised time series anomaly detection. IEEE Transactions on Knowledge and Data Engineering.
 
 
 You can also use the BibTex entry below for citation.
