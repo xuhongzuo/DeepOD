@@ -64,7 +64,8 @@ class FeaWAD(BaseDeepAD):
     random_state： int, optional (default=42)
         the seed used by the random
     """
-    def __init__(self, epochs=100, batch_size=64, lr=1e-3,
+
+    def __init__(self, epochs=100, pretrain_epochs=50, batch_size=64, lr=1e-3,
                  rep_dim=128, hidden_dims='100,50', act='ReLU', bias=False,
                  margin=5.,
                  epoch_steps=-1, prt_steps=10, device='cuda',
@@ -76,6 +77,7 @@ class FeaWAD(BaseDeepAD):
             verbose=verbose, random_state=random_state
         )
 
+        self.pretrain_epochs = pretrain_epochs
         self.margin = margin
 
         self.rep_dim = rep_dim
@@ -83,6 +85,7 @@ class FeaWAD(BaseDeepAD):
         self.act = act
         self.bias = bias
 
+        self.cur_epoch = None
         return
 
     def training_prepare(self, X, y):
@@ -107,6 +110,8 @@ class FeaWAD(BaseDeepAD):
         }
         net = FeaWadNet(**network_params).to(self.device)
         criterion = FeaWADLoss(margin=self.margin)
+        self.cur_epoch = 0
+
         if self.verbose >= 2:
             print(net)
 
@@ -123,6 +128,8 @@ class FeaWAD(BaseDeepAD):
         batch_x = batch_x.float().to(self.device)
         batch_y = batch_y.to(self.device)
         pred, sub_result = net(batch_x)
+        if self.cur_epoch <= self.pretrain_epochs:
+            return torch.nn.functional.mse_loss(batch_x, net.AEmodel(batch_x)[0])
         loss = criterion(batch_y, pred, sub_result)
         return loss
 
@@ -132,6 +139,9 @@ class FeaWAD(BaseDeepAD):
         s = s.view(-1)
         batch_z = batch_x
         return batch_z, s
+
+    def epoch_update(self):
+        self.cur_epoch += 1
 
 
 class FeaWadNet(torch.nn.Module):
@@ -143,7 +153,7 @@ class FeaWadNet(torch.nn.Module):
         FWmodel = get_network('MLP')
         self.AEmodel = AEmodel_class(n_features, n_hidden=n_hidden, n_emb=n_emb,
                                      activation=activation, bias=bias)
-        self.LinearModel = FWmodel(n_features+n_emb, n_hidden=n_hidden2, n_output=1,
+        self.LinearModel = FWmodel(n_features + n_emb, n_hidden=n_hidden2, n_output=1,
                                    activation=activation, bias=bias)
 
     def forward(self, x):
@@ -181,6 +191,7 @@ class FeaWADLoss(torch.nn.Module):
             - If ``'sum'``: the output will be summed
 
     """
+
     def __init__(self, margin=5., reduction='mean'):
         super(FeaWADLoss, self).__init__()
         self.margin = margin
@@ -192,8 +203,8 @@ class FeaWADLoss(torch.nn.Module):
         inlier_loss = torch.abs(dev)
         outlier_loss = torch.abs(torch.maximum(self.margin - dev, torch.tensor(0.)))
 
-        sub_nor = torch.norm(sub_result, p=2, dim=1 if len(sub_result.shape)==2 else [1,2])
-        outlier_sub_loss = torch.abs(torch.maximum(self.margin-sub_nor, torch.tensor(0.)))
+        sub_nor = torch.norm(sub_result, p=2, dim=1 if len(sub_result.shape) == 2 else [1, 2])
+        outlier_sub_loss = torch.abs(torch.maximum(self.margin - sub_nor, torch.tensor(0.)))
         loss = (1 - y_true) * (inlier_loss + sub_nor) + y_true * (outlier_loss + outlier_sub_loss)
 
         if self.reduction == 'mean':
