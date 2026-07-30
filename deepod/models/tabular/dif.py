@@ -263,7 +263,14 @@ def cal_score(xx, clf):
         dev = mat.sum(axis=1)/(exist.sum(axis=1)+1e-6)
         deviations[:, ii] = dev
 
-    scores = 2 ** (-depth_sum / (len(clf.estimators_) * _average_path_length([clf.max_samples_])))
+    # the average path length of an isolation tree fitted on a single sample
+    # (i.e. ``clf.max_samples_ <= 1``) is zero, which turns the exponent below
+    # into a ``0 / 0`` division and produces NaN anomaly scores (see issue #45).
+    # guard against this degenerate case so the returned scores stay finite.
+    denom = len(clf.estimators_) * _average_path_length([clf.max_samples_])
+    with np.errstate(divide='ignore', invalid='ignore'):
+        scores = 2 ** (-depth_sum / denom)
+    scores = np.nan_to_num(scores, nan=0.0, posinf=0.0, neginf=0.0)
     deviation = np.mean(deviations, axis=1)
     leaf_sample = (clf.max_samples_ - np.mean(leaf_samples, axis=1)) / clf.max_samples_
 

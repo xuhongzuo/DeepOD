@@ -7,6 +7,7 @@ import sys
 import unittest
 
 # noinspection PyProtectedMember
+import numpy as np
 from numpy.testing import assert_equal
 from sklearn.metrics import roc_auc_score
 import torch
@@ -161,6 +162,26 @@ class TestDIF(unittest.TestCase):
 
     def tearDown(self):
         pass
+
+
+class TestDIFSingleWindow(unittest.TestCase):
+    # kept separate from TestDIF so this regression check stays lightweight
+    # (no model training in setUp).
+    def test_dif_ts_single_window_scores_are_finite(self):
+        # regression test for issue #45: when the series is no longer than
+        # ``seq_len`` only a single sub-sequence is produced, so the isolation
+        # forest is fit on a single sample and ``cal_score`` divided by zero,
+        # returning NaN anomaly scores. the scores must stay finite.
+        X = np.full((33, 20), 1.0)
+        clf = DeepIsolationForestTS(seq_len=33, stride=1,
+                                    n_ensemble=2, n_estimators=6,
+                                    max_samples=33, hidden_dims='50',
+                                    device='cpu', random_state=42, verbose=0)
+        clf.fit(X)
+        scores = clf.decision_function(X)
+        assert_equal(scores.shape[0], X.shape[0])
+        assert not np.isnan(scores).any()
+        assert np.isfinite(scores).all()
 
 
 if __name__ == '__main__':
